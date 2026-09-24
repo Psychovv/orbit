@@ -162,15 +162,19 @@ export function TasksModule({
     setIsAddModalOpen(true);
   };
 
-  const handleVoiceResult = (result: {
-    create?: Array<{ title?: string, date?: string, time?: string, categoryId?: string }>;
-    completeIds?: string[];
-  }) => {
+  const handleVoiceResult = (result: any) => {
+    console.log("Voice result received:", result);
+    
+    // Fallback if the server returned the old Array format
+    let data = result;
+    if (Array.isArray(result)) {
+      data = { create: result, completeIds: [] };
+    }
+
     // 1. Process completions
-    if (result.completeIds && result.completeIds.length > 0) {
-      result.completeIds.forEach(id => {
-        // Only toggle if it's not already completed
-        const task = tasks.find(t => t.id === id);
+    if (data.completeIds && data.completeIds.length > 0) {
+      data.completeIds.forEach((id: string) => {
+        const task = tasks.find((t) => t.id === id);
         if (task && !task.completed) {
           onToggleComplete(id);
         }
@@ -178,8 +182,8 @@ export function TasksModule({
     }
 
     // 2. Process creations
-    const results = result.create || [];
-    if (results.length === 1 && (!result.completeIds || result.completeIds.length === 0)) {
+    const results = data.create || [];
+    if (results.length === 1 && (!data.completeIds || data.completeIds.length === 0)) {
       // Only 1 task to create and no tasks completed -> open modal
       const res = results[0];
       let dayKey: DayOfWeek | undefined;
@@ -194,7 +198,7 @@ export function TasksModule({
       handleOpenAddModal(res.date, dayKey, { title: res.title, time: res.time, categoryId: res.categoryId });
     } else if (results.length > 0) {
       // Múltiplas tarefas ou misto (criar + completar) -> cria direto
-      results.forEach((res) => {
+      results.forEach((res: any) => {
         if (!res.title) return;
         
         let dateStr = res.date || formatDateKey(new Date());
