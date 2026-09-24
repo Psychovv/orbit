@@ -16,6 +16,7 @@ import {
   INITIAL_FINANCE_CATEGORIES,
 } from "@/lib/initial-data";
 import { Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function OrbitApp() {
   const [activeModule, setActiveModule] = useState<"tasks" | "finance">("tasks");
@@ -25,6 +26,7 @@ export default function OrbitApp() {
   const [financeCategories, setFinanceCategories] = useState<FinanceCategory[]>(INITIAL_FINANCE_CATEGORIES);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
   const [isCategoriesModalOpen, setIsCategoriesModalOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -40,8 +42,26 @@ export default function OrbitApp() {
     setTaskCategories(loadedCats);
     setTransactions(loadedTxs);
     setFinanceCategories(loadedFinCats);
+
+    try {
+      const savedCollapsed = localStorage.getItem("orbit_sidebar_collapsed");
+      if (savedCollapsed === "true") {
+        setIsSidebarCollapsed(true);
+      }
+    } catch {}
+
     setIsLoaded(true);
   }, []);
+
+  const handleToggleSidebarCollapse = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("orbit_sidebar_collapsed", String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   // Save changes to storage whenever state updates
   useEffect(() => {
@@ -149,15 +169,24 @@ export default function OrbitApp() {
         onResetData={handleResetData}
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={handleToggleSidebarCollapse}
       />
 
-      {/* Main Content Area - Shifted Right on Desktop */}
-      <div className="flex-1 flex flex-col md:pl-64 transition-all duration-300">
+      {/* Main Content Area - Shifted Right on Desktop according to sidebar state */}
+      <div
+        className={cn(
+          "flex-1 flex flex-col transition-all duration-300 ease-in-out",
+          isSidebarCollapsed ? "md:pl-[72px]" : "md:pl-64"
+        )}
+      >
         {/* Streamlined Top Header */}
         <OrbitHeader
           activeModule={activeModule}
           onSelectModule={setActiveModule}
           onOpenMobileMenu={() => setIsMobileSidebarOpen(true)}
+          isSidebarCollapsed={isSidebarCollapsed}
+          onToggleSidebarCollapse={handleToggleSidebarCollapse}
           netBalance={netBalance}
           totalCompletedTasks={completedTasks}
           totalTasks={totalTasks}

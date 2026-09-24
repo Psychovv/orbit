@@ -1,13 +1,15 @@
 "use client";
 
 import React from "react";
-import { Menu, Calendar, Wallet, RotateCcw } from "lucide-react";
+import { Menu, Calendar, Wallet, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 
 interface OrbitHeaderProps {
   activeModule: "tasks" | "finance";
   onSelectModule: (module: "tasks" | "finance") => void;
   onOpenMobileMenu: () => void;
+  isSidebarCollapsed?: boolean;
+  onToggleSidebarCollapse?: () => void;
   netBalance: number;
   totalCompletedTasks: number;
   totalTasks: number;
@@ -17,6 +19,8 @@ export function OrbitHeader({
   activeModule,
   onSelectModule,
   onOpenMobileMenu,
+  isSidebarCollapsed = false,
+  onToggleSidebarCollapse,
   netBalance,
   totalCompletedTasks,
   totalTasks,
@@ -29,8 +33,24 @@ export function OrbitHeader({
     <header className="sticky top-0 z-20 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-[#090812]/85 backdrop-blur-xl transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
-          {/* Left: Mobile hamburger & Brand */}
+          {/* Left: Mobile hamburger & Brand / Desktop Sidebar Toggle */}
           <div className="flex items-center gap-3">
+            {/* Desktop Sidebar Toggle Button */}
+            {onToggleSidebarCollapse && (
+              <button
+                onClick={onToggleSidebarCollapse}
+                className="hidden md:flex p-2 rounded-xl text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+                title={isSidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
+                aria-label={isSidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
+              >
+                {isSidebarCollapsed ? (
+                  <PanelLeftOpen className="w-5 h-5 text-[#844DFE]" />
+                ) : (
+                  <PanelLeftClose className="w-5 h-5 text-zinc-500 hover:text-[#844DFE]" />
+                )}
+              </button>
+            )}
+
             <button
               onClick={onOpenMobileMenu}
               className="md:hidden p-2 rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
@@ -53,12 +73,12 @@ export function OrbitHeader({
                 {activeModule === "tasks" ? (
                   <>
                     <Calendar className="w-4 h-4 text-[#844DFE]" />
-                    <span>Missões da Semana</span>
+                    <span>Tarefas & Calendário</span>
                   </>
                 ) : (
                   <>
                     <Wallet className="w-4 h-4 text-[#844DFE]" />
-                    <span>Cofre Financeiro</span>
+                    <span>Planejamento Financeiro</span>
                   </>
                 )}
               </span>
