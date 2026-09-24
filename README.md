@@ -8,7 +8,7 @@ Orbit é um aplicativo web de organização pessoal e planejamento financeiro, c
 
 - Visão da semana, de segunda a domingo, com navegação entre semanas e visão mensal.
 - Categorias personalizáveis (Guitarra, Estudos, Faculdade, Exercícios, Projetos, Rotina).
-- Conclusão de tarefas e criação por texto ou voz com a Orbit AI.
+- Criação, conclusão e exclusão de tarefas por texto ou voz com a Orbit AI.
 
 ### Finanças
 
