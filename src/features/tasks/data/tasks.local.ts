@@ -109,7 +109,10 @@ export function createLocalTasksRepository(): TasksRepository {
         const tasks = await loadTasks();
         const current = tasks.find((t) => t.id === id);
         if (!current) throw new Error(`Task ${id} not found`);
-        const updated: Task = { ...current, ...data, updatedAt: nowIso() };
+        const next: Record<string, unknown> = { ...current, ...data, updatedAt: nowIso() };
+        if (next.description == null || next.description === "") delete next.description;
+        if (next.time == null || next.time === "") delete next.time;
+        const updated = TaskSchema.parse(next);
         writeJson(
           TASKS_STORAGE_KEYS.tasks,
           tasks.map((t) => (t.id === id ? updated : t))

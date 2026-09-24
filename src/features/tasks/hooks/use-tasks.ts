@@ -74,7 +74,16 @@ export function useUpdateTask() {
       repositories.tasks.update(id, patch),
     onMutate: ({ id, patch }) =>
       patchRangedLists<Task>(queryClient, TASKS, (tasks) =>
-        tasks.map((t) => (t.id === id ? { ...t, ...patch } : t))
+        tasks.map((t) => {
+          if (t.id !== id) return t;
+          const { description, time, ...rest } = patch;
+          const next: Task = { ...t, ...rest };
+          if (description === null) delete next.description;
+          else if (description !== undefined) next.description = description;
+          if (time === null) delete next.time;
+          else if (time !== undefined) next.time = time;
+          return next;
+        })
       ),
     onError: (_error, _vars, rollback) => rollback?.(),
     onSettled: () => queryClient.invalidateQueries({ queryKey: [TASKS] }),

@@ -42,6 +42,8 @@ export const CreateTaskSchema = TaskSchema.pick({
 export type CreateTaskInput = z.infer<typeof CreateTaskSchema>;
 
 export const UpdateTaskSchema = CreateTaskSchema.partial().extend({
+  description: z.string().max(2000).nullable().optional(),
+  time: TimeSchema.nullable().optional(),
   completedAt: z.iso.datetime().nullable().optional(),
   focusSeconds: z.number().int().nonnegative().optional(),
   focusStartedAt: z.iso.datetime().nullable().optional(),
