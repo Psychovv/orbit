@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Transaction, FinanceCategory } from "@/types/orbit";
-import { GlowCard } from "@/components/magic/glow-card";
+import { PAYMENT_METHOD_LABELS, type FinanceCategory, type Transaction } from "../domain/finance.schema";
+import { formatBRL } from "../domain/money";
+import { formatShortDate } from "@/shared/lib/date-utils";
+import { GlowCard } from "@/shared/effects/glow-card";
 import {
   Search,
-  Filter,
   ArrowUpRight,
   ArrowDownRight,
   Trash2,
@@ -13,7 +14,7 @@ import {
   CreditCard,
   Layers,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 
 interface TransactionsTableProps {
   transactions: Transaction[];
@@ -49,30 +50,8 @@ export function TransactionsTable({
         }
         return true;
       })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort((a, b) => b.date.localeCompare(a.date));
   }, [transactions, typeFilter, categoryFilter, searchTerm]);
-
-  const formatBRL = (val: number) => {
-    return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  };
-
-  const formatDate = (isoDate: string) => {
-    try {
-      const [year, month, day] = isoDate.split("-");
-      const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-      return `${day} ${months[parseInt(month, 10) - 1]}`;
-    } catch {
-      return isoDate;
-    }
-  };
-
-  const paymentLabels: Record<string, string> = {
-    pix: "PIX",
-    cartao: "Cartão",
-    boleto: "Boleto",
-    transferencia: "Transferência",
-    dinheiro: "Dinheiro",
-  };
 
   return (
     <GlowCard className="p-6 space-y-5">
@@ -181,7 +160,7 @@ export function TransactionsTable({
                 </tr>
               ) : (
                 filteredTransactions.map((tx) => {
-                  const cat = categoriesMap.get(tx.categoryId);
+                  const cat = tx.categoryId ? categoriesMap.get(tx.categoryId) : undefined;
                   const isIncome = tx.type === "income";
 
                   return (
@@ -235,7 +214,7 @@ export function TransactionsTable({
                       <td className="py-3.5 px-4 text-xs text-zinc-600 dark:text-zinc-400 font-mono whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           <Calendar className="w-3.5 h-3.5 text-zinc-400" />
-                          <span>{formatDate(tx.date)}</span>
+                          <span>{formatShortDate(tx.date)}</span>
                         </div>
                       </td>
 
@@ -243,7 +222,7 @@ export function TransactionsTable({
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800/60 px-2 py-0.5 rounded-md">
                           <CreditCard className="w-3 h-3 text-zinc-400" />
-                          <span>{paymentLabels[tx.paymentMethod] || tx.paymentMethod}</span>
+                          <span>{PAYMENT_METHOD_LABELS[tx.paymentMethod]}</span>
                         </span>
                       </td>
 
@@ -256,7 +235,7 @@ export function TransactionsTable({
                               : "text-rose-600 dark:text-rose-400"
                           )}
                         >
-                          {isIncome ? "+" : "-"} {formatBRL(tx.amount)}
+                          {isIncome ? "+" : "-"} {formatBRL(tx.amountCents)}
                         </span>
                       </td>
 

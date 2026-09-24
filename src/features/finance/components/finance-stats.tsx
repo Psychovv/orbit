@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
-import { GlowCard } from "@/components/magic/glow-card";
+import { GlowCard } from "@/shared/effects/glow-card";
+import type { MonthlyMetrics } from "../domain/metrics";
+import { formatBRL } from "../domain/money";
 import {
   Wallet,
   ArrowUpRight,
@@ -9,32 +11,12 @@ import {
   CreditCard,
   TrendingUp,
   Percent,
-  Sparkles,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 
-interface FinanceStatsProps {
-  totalIncome: number;
-  dailyExpenses: number;
-  creditCardExpenses: number;
-  netBalance: number;
-  incomeCount: number;
-  dailyCount: number;
-  cardCount: number;
-}
-
-export function FinanceStats({
-  totalIncome,
-  dailyExpenses,
-  creditCardExpenses,
-  netBalance,
-  incomeCount,
-  dailyCount,
-  cardCount,
-}: FinanceStatsProps) {
-  const formatBRL = (val: number) => {
-    return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  };
+export function FinanceStats({ metrics }: { metrics: MonthlyMetrics }) {
+  const { totalIncome, dailyExpenses, creditCardExpenses, netBalance, incomeCount, dailyCount, cardCount } =
+    metrics;
 
   const totalExpense = dailyExpenses + creditCardExpenses;
   const committedRate = totalIncome > 0 ? Math.min(100, (totalExpense / totalIncome) * 100) : 0;
