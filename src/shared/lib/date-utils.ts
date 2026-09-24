@@ -1,4 +1,4 @@
-import { DayOfWeek } from "@/types/orbit";
+export type DayOfWeek = "seg" | "ter" | "qua" | "qui" | "sex" | "sab" | "dom";
 
 export interface CalendarDayInfo {
   date: string; // YYYY-MM-DD
@@ -46,6 +46,18 @@ export function formatDateKey(date: Date): string {
 export function parseDateKey(dateStr: string): Date {
   const [y, m, d] = dateStr.split("-").map(Number);
   return new Date(y, m - 1, d);
+}
+
+export function isDateKey(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(parseDateKey(value).getTime());
+}
+
+export function getDayOfWeek(dateKey: string): DayOfWeek {
+  return DAY_KEYS[parseDateKey(dateKey).getDay()];
+}
+
+export function todayKey(): string {
+  return formatDateKey(new Date());
 }
 
 export function isSameDay(d1: Date, d2: Date): boolean {
@@ -170,4 +182,46 @@ export function parseYearMonthKey(key: string): Date {
 
 export function isSameMonth(d1: Date, d2: Date): boolean {
   return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth();
+}
+
+export function isYearMonthKey(value: string): boolean {
+  return /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+}
+
+export function formatShortDate(dateKey: string): string {
+  const [, month, day] = dateKey.split("-");
+  return `${day} ${MONTH_SHORT[Number(month) - 1]}`;
+}
+
+export function formatLongDate(dateKey: string): { dayName: string; date: string } {
+  const d = parseDateKey(dateKey);
+  return {
+    dayName: DAY_NAMES[d.getDay()],
+    date: `${d.getDate()} de ${MONTH_NAMES[d.getMonth()]} de ${d.getFullYear()}`,
+  };
+}
+
+export interface DateRange {
+  from: string;
+  to: string;
+}
+
+export function weekRange(baseDate: Date): DateRange {
+  const monday = getStartOfWeek(baseDate);
+  return { from: formatDateKey(monday), to: formatDateKey(addDays(monday, 6)) };
+}
+
+export function monthGridRange(baseDate: Date): DateRange {
+  const start = getStartOfWeek(new Date(baseDate.getFullYear(), baseDate.getMonth(), 1));
+  return { from: formatDateKey(start), to: formatDateKey(addDays(start, 41)) };
+}
+
+export function monthRange(monthKey: string): DateRange {
+  const first = parseYearMonthKey(monthKey);
+  const last = new Date(first.getFullYear(), first.getMonth() + 1, 0);
+  return { from: formatDateKey(first), to: formatDateKey(last) };
+}
+
+export function isInRange(dateKey: string, range: DateRange): boolean {
+  return dateKey >= range.from && dateKey <= range.to;
 }

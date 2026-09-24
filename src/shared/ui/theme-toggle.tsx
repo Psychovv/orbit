@@ -5,13 +5,15 @@ import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
+const noopSubscribe = () => () => {};
+
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = React.useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false
+  );
 
   if (!mounted) {
     return <div className="w-10 h-10 rounded-xl bg-purple-100/50 dark:bg-purple-950/40" />;

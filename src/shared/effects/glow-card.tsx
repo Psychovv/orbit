@@ -1,18 +1,16 @@
 "use client";
 
 import React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 
 interface GlowCardProps extends React.HTMLAttributes<HTMLDivElement> {
   glowColor?: "purple" | "indigo" | "emerald" | "amber" | "rose" | "cyan";
-  glowIntensity?: "subtle" | "medium" | "strong";
 }
 
 export function GlowCard({
   children,
   className,
   glowColor = "purple",
-  glowIntensity = "subtle",
   ...props
 }: GlowCardProps) {
   const glowStyles = {

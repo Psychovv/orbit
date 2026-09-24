@@ -46,7 +46,7 @@ export function CosmicBackground() {
 
     const starColors = ["#ffffff", "#e8e1fd", "#d1c0fc", "#f5f3ff", "#844DFE"];
     let stars: Star[] = [];
-    let meteors: Meteor[] = [];
+    const meteors: Meteor[] = [];
 
     const initStars = () => {
       const starCount = Math.min(Math.floor((width * height) / 12000), 90);
@@ -69,7 +69,7 @@ export function CosmicBackground() {
     // Occasional meteor generator
     let lastMeteorTime = 0;
     const spawnMeteor = (now: number) => {
-      if (now - lastMeteorTime > 6000 && Math.random() > 0.4) {
+      if (now - lastMeteorTime > 3000 && Math.random() > 0.4) {
         lastMeteorTime = now;
         meteors.push({
           x: Math.random() * width * 0.8,
