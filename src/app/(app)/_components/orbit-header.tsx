@@ -1,34 +1,24 @@
 "use client";
 
 import React from "react";
+import { usePathname } from "next/navigation";
 import { Menu, Calendar, Wallet, PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { ThemeToggle } from "./theme-toggle";
-import { OrbitMark } from "@/components/orbit-mark";
+import { ThemeToggle } from "@/shared/ui/theme-toggle";
+import { OrbitMark } from "@/shared/ui/orbit-mark";
+import { useTasks } from "@/features/tasks/hooks/use-tasks";
+import { countCompleted } from "@/features/tasks/domain/task.selectors";
+import { useTransactions } from "@/features/finance/hooks/use-finance";
+import { netBalance } from "@/features/finance/domain/metrics";
+import { formatBRL } from "@/features/finance/domain/money";
 
 interface OrbitHeaderProps {
-  activeModule: "tasks" | "finance";
-  onSelectModule: (module: "tasks" | "finance") => void;
   onOpenMobileMenu: () => void;
   isSidebarCollapsed?: boolean;
   onToggleSidebarCollapse?: () => void;
-  netBalance: number;
-  totalCompletedTasks: number;
-  totalTasks: number;
 }
 
-export function OrbitHeader({
-  activeModule,
-  onSelectModule,
-  onOpenMobileMenu,
-  isSidebarCollapsed = false,
-  onToggleSidebarCollapse,
-  netBalance,
-  totalCompletedTasks,
-  totalTasks,
-}: OrbitHeaderProps) {
-  const formatBRL = (val: number) => {
-    return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  };
+export function OrbitHeader({ onOpenMobileMenu, isSidebarCollapsed = false, onToggleSidebarCollapse }: OrbitHeaderProps) {
+  const isFinance = usePathname().startsWith("/finance");
 
   return (
     <header className="sticky top-0 z-20 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-[#090812]/85 backdrop-blur-xl transition-colors">
@@ -71,15 +61,15 @@ export function OrbitHeader({
             {/* Desktop Module Indicator / Breadcrumb */}
             <div className="hidden md:flex items-center gap-2 text-sm">
               <span className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                {activeModule === "tasks" ? (
-                  <>
-                    <Calendar className="w-4 h-4 text-[#844DFE]" />
-                    <span>Tarefas & Calendário</span>
-                  </>
-                ) : (
+                {isFinance ? (
                   <>
                     <Wallet className="w-4 h-4 text-[#844DFE]" />
                     <span>Planejamento Financeiro</span>
+                  </>
+                ) : (
+                  <>
+                    <Calendar className="w-4 h-4 text-[#844DFE]" />
+                    <span>Tarefas & Calendário</span>
                   </>
                 )}
               </span>
@@ -88,20 +78,31 @@ export function OrbitHeader({
 
           {/* Right: Quick info & Theme toggle */}
           <div className="flex items-center gap-3">
-            {activeModule === "finance" ? (
-              <div className="text-xs font-mono font-bold text-zinc-700 dark:text-zinc-300 px-3 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/80">
-                Saldo: {formatBRL(netBalance)}
-              </div>
-            ) : (
-              <div className="text-xs font-mono font-medium text-zinc-500 dark:text-zinc-400 hidden sm:block">
-                {totalCompletedTasks} de {totalTasks} concluídas
-              </div>
-            )}
-
+            {isFinance ? <BalanceSummary /> : <TasksSummary />}
             <ThemeToggle />
           </div>
         </div>
       </div>
     </header>
+  );
+}
+
+function BalanceSummary() {
+  const { data } = useTransactions();
+  if (!data) return null;
+  return (
+    <div className="text-xs font-mono font-bold text-zinc-700 dark:text-zinc-300 px-3 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/80">
+      Saldo: {formatBRL(netBalance(data))}
+    </div>
+  );
+}
+
+function TasksSummary() {
+  const { data } = useTasks();
+  if (!data) return null;
+  return (
+    <div className="text-xs font-mono font-medium text-zinc-500 dark:text-zinc-400 hidden sm:block">
+      {countCompleted(data)} de {data.length} concluídas
+    </div>
   );
 }

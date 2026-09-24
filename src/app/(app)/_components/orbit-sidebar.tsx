@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Calendar,
@@ -15,44 +18,39 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
-import { ThemeToggle } from "@/components/header/theme-toggle";
-import { OrbitMark } from "@/components/orbit-mark";
-import { Task, TaskCategory } from "@/types/orbit";
-import { cn } from "@/lib/utils";
+import { dataSource, resetLocalData } from "@/config/data-source";
+import { useTaskDialogs } from "@/features/tasks/components/task-dialogs";
+import { ALL_CATEGORIES, countByCategory, countCompleted } from "@/features/tasks/domain/task.selectors";
+import { useTaskCategories, useTasks } from "@/features/tasks/hooks/use-tasks";
+import { TASKS_PATH, tasksHref } from "@/features/tasks/hooks/use-tasks-view-state";
+import { ThemeToggle } from "@/shared/ui/theme-toggle";
+import { OrbitMark } from "@/shared/ui/orbit-mark";
+import { cn } from "@/shared/lib/utils";
+
+const FINANCE_PATH = "/finance";
 
 interface OrbitSidebarProps {
-  activeModule: "tasks" | "finance";
-  onSelectModule: (module: "tasks" | "finance") => void;
-  categories: TaskCategory[];
-  tasks: Task[];
-  selectedCategoryId: string;
-  onSelectCategory: (categoryId: string) => void;
-  onOpenCategoriesModal: () => void;
-  onOpenAddTaskModal: () => void;
-  onResetData: () => void;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
 }
 
-export function OrbitSidebar({
-  activeModule,
-  onSelectModule,
-  categories,
-  tasks,
-  selectedCategoryId,
-  onSelectCategory,
-  onOpenCategoriesModal,
-  onOpenAddTaskModal,
-  onResetData,
-  isOpenMobile,
-  onCloseMobile,
-  isCollapsed = false,
-  onToggleCollapse,
-}: OrbitSidebarProps) {
+export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false, onToggleCollapse }: OrbitSidebarProps) {
+  const pathname = usePathname();
+  const activeModule = pathname.startsWith(FINANCE_PATH) ? "finance" : "tasks";
   const [isTaskCategoriesExpanded, setIsTaskCategoriesExpanded] = useState(true);
-  const completedTasks = tasks.filter((t) => t.completed).length;
+  const dialogs = useTaskDialogs();
+  const queryClient = useQueryClient();
+  const { data: tasks = [] } = useTasks();
+  const completedTasks = countCompleted(tasks);
+
+  const handleResetData = () => {
+    if (window.confirm("Deseja restaurar as tarefas e finanças para os dados de demonstração?")) {
+      resetLocalData();
+      queryClient.resetQueries();
+    }
+  };
 
   // Render content when expanded
   const expandedContent = (
@@ -112,15 +110,16 @@ export function OrbitSidebar({
           <div className="space-y-1">
             {/* Item 1: Tarefas & Categorias Agrupadas */}
             <div>
-              <button
-                onClick={() => {
-                  onSelectModule("tasks");
+              <Link
+                href={TASKS_PATH}
+                onClick={(e) => {
                   if (activeModule === "tasks") {
+                    e.preventDefault();
                     setIsTaskCategoriesExpanded((prev) => !prev);
                   } else {
                     setIsTaskCategoriesExpanded(true);
+                    onCloseMobile();
                   }
-                  onCloseMobile();
                 }}
                 className={cn(
                   "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer",
@@ -153,7 +152,7 @@ export function OrbitSidebar({
                     </span>
                   )}
                 </div>
-              </button>
+              </Link>
 
               {/* Categorias como parte interna de Tarefas */}
               <AnimatePresence initial={false}>
@@ -171,7 +170,7 @@ export function OrbitSidebar({
                           Categorias
                         </span>
                         <button
-                          onClick={onOpenCategoriesModal}
+                          onClick={dialogs.openCategories}
                           className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                           title="Gerenciar categorias"
                         >
@@ -179,57 +178,9 @@ export function OrbitSidebar({
                         </button>
                       </div>
 
-                      {/* Todas as Tarefas */}
-                      <button
-                        onClick={() => {
-                          onSelectCategory("all");
-                          onCloseMobile();
-                        }}
-                        className={cn(
-                          "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer",
-                          selectedCategoryId === "all"
-                            ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-semibold shadow-2xs border border-zinc-200/80 dark:border-zinc-700/80"
-                            : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-900/40"
-                        )}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Layers className="w-3.5 h-3.5 text-zinc-400" />
-                          <span>Todas</span>
-                        </div>
-                        <span className="text-[10px] font-mono text-zinc-400">
-                          {tasks.length}
-                        </span>
-                      </button>
-
-                      {/* Lista de Categorias de Tarefas */}
-                      {categories.map((cat) => {
-                        const count = tasks.filter((t) => t.categoryId === cat.id).length;
-                        const isSelected = selectedCategoryId === cat.id;
-
-                        return (
-                          <button
-                            key={cat.id}
-                            onClick={() => {
-                              onSelectCategory(cat.id);
-                              onCloseMobile();
-                            }}
-                            className={cn(
-                              "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer",
-                              isSelected
-                                ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-semibold shadow-2xs border border-[#844DFE]/30"
-                                : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-900/40"
-                            )}
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-xs shrink-0">{cat.icon}</span>
-                              <span className="truncate">{cat.name}</span>
-                            </div>
-                            <span className="text-[10px] font-mono text-zinc-400 shrink-0">
-                              {count}
-                            </span>
-                          </button>
-                        );
-                      })}
+                      <Suspense fallback={null}>
+                        <CategoryLinks onNavigate={onCloseMobile} />
+                      </Suspense>
                     </div>
                   </motion.div>
                 )}
@@ -238,11 +189,9 @@ export function OrbitSidebar({
 
             {/* Item 2: Finanças (Totalmente separado, sem categorias de tarefas) */}
             <div>
-              <button
-                onClick={() => {
-                  onSelectModule("finance");
-                  onCloseMobile();
-                }}
+              <Link
+                href={FINANCE_PATH}
+                onClick={onCloseMobile}
                 className={cn(
                   "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer",
                   activeModule === "finance"
@@ -259,7 +208,7 @@ export function OrbitSidebar({
                   />
                   <span>Finanças</span>
                 </div>
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -270,7 +219,7 @@ export function OrbitSidebar({
         {/* Quick Add Button */}
         <button
           onClick={() => {
-            onOpenAddTaskModal();
+            dialogs.openAddTask();
             onCloseMobile();
           }}
           className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#844DFE] hover:bg-[#723ce6] text-white text-xs font-semibold shadow-sm shadow-[#844DFE]/25 transition-all cursor-pointer"
@@ -281,14 +230,18 @@ export function OrbitSidebar({
 
         {/* Theme Toggle & Reset Data */}
         <div className="flex items-center justify-between pt-1">
-          <button
-            onClick={onResetData}
-            title="Restaurar dados iniciais"
-            className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors cursor-pointer"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span>Restaurar</span>
-          </button>
+          {dataSource === "local" ? (
+            <button
+              onClick={handleResetData}
+              title="Restaurar dados iniciais"
+              className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Restaurar</span>
+            </button>
+          ) : (
+            <span />
+          )}
 
           <ThemeToggle />
         </div>
@@ -325,8 +278,8 @@ export function OrbitSidebar({
       <div className="space-y-3 flex flex-col items-center">
         {/* Tarefas Icon */}
         <div className="relative group">
-          <button
-            onClick={() => onSelectModule("tasks")}
+          <Link
+            href={TASKS_PATH}
             className={cn(
               "flex h-10 w-10 items-center justify-center rounded-xl transition-all cursor-pointer",
               activeModule === "tasks"
@@ -336,7 +289,7 @@ export function OrbitSidebar({
             aria-label="Módulo de Tarefas"
           >
             <Calendar className="w-5 h-5" />
-          </button>
+          </Link>
 
           {/* Hover Tooltip */}
           <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-zinc-900 text-white text-xs font-semibold whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-lg z-50">
@@ -346,8 +299,8 @@ export function OrbitSidebar({
 
         {/* Finanças Icon */}
         <div className="relative group">
-          <button
-            onClick={() => onSelectModule("finance")}
+          <Link
+            href={FINANCE_PATH}
             className={cn(
               "flex h-10 w-10 items-center justify-center rounded-xl transition-all cursor-pointer",
               activeModule === "finance"
@@ -357,7 +310,7 @@ export function OrbitSidebar({
             aria-label="Módulo de Finanças"
           >
             <Wallet className="w-5 h-5" />
-          </button>
+          </Link>
 
           {/* Hover Tooltip */}
           <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-zinc-900 text-white text-xs font-semibold whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-lg z-50">
@@ -368,7 +321,7 @@ export function OrbitSidebar({
         {/* Quick Add Task */}
         <div className="relative group pt-2">
           <button
-            onClick={onOpenAddTaskModal}
+            onClick={() => dialogs.openAddTask()}
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#844DFE]/15 hover:bg-[#844DFE] text-[#844DFE] hover:text-white transition-all cursor-pointer"
             aria-label="Adicionar tarefa"
           >
@@ -427,6 +380,59 @@ export function OrbitSidebar({
           </div>
         )}
       </AnimatePresence>
+    </>
+  );
+}
+
+function CategoryLinks({ onNavigate }: { onNavigate: () => void }) {
+  const searchParams = useSearchParams();
+  const { data: categories = [] } = useTaskCategories();
+  const { data: tasks = [] } = useTasks();
+  const counts = countByCategory(tasks);
+  const selectedCategoryId = searchParams.get("category") ?? ALL_CATEGORIES;
+
+  return (
+    <>
+      {/* Todas as Tarefas */}
+      <Link
+        href={tasksHref(searchParams, { category: ALL_CATEGORIES })}
+        onClick={onNavigate}
+        scroll={false}
+        className={cn(
+          "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer",
+          selectedCategoryId === ALL_CATEGORIES
+            ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-semibold shadow-2xs border border-zinc-200/80 dark:border-zinc-700/80"
+            : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-900/40"
+        )}
+      >
+        <div className="flex items-center gap-2">
+          <Layers className="w-3.5 h-3.5 text-zinc-400" />
+          <span>Todas</span>
+        </div>
+        <span className="text-[10px] font-mono text-zinc-400">{tasks.length}</span>
+      </Link>
+
+      {/* Lista de Categorias de Tarefas */}
+      {categories.map((cat) => (
+        <Link
+          key={cat.id}
+          href={tasksHref(searchParams, { category: cat.id })}
+          onClick={onNavigate}
+          scroll={false}
+          className={cn(
+            "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer",
+            selectedCategoryId === cat.id
+              ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-semibold shadow-2xs border border-[#844DFE]/30"
+              : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-900/40"
+          )}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs shrink-0">{cat.icon}</span>
+            <span className="truncate">{cat.name}</span>
+          </div>
+          <span className="text-[10px] font-mono text-zinc-400 shrink-0">{counts.get(cat.id) ?? 0}</span>
+        </Link>
+      ))}
     </>
   );
 }
