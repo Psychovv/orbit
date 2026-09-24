@@ -127,23 +127,23 @@ export function VoiceTaskButton({ categories, onVoiceResult }: VoiceTaskButtonPr
 
   return (
     <div className="relative flex items-center">
-      {/* Transcript Popover */}
+      {/* Transcript Fixed Overlay */}
       {(isListening || isProcessing) && transcript && (
-        <div className="absolute right-0 bottom-full mb-2 w-[280px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 shadow-lg z-50 animate-in fade-in zoom-in-95 duration-200">
-          <div className="flex items-start gap-2">
+        <div className="fixed inset-x-0 bottom-10 md:bottom-24 mx-auto w-[90%] max-w-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800/80 rounded-3xl p-6 md:p-8 shadow-2xl z-[100] animate-in slide-in-from-bottom-8 fade-in duration-300">
+          <div className="flex flex-col items-center text-center gap-4">
             {isProcessing ? (
-              <Loader2 className="w-4 h-4 text-[#844DFE] animate-spin shrink-0 mt-0.5" />
+              <Loader2 className="w-8 h-8 text-[#844DFE] animate-spin" />
             ) : (
-              <div className="relative flex h-3 w-3 mt-1 shrink-0">
+              <div className="relative flex h-6 w-6">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                <span className="relative inline-flex rounded-full h-6 w-6 bg-red-500"></span>
               </div>
             )}
-            <div className="flex-1 min-w-0 text-sm text-zinc-700 dark:text-zinc-300">
+            <div className="text-lg md:text-2xl font-medium text-zinc-800 dark:text-zinc-100 max-h-[30vh] overflow-y-auto w-full px-2">
               {isProcessing ? (
-                <span className="text-zinc-500 dark:text-zinc-400 font-medium italic">Processando...</span>
+                <span className="text-zinc-500 dark:text-zinc-400 italic animate-pulse">Processando sua fala com IA...</span>
               ) : (
-                <span className="italic">"{transcript}"</span>
+                <span>"{transcript}"</span>
               )}
             </div>
           </div>
