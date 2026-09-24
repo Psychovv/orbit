@@ -12,6 +12,8 @@ interface DialogProps {
   description?: string;
   children: React.ReactNode;
   className?: string;
+  /** Classes da camada externa, para subir o z-index sobre outros overlays. */
+  containerClassName?: string;
 }
 
 export function Dialog({
@@ -21,7 +23,10 @@ export function Dialog({
   description,
   children,
   className,
+  containerClassName,
 }: DialogProps) {
+  const titleId = React.useId();
+
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -39,7 +44,7 @@ export function Dialog({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div className={cn("fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6", containerClassName)}>
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -52,6 +57,9 @@ export function Dialog({
 
           {/* Modal Content */}
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -62,12 +70,15 @@ export function Dialog({
             )}
           >
             {/* Ambient top light */}
-            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#844DFE] to-transparent" />
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-brand to-transparent" />
 
             {/* Header */}
             <div className="flex items-start justify-between gap-4 mb-5">
               <div>
-                <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                <h3
+                  id={titleId}
+                  className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2"
+                >
                   {title}
                 </h3>
                 {description && (
