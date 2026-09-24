@@ -3,8 +3,11 @@
 import React from "react";
 import { motion } from "motion/react";
 import type { Task, TaskCategory } from "../domain/task.schema";
+import { formatFocusDuration } from "../domain/focus";
 import { isCompleted } from "../domain/task.selectors";
-import { Check, Clock, Trash2 } from "lucide-react";
+import { useFocusSession } from "../hooks/use-focus-session";
+import { useTaskDialogs } from "./task-dialogs";
+import { Check, Clock, Timer, Trash2 } from "lucide-react";
 import { triggerCosmicCelebration } from "@/shared/effects/confetti";
 import { cn } from "@/shared/lib/utils";
 
@@ -17,6 +20,10 @@ interface TaskItemProps {
 
 export function TaskItem({ task, category, onToggleComplete, onDelete }: TaskItemProps) {
   const completed = isCompleted(task);
+  const dialogs = useTaskDialogs();
+  const session = useFocusSession();
+  const elapsed = session.elapsed(task);
+  const running = session.active?.id === task.id;
 
   const handleToggle = () => {
     if (!completed) {
@@ -42,7 +49,10 @@ export function TaskItem({ task, category, onToggleComplete, onDelete }: TaskIte
       <div className="flex items-start gap-3">
         {/* Checkbox with #844DFE completion */}
         <button
-          onClick={handleToggle}
+          onClick={(event) => {
+            event.stopPropagation();
+            handleToggle();
+          }}
           className={cn(
             "relative mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-md border transition-all cursor-pointer",
             completed
@@ -63,7 +73,11 @@ export function TaskItem({ task, category, onToggleComplete, onDelete }: TaskIte
         </button>
 
         {/* Task Title & Description with normal, spacious word-wrap */}
-        <div className="flex-1 min-w-0">
+        <button
+          type="button"
+          onClick={() => dialogs.openTask(task.id)}
+          className="flex-1 min-w-0 text-left cursor-pointer"
+        >
           <p
             className={cn(
               "text-sm font-medium leading-relaxed whitespace-normal break-words transition-colors",
@@ -80,11 +94,14 @@ export function TaskItem({ task, category, onToggleComplete, onDelete }: TaskIte
               {task.description}
             </p>
           )}
-        </div>
+        </button>
 
         {/* Delete action button */}
         <button
-          onClick={() => onDelete(task.id)}
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete(task.id);
+          }}
           className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer shrink-0"
           title="Excluir tarefa"
         >
@@ -108,12 +125,22 @@ export function TaskItem({ task, category, onToggleComplete, onDelete }: TaskIte
         )}
 
         {/* Time (if present) */}
-        {task.time && (
-          <span className="inline-flex items-center gap-1 text-[11px] text-zinc-400 dark:text-zinc-500 font-mono">
-            <Clock className="w-3 h-3 text-zinc-400" />
-            <span>{task.time}</span>
-          </span>
-        )}
+        <span className="inline-flex items-center gap-2 text-[11px] text-zinc-400 dark:text-zinc-500 font-mono">
+          {(running || elapsed > 0) && (
+            <span className="inline-flex items-center gap-1">
+              <Timer className={cn("w-3 h-3", running && "text-[#844DFE]")} />
+              <span className={cn(running && "text-[#844DFE] dark:text-[#b494ff]")}>
+                {formatFocusDuration(elapsed)}
+              </span>
+            </span>
+          )}
+          {task.time && (
+            <span className="inline-flex items-center gap-1">
+              <Clock className="w-3 h-3 text-zinc-400" />
+              <span>{task.time}</span>
+            </span>
+          )}
+        </span>
       </div>
     </motion.div>
   );

@@ -39,7 +39,7 @@ export const DEMO_TASK_CATEGORIES: TaskCategory[] = [
   }
 ];
 
-export const DEMO_TASKS: Task[] = [
+const DEMO_TASK_SEED = [
   {
     id: "task-prev-1",
     title: "Setup inicial do ambiente e repositório Git",
@@ -232,4 +232,10 @@ export const DEMO_TASKS: Task[] = [
     createdAt: "2026-09-23T10:00:00Z",
     updatedAt: "2026-09-23T10:00:00Z"
   }
-];
+] as const satisfies ReadonlyArray<Omit<Task, "focusSeconds" | "focusStartedAt">>;
+
+export const DEMO_TASKS: Task[] = DEMO_TASK_SEED.map((task) => ({
+  ...task,
+  focusSeconds: 0,
+  focusStartedAt: null,
+}));

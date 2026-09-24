@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import type { Task } from "./task.schema";
 import { ALL_CATEGORIES, countByCategory, countCompleted, filterByCategory, groupByDate } from "./task.selectors";
 
-const base = { priority: "media", createdAt: "2026-09-20T12:00:00.000Z", updatedAt: "2026-09-20T12:00:00.000Z" } as const;
+const base = {
+  priority: "media",
+  focusSeconds: 0,
+  focusStartedAt: null,
+  createdAt: "2026-09-20T12:00:00.000Z",
+  updatedAt: "2026-09-20T12:00:00.000Z",
+} as const;
 const tasks: Task[] = [
   { ...base, id: "1", title: "A", date: "2026-09-21", categoryId: "estudos", completedAt: null },
   { ...base, id: "2", title: "B", date: "2026-09-21", categoryId: "guitarra", completedAt: "2026-09-21T10:00:00.000Z" },

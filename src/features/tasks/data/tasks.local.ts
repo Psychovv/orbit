@@ -45,6 +45,8 @@ export function migrateLegacyTask(raw: unknown): Task | null {
     categoryId: optionalString(t.categoryId) ?? null,
     priority: t.priority ?? "media",
     completedAt: t.completed === true ? createdAt : null,
+    focusSeconds: 0,
+    focusStartedAt: null,
     createdAt,
     updatedAt: createdAt,
   });
@@ -88,7 +90,15 @@ export function createLocalTasksRepository(): TasksRepository {
       withStoreLock(async () => {
         const data = CreateTaskSchema.parse(input);
         const now = nowIso();
-        const task: Task = { ...data, id: createId(), completedAt: null, createdAt: now, updatedAt: now };
+        const task: Task = {
+          ...data,
+          id: createId(),
+          completedAt: null,
+          focusSeconds: 0,
+          focusStartedAt: null,
+          createdAt: now,
+          updatedAt: now,
+        };
         writeJson(TASKS_STORAGE_KEYS.tasks, [task, ...(await loadTasks())]);
         return task;
       }),

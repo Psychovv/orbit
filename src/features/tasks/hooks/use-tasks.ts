@@ -17,6 +17,7 @@ import type {
   Task,
   UpdateTaskInput,
 } from "../domain/task.schema";
+import { pausedFocusPatch } from "../domain/focus";
 import { isCompleted } from "../domain/task.selectors";
 
 const TASKS = "tasks";
@@ -52,6 +53,8 @@ export function useCreateTask() {
         ...input,
         id: `temp-${createId()}`,
         completedAt: null,
+        focusSeconds: 0,
+        focusStartedAt: null,
         createdAt: now,
         updatedAt: now,
       };
@@ -80,8 +83,16 @@ export function useUpdateTask() {
 
 export function useToggleTaskCompletion() {
   const update = useUpdateTask();
-  return (task: Task) =>
-    update.mutate({ id: task.id, patch: { completedAt: isCompleted(task) ? null : nowIso() } });
+  return (task: Task) => {
+    const completing = !isCompleted(task);
+    update.mutate({
+      id: task.id,
+      patch: {
+        completedAt: completing ? nowIso() : null,
+        ...(completing && task.focusStartedAt ? pausedFocusPatch(task) : {}),
+      },
+    });
+  };
 }
 
 export function useDeleteTask() {

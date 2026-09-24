@@ -24,6 +24,8 @@ export const TaskSchema = z.object({
   categoryId: z.string().nullable(),
   priority: PrioritySchema,
   completedAt: z.iso.datetime().nullable(),
+  focusSeconds: z.number().int().nonnegative().default(0),
+  focusStartedAt: z.iso.datetime().nullable().default(null),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });
@@ -41,5 +43,7 @@ export type CreateTaskInput = z.infer<typeof CreateTaskSchema>;
 
 export const UpdateTaskSchema = CreateTaskSchema.partial().extend({
   completedAt: z.iso.datetime().nullable().optional(),
+  focusSeconds: z.number().int().nonnegative().optional(),
+  focusStartedAt: z.iso.datetime().nullable().optional(),
 });
 export type UpdateTaskInput = z.infer<typeof UpdateTaskSchema>;
