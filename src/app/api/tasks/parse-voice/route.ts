@@ -2,7 +2,7 @@ import {
   TaskCommandRequestSchema,
   TaskCommandResponseSchema,
 } from "@/features/assistant/domain/actions";
-import { addCalendarDays, bulkTaskIds } from "@/features/assistant/domain/bulk-commands";
+import { addCalendarDays, bulkTaskIds, prefersStrongerTaskModel } from "@/features/assistant/domain/bulk-commands";
 import { formatDateKey } from "@/shared/lib/date-utils";
 import { createAssistantRoute } from "../../_lib/assistant-route";
 
@@ -29,6 +29,8 @@ Cats: ${categories.map((c) => `${c.id}:${c.name}`).join(", ")}
 Tarefas Existentes: ${pendingTasks.map((t) => `${t.id}|${t.date || "?"}|${t.completed ? "sim" : "nao"}|${t.title}`).join(" || ")}
 Texto: "${text}"`;
   },
+
+  useStrongerModel: ({ text, pendingTasks }) => prefersStrongerTaskModel(text, pendingTasks.length),
 
   postProcess: (output, { text, currentDate, pendingTasks }) => {
     const today = currentDate ?? formatDateKey(new Date());

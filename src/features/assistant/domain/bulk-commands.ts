@@ -43,3 +43,25 @@ export function bulkTaskIds(
     .filter((task) => task.date === target && (action === "delete" || !task.completed))
     .map((task) => task.id);
 }
+
+/** A partir daqui o Flash-Lite barato erra mais data e ID do que o 3.5. */
+const STRONGER_MODEL_TASK_COUNT = 40;
+
+function hasRelativeDate(normalized: string): boolean {
+  return (
+    /\b(hoje|ontem|amanha|anteontem)\b/.test(normalized) ||
+    /\b(segunda|terca|quarta|quinta|sexta|sabado|domingo)\b/.test(normalized) ||
+    /\b(semana|mes)\b/.test(normalized) ||
+    /\bdia\s+\d{1,2}\b/.test(normalized)
+  );
+}
+
+/**
+ * Pedidos com data relativa e lista longa vão para o modelo mais capaz.
+ * Lote ("apague tudo de hoje") continua no modelo barato: o servidor resolve os IDs.
+ */
+export function prefersStrongerTaskModel(text: string, taskCount: number): boolean {
+  if (taskCount < STRONGER_MODEL_TASK_COUNT) return false;
+  if (!hasRelativeDate(normalize(text))) return false;
+  return bulkTaskIds(text, "2026-01-01", [], "delete") === null && bulkTaskIds(text, "2026-01-01", [], "complete") === null;
+}

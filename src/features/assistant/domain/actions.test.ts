@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FinanceCommandResponseSchema, TaskCommandRequestSchema, TaskCommandResponseSchema } from "./actions";
-import { bulkTaskIds } from "./bulk-commands";
+import { bulkTaskIds, prefersStrongerTaskModel } from "./bulk-commands";
 
 describe("TaskCommandResponseSchema", () => {
   it("accepts the legacy array format as creations", () => {
@@ -59,5 +59,18 @@ describe("bulkTaskIds", () => {
 
   it("ignores non-bulk requests", () => {
     expect(bulkTaskIds("conclua a tarefa de ler", "2026-09-24", tasks, "complete")).toBeNull();
+  });
+});
+
+describe("prefersStrongerTaskModel", () => {
+  it("keeps short lists and bulk commands on the cheap model", () => {
+    expect(prefersStrongerTaskModel("crie uma task para o dia 27 jogar valorant", 5)).toBe(false);
+    expect(prefersStrongerTaskModel("comprar leite", 80)).toBe(false);
+    expect(prefersStrongerTaskModel("apague todas as tarefas de hoje", 80)).toBe(false);
+  });
+
+  it("uses the stronger model for a relative date on a long list", () => {
+    expect(prefersStrongerTaskModel("conclua a tarefa de sexta", 40)).toBe(true);
+    expect(prefersStrongerTaskModel("jogar valorant dia 27", 40)).toBe(true);
   });
 });
