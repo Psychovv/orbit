@@ -45,3 +45,8 @@ export const CreateTransactionSchema = TransactionSchema.omit({
   updatedAt: true,
 });
 export type CreateTransactionInput = z.infer<typeof CreateTransactionSchema>;
+
+export const UpdateTransactionSchema = CreateTransactionSchema.partial().extend({
+  notes: z.string().max(2000).nullable().optional(),
+});
+export type UpdateTransactionInput = z.infer<typeof UpdateTransactionSchema>;

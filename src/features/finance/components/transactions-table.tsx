@@ -9,6 +9,7 @@ import {
   Search,
   ArrowUpRight,
   ArrowDownRight,
+  Pencil,
   Trash2,
   Calendar,
   CreditCard,
@@ -19,12 +20,14 @@ import { cn } from "@/shared/lib/utils";
 interface TransactionsTableProps {
   transactions: Transaction[];
   categories: FinanceCategory[];
+  onEditTransaction: (transaction: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
 }
 
 export function TransactionsTable({
   transactions,
   categories,
+  onEditTransaction,
   onDeleteTransaction,
 }: TransactionsTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -241,13 +244,26 @@ export function TransactionsTable({
 
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-center">
-                        <button
-                          onClick={() => onDeleteTransaction(tx.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer"
-                          title="Excluir lançamento"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="inline-flex items-center justify-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={() => onEditTransaction(tx)}
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-[#844DFE] hover:bg-[#844DFE]/10 transition-all cursor-pointer"
+                            title="Editar lançamento"
+                            aria-label={`Editar ${tx.description}`}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onDeleteTransaction(tx.id)}
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer"
+                            title="Excluir lançamento"
+                            aria-label={`Excluir ${tx.description}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

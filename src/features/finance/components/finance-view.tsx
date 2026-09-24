@@ -8,7 +8,9 @@ import {
   useDeleteTransaction,
   useFinanceCategories,
   useTransactions,
+  useUpdateTransaction,
 } from "../hooks/use-finance";
+import type { Transaction } from "../domain/finance.schema";
 import { useFinanceViewState } from "../hooks/use-finance-view-state";
 import { useFinanceAssistant } from "../hooks/use-finance-assistant";
 import { FinanceStats } from "./finance-stats";
@@ -37,18 +39,26 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
+type TransactionDraft =
+  | { mode: "create"; defaults: TransactionFormDefaults }
+  | { mode: "edit"; transactionId: string; defaults: TransactionFormDefaults };
+
 export function FinanceView() {
   const { monthKey, isCurrentMonth, setMonthKey } = useFinanceViewState();
-  const [modalDefaults, setModalDefaults] = useState<TransactionFormDefaults | null>(null);
+  const [draft, setDraft] = useState<TransactionDraft | null>(null);
 
   const range = useMemo(() => monthRange(monthKey), [monthKey]);
   const transactionsQuery = useTransactions(range);
   const categoriesQuery = useFinanceCategories();
   const createTransaction = useCreateTransaction();
+  const updateTransaction = useUpdateTransaction();
   const deleteTransaction = useDeleteTransaction();
   const runAssistant = useFinanceAssistant({
-    onSingleDraft: ({ amount, ...draft }) =>
-      setModalDefaults({ ...draft, amountCents: amount !== undefined ? toCents(amount) : undefined }),
+    onSingleDraft: ({ amount, ...next }) =>
+      setDraft({
+        mode: "create",
+        defaults: { ...next, amountCents: amount !== undefined ? toCents(amount) : undefined },
+      }),
   });
 
   const monthlyTransactions = useMemo(() => transactionsQuery.data ?? [], [transactionsQuery.data]);
@@ -57,7 +67,22 @@ export function FinanceView() {
   const currentMonthDate = parseYearMonthKey(monthKey);
 
   const shiftMonth = (delta: number) => setMonthKey(getYearMonthKey(addMonths(currentMonthDate, delta)));
-  const openAddModal = () => setModalDefaults({ date: isCurrentMonth ? todayKey() : `${monthKey}-01` });
+  const openAddModal = () =>
+    setDraft({ mode: "create", defaults: { date: isCurrentMonth ? todayKey() : `${monthKey}-01` } });
+  const openEditModal = (tx: Transaction) =>
+    setDraft({
+      mode: "edit",
+      transactionId: tx.id,
+      defaults: {
+        description: tx.description,
+        amountCents: tx.amountCents,
+        type: tx.type,
+        categoryId: tx.categoryId ?? undefined,
+        date: tx.date,
+        paymentMethod: tx.paymentMethod,
+        notes: tx.notes,
+      },
+    });
 
   if (transactionsQuery.isPending || categoriesQuery.isPending) return <ViewSkeleton />;
 
@@ -173,15 +198,27 @@ export function FinanceView() {
       <TransactionsTable
         transactions={monthlyTransactions}
         categories={categories}
+        onEditTransaction={openEditModal}
         onDeleteTransaction={(id) => deleteTransaction.mutate(id)}
       />
 
       <AddTransactionModal
-        isOpen={modalDefaults !== null}
-        onClose={() => setModalDefaults(null)}
+        isOpen={draft !== null}
+        onClose={() => setDraft(null)}
         categories={categories}
-        defaults={modalDefaults ?? {}}
-        onSubmit={(input) => createTransaction.mutate(input)}
+        defaults={draft?.defaults ?? {}}
+        formKey={draft?.mode === "edit" ? draft.transactionId : "create"}
+        mode={draft?.mode ?? "create"}
+        onSubmit={(input) => {
+          if (draft?.mode === "edit") {
+            updateTransaction.mutate({
+              id: draft.transactionId,
+              patch: { ...input, notes: input.notes ?? null },
+            });
+            return;
+          }
+          createTransaction.mutate(input);
+        }}
       />
     </div>
   );

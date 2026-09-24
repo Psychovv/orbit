@@ -11,7 +11,7 @@ import { repositories } from "@/config/data-source";
 import { isInRange, type DateRange } from "@/shared/lib/date-utils";
 import { createId, nowIso } from "@/shared/lib/id";
 import { patchRangedLists, rangedListKey } from "@/shared/lib/query-cache";
-import type { CreateTransactionInput, Transaction } from "../domain/finance.schema";
+import type { CreateTransactionInput, Transaction, UpdateTransactionInput } from "../domain/finance.schema";
 
 const TRANSACTIONS = "transactions";
 const FINANCE_CATEGORIES = "finance-categories";
@@ -48,6 +48,37 @@ export function useCreateTransaction() {
       );
     },
     onError: (_error, _input, rollback) => rollback?.(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: [TRANSACTIONS] }),
+  });
+}
+
+function applyTransactionPatch(tx: Transaction, patch: UpdateTransactionInput, updatedAt: string): Transaction {
+  const { notes, ...rest } = patch;
+  const next: Transaction = { ...tx, ...rest, updatedAt };
+  if (notes === null || notes === "") delete next.notes;
+  else if (notes !== undefined) next.notes = notes;
+  return next;
+}
+
+export function useUpdateTransaction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: UpdateTransactionInput }) =>
+      repositories.transactions.update(id, patch),
+    onMutate: ({ id, patch }) => {
+      const updatedAt = nowIso();
+      const cached = queryClient
+        .getQueriesData<Transaction[]>({ queryKey: [TRANSACTIONS, "list"] })
+        .flatMap(([, items]) => items ?? []);
+      const current = cached.find((tx) => tx.id === id);
+      if (!current) return;
+      const next = applyTransactionPatch(current, patch, updatedAt);
+      return patchRangedLists<Transaction>(queryClient, TRANSACTIONS, (txs, range) => {
+        const without = txs.filter((tx) => tx.id !== id);
+        return !range || isInRange(next.date, range) ? [next, ...without] : without;
+      });
+    },
+    onError: (_error, _vars, rollback) => rollback?.(),
     onSettled: () => queryClient.invalidateQueries({ queryKey: [TRANSACTIONS] }),
   });
 }

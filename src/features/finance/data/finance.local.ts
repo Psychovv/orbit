@@ -5,6 +5,7 @@ import {
   CreateTransactionSchema,
   FinanceCategorySchema,
   TransactionSchema,
+  UpdateTransactionSchema,
   type FinanceCategory,
   type Transaction,
 } from "../domain/finance.schema";
@@ -92,6 +93,22 @@ export function createLocalTransactionsRepository(): TransactionsRepository {
         };
         writeJson(FINANCE_STORAGE_KEYS.transactions, [tx, ...(await loadTransactions())]);
         return tx;
+      }),
+
+    update: (id, patch) =>
+      withStoreLock(async () => {
+        const data = UpdateTransactionSchema.parse(patch);
+        const txs = await loadTransactions();
+        const current = txs.find((tx) => tx.id === id);
+        if (!current) throw new Error(`Transaction ${id} not found`);
+        const next: Record<string, unknown> = { ...current, ...data, updatedAt: nowIso() };
+        if (next.notes == null || next.notes === "") delete next.notes;
+        const updated = TransactionSchema.parse(next);
+        writeJson(
+          FINANCE_STORAGE_KEYS.transactions,
+          txs.map((tx) => (tx.id === id ? updated : tx))
+        );
+        return updated;
       }),
 
     remove: (id) =>

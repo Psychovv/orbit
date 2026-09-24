@@ -12,7 +12,7 @@ import { Dialog } from "@/shared/ui/dialog";
 import { Input, Textarea } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
 import { todayKey } from "@/shared/lib/date-utils";
-import { ArrowDownRight, ArrowUpRight, Plus } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Check, Plus } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
 export interface TransactionFormDefaults {
@@ -22,6 +22,7 @@ export interface TransactionFormDefaults {
   categoryId?: string;
   paymentMethod?: PaymentMethod;
   date?: string;
+  notes?: string;
 }
 
 interface AddTransactionModalProps {
@@ -29,6 +30,9 @@ interface AddTransactionModalProps {
   onClose: () => void;
   categories: FinanceCategory[];
   defaults: TransactionFormDefaults;
+  /** Identifica o formulário para remontar ao trocar de lançamento. */
+  formKey?: string;
+  mode?: "create" | "edit";
   onSubmit: (input: CreateTransactionInput) => void;
 }
 
@@ -40,16 +44,37 @@ const PAYMENT_OPTIONS: { id: PaymentMethod; label: string }[] = [
   { id: "dinheiro", label: "Dinheiro" },
 ];
 
-export function AddTransactionModal({ isOpen, onClose, categories, defaults, onSubmit }: AddTransactionModalProps) {
+export function AddTransactionModal({
+  isOpen,
+  onClose,
+  categories,
+  defaults,
+  formKey = "create",
+  mode = "create",
+  onSubmit,
+}: AddTransactionModalProps) {
+  const editing = mode === "edit";
+
   return (
     <Dialog
       isOpen={isOpen}
       onClose={onClose}
-      title="Registrar Transação"
-      description="Lance uma nova despesa ou receita em seu cofre financeiro."
+      title={editing ? "Editar Transação" : "Registrar Transação"}
+      description={
+        editing
+          ? "Atualize os dados deste lançamento."
+          : "Lance uma nova despesa ou receita em seu cofre financeiro."
+      }
       className="max-w-lg"
     >
-      <AddTransactionForm categories={categories} defaults={defaults} onClose={onClose} onSubmit={onSubmit} />
+      <AddTransactionForm
+        key={formKey}
+        categories={categories}
+        defaults={defaults}
+        mode={mode}
+        onClose={onClose}
+        onSubmit={onSubmit}
+      />
     </Dialog>
   );
 }
@@ -62,9 +87,10 @@ function firstCategoryOf(categories: FinanceCategory[], type: TransactionType, p
 function AddTransactionForm({
   categories,
   defaults,
+  mode = "create",
   onClose,
   onSubmit,
-}: Omit<AddTransactionModalProps, "isOpen">) {
+}: Omit<AddTransactionModalProps, "isOpen" | "formKey">) {
   const [type, setType] = useState<TransactionType>(defaults.type ?? "expense");
   const [description, setDescription] = useState(defaults.description ?? "");
   const [amountStr, setAmountStr] = useState(
@@ -75,7 +101,7 @@ function AddTransactionForm({
   );
   const [date, setDate] = useState(defaults.date ?? todayKey());
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(defaults.paymentMethod ?? "pix");
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState(defaults.notes ?? "");
 
   const filteredCategories = categories.filter((c) => c.type === type);
 
@@ -250,8 +276,8 @@ function AddTransactionForm({
               : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30"
           )}
         >
-          <Plus className="w-4 h-4" />
-          Salvar Transação
+          {mode === "edit" ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          {mode === "edit" ? "Salvar alterações" : "Salvar Transação"}
         </Button>
       </div>
     </form>
