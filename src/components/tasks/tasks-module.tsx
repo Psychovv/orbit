@@ -162,25 +162,40 @@ export function TasksModule({
     setIsAddModalOpen(true);
   };
 
-  const handleVoiceResult = (results: Array<{ title?: string, date?: string, time?: string, categoryId?: string }>) => {
-    if (!results || results.length === 0) return;
+  const handleVoiceResult = (result: {
+    create?: Array<{ title?: string, date?: string, time?: string, categoryId?: string }>;
+    completeIds?: string[];
+  }) => {
+    // 1. Process completions
+    if (result.completeIds && result.completeIds.length > 0) {
+      result.completeIds.forEach(id => {
+        // Only toggle if it's not already completed
+        const task = tasks.find(t => t.id === id);
+        if (task && !task.completed) {
+          onToggleComplete(id);
+        }
+      });
+    }
 
-    if (results.length === 1) {
-      const result = results[0];
+    // 2. Process creations
+    const results = result.create || [];
+    if (results.length === 1 && (!result.completeIds || result.completeIds.length === 0)) {
+      // Only 1 task to create and no tasks completed -> open modal
+      const res = results[0];
       let dayKey: DayOfWeek | undefined;
-      if (result.date) {
+      if (res.date) {
         try {
-          const parsed = parseDateKey(result.date);
+          const parsed = parseDateKey(res.date);
           const dayIdx = parsed.getDay();
           const map: Record<number, DayOfWeek> = { 0: "dom", 1: "seg", 2: "ter", 3: "qua", 4: "qui", 5: "sex", 6: "sab" };
           dayKey = map[dayIdx];
         } catch {}
       }
-      handleOpenAddModal(result.date, dayKey, { title: result.title, time: result.time, categoryId: result.categoryId });
-    } else {
-      // Se vieram múltiplas tarefas, criamos todas diretamente
+      handleOpenAddModal(res.date, dayKey, { title: res.title, time: res.time, categoryId: res.categoryId });
+    } else if (results.length > 0) {
+      // Múltiplas tarefas ou misto (criar + completar) -> cria direto
       results.forEach((res) => {
-        if (!res.title) return; // ignora se não conseguiu nem extrair título
+        if (!res.title) return;
         
         let dateStr = res.date || formatDateKey(new Date());
         let dayKey: DayOfWeek = "seg";
@@ -303,7 +318,11 @@ export function TasksModule({
           </Button>
 
           {/* Voice Task Button */}
-          <VoiceTaskButton categories={categories} onVoiceResult={handleVoiceResult} />
+          <VoiceTaskButton
+            categories={categories}
+            pendingTasks={tasks.filter((t) => !t.completed).map((t) => ({ id: t.id, title: t.title }))}
+            onVoiceResult={handleVoiceResult}
+          />
 
           {/* Primary Add Task Button using #844DFE */}
           <Button

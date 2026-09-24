@@ -9,15 +9,19 @@ import { cn } from "@/lib/utils";
 
 interface AiTaskButtonProps {
   categories: TaskCategory[];
-  onVoiceResult: (results: Array<{
-    title?: string;
-    date?: string;
-    time?: string;
-    categoryId?: string;
-  }>) => void;
+  pendingTasks: Array<{ id: string, title: string }>;
+  onVoiceResult: (result: {
+    create?: Array<{
+      title?: string;
+      date?: string;
+      time?: string;
+      categoryId?: string;
+    }>;
+    completeIds?: string[];
+  }) => void;
 }
 
-export function VoiceTaskButton({ categories, onVoiceResult }: AiTaskButtonProps) {
+export function VoiceTaskButton({ categories, pendingTasks, onVoiceResult }: AiTaskButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputText, setInputText] = useState("");
   const [isSupported, setIsSupported] = useState(true);
@@ -88,6 +92,7 @@ export function VoiceTaskButton({ categories, onVoiceResult }: AiTaskButtonProps
           text,
           currentDate: new Date().toISOString(),
           categories: categories.map((c) => ({ id: c.id, name: c.name })),
+          pendingTasks,
         }),
       });
 

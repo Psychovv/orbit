@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { text, currentDate, categories } = body;
+    const { text, currentDate, categories, pendingTasks } = body;
 
     if (!text) {
       return NextResponse.json(
@@ -24,8 +24,13 @@ export async function POST(req: Request) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
 
-    const prompt = `Extraia tarefas p/ JSON Array: [{title:string, date?:YYYY-MM-DD, time?:HH:MM, categoryId?:string}]. Hoje: ${currentDate}
+    const prompt = `Retorne um JSON EXATO: { "create": [{title:string, date?:YYYY-MM-DD, time?:HH:MM, categoryId?:string}], "completeIds": [string] }.
+Regras:
+1. 'create' tem tarefas novas.
+2. 'completeIds' tem IDs (string) das tarefas existentes que o usuario pediu para finalizar/concluir. 
+Hoje: ${currentDate}
 Cats: ${categories.map((c: any) => `${c.id}:${c.name}`).join(", ")}
+Tarefas Existentes: ${(pendingTasks || []).map((t: any) => `${t.id}:${t.title}`).join(" | ")}
 Texto: "${text}"`;
 
     const result = await model.generateContent({
