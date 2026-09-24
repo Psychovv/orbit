@@ -7,6 +7,8 @@ import {
   Compass,
   Layers
 } from 'lucide-react';
+import { ScaleIn, Backdrop } from '../components/motion';
+import { AnimatePresence } from 'framer-motion';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -201,101 +203,98 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-bg/80 backdrop-blur-md animate-in fade-in duration-150">
-      <div
-        className="fixed inset-0"
-        onClick={onClose}
-      />
-      <div
-        className="relative w-full max-w-xl rounded-2xl bg-bg-elev border border-line-strong shadow-2xl overflow-hidden flex flex-col z-10"
-        onKeyDown={handleKeyDown}
-      >
-        {/* Search Input Box */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-line bg-bg-elev-2/50">
-          <Search size={18} className="text-text-dim flex-shrink-0" />
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setSelectedIndex(0);
-            }}
-            placeholder="Digite para buscar tarefas, metas ou comandos..."
-            className="w-full bg-transparent text-sm text-text placeholder-text-faint focus:outline-none"
-          />
-          <span className="font-mono text-[10px] text-text-faint bg-bg px-2 py-0.5 rounded border border-line flex-shrink-0">
-            ESC
-          </span>
-        </div>
-
-        {/* Results List */}
-        <div className="max-h-[380px] overflow-y-auto p-2 space-y-1">
-          {filtered.length === 0 ? (
-            <div className="p-8 text-center text-text-dim text-sm">
-              Nenhum resultado encontrado para "{query}"
+    <AnimatePresence>
+      {isOpen && (
+        <Backdrop onClick={onClose} className="pt-16 sm:pt-24 items-start px-4">
+          <ScaleIn className="w-full max-w-2xl rounded-2xl bg-bg-elev border border-line-strong shadow-2xl overflow-hidden flex flex-col z-10"
+            onKeyDown={handleKeyDown}
+          >
+            {/* Search Input Box */}
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-line bg-bg-elev-2/50">
+              <Search size={20} className="text-text-dim flex-shrink-0" />
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setSelectedIndex(0);
+                }}
+                placeholder="Digite para buscar tarefas, metas ou comandos..."
+                className="w-full bg-transparent text-base text-text placeholder-text-faint focus:outline-none"
+              />
+              <span className="font-mono text-xs text-text-faint bg-bg px-2.5 py-1 rounded border border-line flex-shrink-0">
+                ESC
+              </span>
             </div>
-          ) : (
-            filtered.map((item, idx) => {
-              const isSelected = idx === selectedIndex;
-              return (
-                <div
-                  key={item.id}
-                  onClick={item.action}
-                  onMouseEnter={() => setSelectedIndex(idx)}
-                  className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors ${
-                    isSelected ? 'bg-accent/15 border border-accent/30' : 'hover:bg-bg-elev-2 border border-transparent'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className="p-1.5 rounded-lg flex-shrink-0"
-                      style={{
-                        backgroundColor: item.color ? `${item.color}22` : 'var(--bg-elev-2)',
-                        color: item.color || 'var(--accent-plasma)'
-                      }}
-                    >
-                      {item.type === 'task' && <CheckCircle2 size={15} />}
-                      {item.type === 'goal' && <Target size={15} />}
-                      {item.type === 'area' && <Layers size={15} />}
-                      {item.type === 'action' && <Compass size={15} />}
-                    </div>
 
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-text truncate">
-                        {item.title}
-                      </p>
-                      {item.subtitle && (
-                        <p className="text-xs text-text-dim truncate">
-                          {item.subtitle}
-                        </p>
+            {/* Results List */}
+            <div className="max-h-[420px] overflow-y-auto p-2.5 space-y-1.5">
+              {filtered.length === 0 ? (
+                <div className="p-8 text-center text-text-dim text-sm">
+                  Nenhum resultado encontrado para "{query}"
+                </div>
+              ) : (
+                filtered.map((item, idx) => {
+                  const isSelected = idx === selectedIndex;
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={item.action}
+                      onMouseEnter={() => setSelectedIndex(idx)}
+                      className={`flex items-center justify-between p-3.5 rounded-xl cursor-pointer transition-colors ${
+                        isSelected ? 'bg-accent/15 border border-accent/30' : 'hover:bg-bg-elev-2 border border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className="p-2 rounded-lg flex-shrink-0"
+                          style={{
+                            backgroundColor: item.color ? `${item.color}22` : 'var(--bg-elev-2)',
+                            color: item.color || 'var(--accent-plasma)'
+                          }}
+                        >
+                          {item.type === 'task' && <CheckCircle2 size={18} />}
+                          {item.type === 'goal' && <Target size={18} />}
+                          {item.type === 'area' && <Layers size={18} />}
+                          {item.type === 'action' && <Compass size={18} />}
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-base font-medium text-text truncate">
+                            {item.title}
+                          </p>
+                          {item.subtitle && (
+                            <p className="text-sm text-text-dim truncate">
+                              {item.subtitle}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {item.badge && (
+                        <span className="font-mono text-xs text-text-faint bg-bg px-2.5 py-1 rounded-full border border-line flex-shrink-0 ml-2">
+                          {item.badge}
+                        </span>
                       )}
                     </div>
-                  </div>
+                  );
+                })
+              )}
+            </div>
 
-                  {item.badge && (
-                    <span className="font-mono text-[10px] text-text-faint bg-bg px-2 py-0.5 rounded-full border border-line flex-shrink-0 ml-2">
-                      {item.badge}
-                    </span>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Palette Footer */}
-        <div className="px-4 py-2 bg-bg-elev-2/80 border-t border-line text-[11px] font-mono text-text-faint flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span>↑↓ navegar</span>
-            <span>↵ selecionar</span>
-          </div>
-          <span>Orbit Quasar Search</span>
-        </div>
-      </div>
-    </div>
+            {/* Palette Footer */}
+            <div className="px-5 py-3 bg-bg-elev-2/80 border-t border-line text-xs font-mono text-text-faint flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span>↑↓ navegar</span>
+                <span>↵ selecionar</span>
+              </div>
+              <span>Orbit Quasar Search</span>
+            </div>
+          </ScaleIn>
+        </Backdrop>
+      )}
+    </AnimatePresence>
   );
 };

@@ -17,6 +17,8 @@ import {
   Coffee,
   Cpu
 } from 'lucide-react';
+import { SlideUp, Backdrop } from '../components/motion';
+import { AnimatePresence } from 'framer-motion';
 
 interface NewAreaModalProps {
   isOpen: boolean;
@@ -72,8 +74,6 @@ export const NewAreaModal: React.FC<NewAreaModalProps> = ({
   const [color, setColor] = useState(COSMIC_COLORS[0]);
   const [icon, setIcon] = useState('sparkles');
 
-  if (!isOpen) return null;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!label.trim()) return;
@@ -97,123 +97,126 @@ export const NewAreaModal: React.FC<NewAreaModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="fixed inset-0" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl bg-bg-elev border border-line-strong p-6 shadow-2xl z-10">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-white"
-              style={{ backgroundColor: color }}
-            >
-              {renderAreaIcon(icon, 16)}
+    <AnimatePresence>
+      {isOpen && (
+        <Backdrop onClick={onClose} className="p-4 items-center justify-center">
+          <SlideUp className="relative w-full max-w-md rounded-2xl bg-bg-elev border border-line-strong p-7 shadow-2xl z-10">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center text-white"
+                  style={{ backgroundColor: color }}
+                >
+                  {renderAreaIcon(icon, 18)}
+                </div>
+                <div>
+                  <h3 className="font-title font-bold text-lg text-text">Criar Nova Área</h3>
+                  <p className="text-sm text-text-dim">Adicione um novo eixo à sua órbita</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-2 rounded-lg text-text-dim hover:text-text hover:bg-bg-elev-2 transition-colors"
+              >
+                <X size={18} />
+              </button>
             </div>
-            <div>
-              <h3 className="font-title font-bold text-base text-text">Criar Nova Área</h3>
-              <p className="text-xs text-text-dim">Adicione um novo eixo à sua órbita</p>
-            </div>
-          </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-text-dim hover:text-text hover:bg-bg-elev-2 transition-colors"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-text mb-1.5">
-              Nome da Área
-            </label>
-            <input
-              type="text"
-              required
-              autoFocus
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              placeholder="Ex: Trabalho, Saúde, Idiomas..."
-              className="w-full px-3.5 py-2.5 rounded-xl bg-bg border border-line text-sm text-text placeholder-text-faint focus:outline-none focus:border-accent-light transition-all"
-            />
-          </div>
-
-          {/* Color Picker with Cosmic Presets */}
-          <div>
-            <label className="block text-xs font-semibold text-text mb-1.5">
-              Cor Cósmica
-            </label>
-            <div className="flex items-center gap-2 flex-wrap mb-2">
-              {COSMIC_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  className={`w-7 h-7 rounded-full transition-transform ${
-                    color === c ? 'scale-125 ring-2 ring-white shadow-md' : 'hover:scale-110 opacity-80'
-                  }`}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
-              <div className="flex items-center gap-1.5 ml-1">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-sm font-semibold text-text mb-2">
+                  Nome da Área
+                </label>
                 <input
-                  type="color"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="w-7 h-7 rounded-full cursor-pointer bg-transparent border-0"
-                  title="Cor personalizada"
+                  type="text"
+                  required
+                  autoFocus
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                  placeholder="Ex: Trabalho, Saúde, Idiomas..."
+                  className="w-full px-4 py-3 rounded-xl bg-bg border border-line text-base text-text placeholder-text-faint focus:outline-none focus:border-accent-light transition-all"
                 />
               </div>
-            </div>
-          </div>
 
-          {/* Icon Selector */}
-          <div>
-            <label className="block text-xs font-semibold text-text mb-1.5">
-              Ícone
-            </label>
-            <div className="grid grid-cols-7 gap-2 max-h-36 overflow-y-auto p-1 bg-bg/50 rounded-xl border border-line">
-              {AVAILABLE_ICONS.map((item) => {
-                const IconComp = item.Icon;
-                const isSelected = icon === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setIcon(item.id)}
-                    className={`p-2 rounded-lg flex items-center justify-center transition-all ${
-                      isSelected
-                        ? 'bg-accent text-white shadow-sm scale-105'
-                        : 'text-text-dim hover:text-text hover:bg-bg-elev-2'
-                    }`}
-                    title={item.label}
-                  >
-                    <IconComp size={16} />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+              {/* Color Picker with Cosmic Presets */}
+              <div>
+                <label className="block text-sm font-semibold text-text mb-2">
+                  Cor Cósmica
+                </label>
+                <div className="flex items-center gap-2 flex-wrap mb-2">
+                  {COSMIC_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setColor(c)}
+                      className={`w-8 h-8 rounded-full transition-transform ${
+                        color === c ? 'scale-125 ring-2 ring-white shadow-md' : 'hover:scale-110 opacity-80'
+                      }`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                  <div className="flex items-center gap-1.5 ml-1">
+                    <input
+                      type="color"
+                      value={color}
+                      onChange={(e) => setColor(e.target.value)}
+                      className="w-8 h-8 rounded-full cursor-pointer bg-transparent border-0"
+                      title="Cor personalizada"
+                    />
+                  </div>
+                </div>
+              </div>
 
-          {/* Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-line">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-medium text-text-dim hover:text-text hover:bg-bg-elev-2 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="btn-primary px-5 py-2 rounded-xl text-xs font-medium transition-all"
-            >
-              Criar Área
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+              {/* Icon Selector */}
+              <div>
+                <label className="block text-sm font-semibold text-text mb-2">
+                  Ícone
+                </label>
+                <div className="grid grid-cols-7 gap-2.5 max-h-40 overflow-y-auto p-2 bg-bg/50 rounded-xl border border-line">
+                  {AVAILABLE_ICONS.map((item) => {
+                    const IconComp = item.Icon;
+                    const isSelected = icon === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setIcon(item.id)}
+                        className={`p-2.5 rounded-lg flex items-center justify-center transition-all ${
+                          isSelected
+                            ? 'bg-accent text-white shadow-sm scale-105'
+                            : 'text-text-dim hover:text-text hover:bg-bg-elev-2'
+                        }`}
+                        title={item.label}
+                      >
+                        <IconComp size={18} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-line">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-5 py-2.5 rounded-xl text-sm font-medium text-text-dim hover:text-text hover:bg-bg-elev-2 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary px-5 py-2.5 rounded-xl text-sm font-medium transition-all"
+                >
+                  Criar Área
+                </button>
+              </div>
+            </form>
+          </SlideUp>
+        </Backdrop>
+      )}
+    </AnimatePresence>
   );
 };

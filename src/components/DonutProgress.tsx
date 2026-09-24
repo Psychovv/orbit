@@ -10,8 +10,8 @@ interface DonutProgressProps {
 export const DonutProgress: React.FC<DonutProgressProps> = ({
   completed,
   total,
-  size = 76,
-  strokeWidth = 7
+  size = 88,
+  strokeWidth = 8
 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -58,7 +58,7 @@ export const DonutProgress: React.FC<DonutProgressProps> = ({
 
       {/* Percentage Center Text */}
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <span className="font-title font-bold text-sm leading-none text-text">
+        <span className="font-title font-bold text-base leading-none text-text">
           {percentage}%
         </span>
       </div>
