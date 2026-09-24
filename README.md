@@ -1,60 +1,72 @@
-# 🪐 Orbit — Hub Pessoal Cósmico
+# Orbit
 
-**Orbit** é um aplicativo web de organização pessoal e planejamento financeiro concebido sob uma temática espacial moderna, elegante e fluida, com paleta de destaque em `#844DFE` e suporte integrado a tema claro e tema escuro.
+Orbit é um aplicativo web de organização pessoal e planejamento financeiro, com tema claro e escuro.
 
----
+## Funcionalidades
 
-## 🌌 Principais Funcionalidades
+### Tarefas
 
-### 1. 📅 Visão Semanal de Tarefas
-* **Estrutura Central de Segunda a Domingo**: 7 colunas generosas exibindo o cronograma de missões e tarefas de cada dia.
-* **Scroll Horizontal Fluido**: Navegação responsiva e confortável entre os dias da semana.
-* **Categorias Personalizáveis**: Organização de tarefas através de etiquetas discretas (ex: *Guitarra*, *Estudos*, *Faculdade*, *Exercícios*, *Projetos*, *Rotina*).
-* **Gestão de Status**: Marcação nítida de tarefas concluídas com celebração cósmica e sem poluição visual no topo.
+- Visão da semana, de segunda a domingo, com navegação entre semanas e visão mensal.
+- Categorias personalizáveis (Guitarra, Estudos, Faculdade, Exercícios, Projetos, Rotina).
+- Conclusão de tarefas e criação por texto ou voz com a Orbit AI.
 
-### 2. 🪐 Cofre Financeiro & Orçamento
-* **Métricas Principais**: Saldo operacional, total de receitas, total de despesas e taxa de economia mensal.
-* **Planejamento por Categoria**: Teto de gastos mensal com barras de progresso e alertas automáticos de limite.
-* **Extrato e Fluxo de Recursos**: Tabela com filtros rápidos (Todas, Receitas, Despesas), busca instantânea por descrição e suporte a métodos de pagamento (PIX, Cartão, Boleto, etc.).
+### Finanças
 
-### 3. ✨ Experiência Visual & Microinterações
-* **Magic UI & Motion**: Background cósmico com estrelas cintilantes em canvas, meteoros ocasionais e transições fluídas entre módulos.
-* **Design System**: Tipografia moderna, cards em glassmorphism com bordas sutis e respiro visual generoso.
-* **Persistência Local**: Dados armazenados localmente no navegador (`localStorage`) com opção de restauração rápida.
+- Saldo, receitas, despesas e taxa de economia do mês.
+- Teto de gastos por categoria, com barra de progresso.
+- Extrato com filtro por tipo, busca por descrição e método de pagamento (PIX, cartão, boleto e outros).
+- Lançamentos por texto ou voz com a Orbit AI.
 
----
+### Interface
 
-## 🛠️ Tecnologias Utilizadas
+- Tema claro e escuro.
+- Dados salvos no navegador (`localStorage`), com opção de restaurar os dados iniciais.
 
-* **Framework**: [Next.js](https://nextjs.org/) (App Router, Turbopack)
-* **Linguagem**: [TypeScript](https://www.typescriptlang.org/)
-* **Estilização**: [Tailwind CSS](https://tailwindcss.com/)
-* **Animações**: [Motion](https://motion.dev/) (antigo Framer Motion)
-* **Ícones**: [Lucide React](https://lucide.dev/)
-* **Temas**: [next-themes](https://github.com/pacocoursey/next-themes) (Dark & Light)
-* **Efeitos**: [canvas-confetti](https://www.npmjs.com/package/canvas-confetti)
+## Tecnologias
 
----
+- [Next.js](https://nextjs.org/) 16 (App Router, Turbopack)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/) 4
+- [Motion](https://motion.dev/)
+- [Lucide](https://lucide.dev/)
+- [next-themes](https://github.com/pacocoursey/next-themes)
+- [Google Gemini](https://ai.google.dev/) para a Orbit AI
 
-## 🚀 Como Executar
+## Como executar
 
-Instale as dependências com o `pnpm`:
+Requisitos: Node.js 20 ou mais recente e pnpm 10.33.4 (versão declarada em `package.json`).
+
+Se o pnpm ainda não estiver instalado:
+
+```bash
+corepack enable
+corepack prepare pnpm@10.33.4 --activate
+```
+
+Na raiz do projeto:
 
 ```bash
 pnpm install
+cp .env.example .env.local
 ```
 
-Inicie o servidor de desenvolvimento:
+No `.env.local`, preencha `GEMINI_API_KEY` com uma chave do [Google AI Studio](https://aistudio.google.com/app/apikey). Sem essa chave o app abre, mas a Orbit AI (tarefas e finanças) não responde. Se o servidor já estiver rodando, reinicie-o depois de alterar o arquivo.
 
 ```bash
 pnpm dev
 ```
 
-Abra [http://localhost:3000](http://localhost:3000) no navegador.
+Abra [http://localhost:3000](http://localhost:3000).
 
-Para gerar a versão de produção:
+Build de produção:
 
 ```bash
 pnpm build
 pnpm start
+```
+
+Lint:
+
+```bash
+pnpm lint
 ```
