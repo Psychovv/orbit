@@ -7,6 +7,7 @@ import { MonthCalendarView } from "./month-calendar-view";
 import { DayDetailModal } from "./day-detail-modal";
 import { AddTaskModal } from "./add-task-modal";
 import { ManageCategoriesModal } from "./manage-categories-modal";
+import { VoiceTaskButton } from "./voice-task-button";
 import { Button } from "@/components/ui/button";
 import {
   getWeekDays,
@@ -70,6 +71,11 @@ export function TasksModule({
   // Modal default date and day
   const [modalDefaultDate, setModalDefaultDate] = useState<string>(formatDateKey(new Date()));
   const [modalDefaultDay, setModalDefaultDay] = useState<DayOfWeek>("seg");
+  
+  // Voice task initial values
+  const [modalInitialTitle, setModalInitialTitle] = useState<string | undefined>();
+  const [modalInitialTime, setModalInitialTime] = useState<string | undefined>();
+  const [modalInitialCategoryId, setModalInitialCategoryId] = useState<string | undefined>();
 
   // Map of categories by ID
   const categoriesMap = useMemo(() => {
@@ -127,7 +133,7 @@ export function TasksModule({
     setCurrentBaseDate(new Date());
   };
 
-  const handleOpenAddModal = (dateStr?: string, dayKey?: DayOfWeek) => {
+  const handleOpenAddModal = (dateStr?: string, dayKey?: DayOfWeek, initialData?: { title?: string, time?: string, categoryId?: string }) => {
     const targetDate = dateStr || formatDateKey(new Date());
     setModalDefaultDate(targetDate);
     if (dayKey) {
@@ -150,7 +156,23 @@ export function TasksModule({
         setModalDefaultDay("seg");
       }
     }
+    setModalInitialTitle(initialData?.title);
+    setModalInitialTime(initialData?.time);
+    setModalInitialCategoryId(initialData?.categoryId);
     setIsAddModalOpen(true);
+  };
+
+  const handleVoiceResult = (result: { title?: string, date?: string, time?: string, categoryId?: string }) => {
+    let dayKey: DayOfWeek | undefined;
+    if (result.date) {
+      try {
+        const parsed = parseDateKey(result.date);
+        const dayIdx = parsed.getDay();
+        const map: Record<number, DayOfWeek> = { 0: "dom", 1: "seg", 2: "ter", 3: "qua", 4: "qui", 5: "sex", 6: "sab" };
+        dayKey = map[dayIdx];
+      } catch {}
+    }
+    handleOpenAddModal(result.date, dayKey, { title: result.title, time: result.time, categoryId: result.categoryId });
   };
 
   const handleSwitchToWeekView = (dateStr: string) => {
@@ -249,6 +271,9 @@ export function TasksModule({
             <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-400" />
             <span className="hidden sm:inline">Categorias</span>
           </Button>
+
+          {/* Voice Task Button */}
+          <VoiceTaskButton categories={categories} onVoiceResult={handleVoiceResult} />
 
           {/* Primary Add Task Button using #844DFE */}
           <Button
@@ -387,6 +412,9 @@ export function TasksModule({
         categories={categories}
         defaultDate={modalDefaultDate}
         defaultDay={modalDefaultDay}
+        initialTitle={modalInitialTitle}
+        initialTime={modalInitialTime}
+        initialCategoryId={modalInitialCategoryId}
         onAddTask={onAddTask}
       />
 

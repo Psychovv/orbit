@@ -18,6 +18,9 @@ interface AddTaskModalProps {
   categories: TaskCategory[];
   defaultDate?: string;
   defaultDay?: DayOfWeek;
+  initialTitle?: string;
+  initialTime?: string;
+  initialCategoryId?: string;
   onAddTask: (task: Omit<Task, "id" | "createdAt" | "completed">) => void;
 }
 
@@ -27,6 +30,9 @@ export function AddTaskModal({
   categories,
   defaultDate,
   defaultDay = "seg",
+  initialTitle,
+  initialTime,
+  initialCategoryId,
   onAddTask,
 }: AddTaskModalProps) {
   const [title, setTitle] = useState("");
@@ -48,11 +54,20 @@ export function AddTaskModal({
       } catch {
         setDay(defaultDay);
       }
-      if (!categoryId && categories.length > 0) {
+      
+      setTitle(initialTitle || "");
+      setTime(initialTime || "");
+      
+      if (initialCategoryId && categories.some(c => c.id === initialCategoryId)) {
+        setCategoryId(initialCategoryId);
+      } else if (!categoryId && categories.length > 0) {
         setCategoryId(categories[0].id);
       }
+      
+      setDescription("");
+      setPriority("media");
     }
-  }, [isOpen, defaultDate, defaultDay, categories, categoryId]);
+  }, [isOpen, defaultDate, defaultDay, categories, initialTitle, initialTime, initialCategoryId]);
 
   const handleDateChange = (newDate: string) => {
     setDate(newDate);
