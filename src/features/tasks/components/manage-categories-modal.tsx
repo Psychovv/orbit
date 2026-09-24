@@ -88,7 +88,7 @@ export function ManageCategoriesModal({
         {/* Add New Category Form */}
         <form onSubmit={handleSubmit} className="border-t border-zinc-100 dark:border-zinc-800/80 pt-4 space-y-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-            <Plus className="w-4 h-4 text-[#844DFE]" />
+            <Plus className="w-4 h-4 text-brand" />
             <span>Nova Categoria</span>
           </div>
 
@@ -112,7 +112,7 @@ export function ManageCategoriesModal({
                   onClick={() => setSelectedIcon(icon)}
                   className={`h-8 w-8 rounded-lg flex items-center justify-center text-sm transition-all cursor-pointer ${
                     selectedIcon === icon
-                      ? "bg-[#844DFE] text-white shadow-xs scale-105"
+                      ? "bg-brand text-white shadow-xs scale-105"
                       : "bg-zinc-100 dark:bg-zinc-800/60 hover:bg-zinc-200 dark:hover:bg-zinc-800"
                   }`}
                 >
@@ -134,7 +134,7 @@ export function ManageCategoriesModal({
                   key={col.color}
                   onClick={() => setSelectedColorIdx(idx)}
                   className={`h-7 w-7 rounded-full transition-transform cursor-pointer border-2 ${
-                    selectedColorIdx === idx ? "ring-2 ring-[#844DFE] ring-offset-2 scale-110 border-white" : "border-transparent"
+                    selectedColorIdx === idx ? "ring-2 ring-brand ring-offset-2 scale-110 border-white" : "border-transparent"
                   }`}
                   style={{ backgroundColor: col.color }}
                   title={col.name}

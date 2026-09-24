@@ -156,8 +156,8 @@ export function CosmicBackground() {
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
       {/* Subtle, moderate Nebula Ambient Glows */}
-      <div className="absolute -top-40 left-1/3 w-[550px] h-[550px] rounded-full bg-[#844DFE]/[0.06] dark:bg-[#844DFE]/[0.08] blur-[150px] pointer-events-none" />
-      <div className="absolute top-1/2 -right-32 w-[450px] h-[450px] rounded-full bg-[#844DFE]/[0.04] dark:bg-[#844DFE]/[0.06] blur-[140px] pointer-events-none" />
+      <div className="absolute -top-40 left-1/3 w-[550px] h-[550px] rounded-full bg-brand/[0.06] dark:bg-brand/[0.08] blur-[150px] pointer-events-none" />
+      <div className="absolute top-1/2 -right-32 w-[450px] h-[450px] rounded-full bg-brand/[0.04] dark:bg-brand/[0.06] blur-[140px] pointer-events-none" />
 
       {/* Grid Pattern overlay with radial fade */}
       <div

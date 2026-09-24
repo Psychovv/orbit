@@ -46,7 +46,7 @@ export function AssistantButton({ title = "Orbit AI", placeholder, onSubmit }: A
         variant="outline"
         size="sm"
         onClick={() => setIsOpen(true)}
-        className="h-9.5 px-3 flex items-center gap-2 text-[#844DFE] dark:text-[#b494ff] border-[#844DFE]/30 bg-[#844DFE]/5 hover:bg-[#844DFE]/10 transition-colors"
+        className="h-9.5 px-3 flex items-center gap-2 text-brand dark:text-brand-soft border-brand/30 bg-brand/5 hover:bg-brand/10 transition-colors"
         title={title}
       >
         <Sparkles className="w-4 h-4" />
@@ -57,7 +57,7 @@ export function AssistantButton({ title = "Orbit AI", placeholder, onSubmit }: A
       {isOpen && (
         <div className="fixed inset-x-0 bottom-10 md:bottom-24 mx-auto w-[90%] max-w-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800/80 rounded-3xl p-6 md:p-8 shadow-2xl z-[100] animate-in slide-in-from-bottom-8 fade-in duration-300">
           <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-2 text-[#844DFE] dark:text-[#b494ff]">
+            <div className="flex items-center gap-2 text-brand dark:text-brand-soft">
               <Sparkles className="w-5 h-5" />
               <h3 className="font-semibold text-lg tracking-tight">Orbit AI</h3>
             </div>
@@ -87,7 +87,7 @@ export function AssistantButton({ title = "Orbit AI", placeholder, onSubmit }: A
           {speech.isListening || isProcessing ? (
             <div className="flex flex-col items-center text-center gap-4 py-6">
               {isProcessing ? (
-                <Loader2 className="w-8 h-8 text-[#844DFE] animate-spin" />
+                <Loader2 className="w-8 h-8 text-brand animate-spin" />
               ) : (
                 <div className="relative flex h-6 w-6">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -126,7 +126,7 @@ export function AssistantButton({ title = "Orbit AI", placeholder, onSubmit }: A
                   onKeyDown={(e) => {
                     if (e.key === "Enter") submit(inputText);
                   }}
-                  className="pr-24 h-14 text-base rounded-2xl border-zinc-300 dark:border-zinc-700 focus-visible:ring-[#844DFE]/30"
+                  className="pr-24 h-14 text-base rounded-2xl border-zinc-300 dark:border-zinc-700 focus-visible:ring-brand/30"
                 />
                 <div className="absolute right-1.5 flex items-center gap-1.5">
                   {speech.isSupported && (
@@ -144,7 +144,7 @@ export function AssistantButton({ title = "Orbit AI", placeholder, onSubmit }: A
                     size="icon"
                     onClick={() => submit(inputText)}
                     disabled={!inputText.trim()}
-                    className="h-11 w-11 bg-[#844DFE] hover:bg-[#7239ea] text-white rounded-xl shadow-md transition-colors"
+                    className="h-11 w-11 bg-brand hover:bg-brand-strong text-white rounded-xl shadow-md transition-colors"
                   >
                     <Send className="w-5 h-5" />
                   </Button>

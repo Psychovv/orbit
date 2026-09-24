@@ -66,7 +66,7 @@ export function MonthCalendarView({
                 cell.isCurrentMonth
                   ? "bg-white/40 dark:bg-transparent hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
                   : "bg-zinc-50/40 dark:bg-zinc-950/40 opacity-40 hover:opacity-75",
-                cell.isToday && "bg-[#844DFE]/5 dark:bg-[#844DFE]/10"
+                cell.isToday && "bg-brand/5 dark:bg-brand/10"
               )}
             >
               {/* Day Number & Quick Add Button */}
@@ -75,9 +75,9 @@ export function MonthCalendarView({
                   className={cn(
                     "inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-all font-mono",
                     cell.isToday
-                      ? "bg-[#844DFE] text-white shadow-xs"
+                      ? "bg-brand text-white shadow-xs"
                       : cell.isCurrentMonth
-                      ? "text-zinc-700 dark:text-zinc-200 group-hover:text-[#844DFE]"
+                      ? "text-zinc-700 dark:text-zinc-200 group-hover:text-brand"
                       : "text-zinc-400 dark:text-zinc-600"
                   )}
                 >
@@ -92,7 +92,7 @@ export function MonthCalendarView({
                     onAddTaskForDay(cell.date);
                   }}
                   title="Adicionar tarefa neste dia"
-                  className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-zinc-400 hover:text-[#844DFE] hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-zinc-400 hover:text-brand hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
@@ -114,7 +114,7 @@ export function MonthCalendarView({
                     >
                       <span
                         className="w-1.5 h-1.5 rounded-full shrink-0"
-                        style={{ backgroundColor: cat?.color || "#844DFE" }}
+                        style={{ backgroundColor: cat?.color || "var(--color-brand)" }}
                       />
                       <span className="truncate">{task.title}</span>
                     </div>

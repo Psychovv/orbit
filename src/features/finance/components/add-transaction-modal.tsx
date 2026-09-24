@@ -186,7 +186,7 @@ function AddTransactionForm({
               placeholder="0,00"
               value={amountStr}
               onChange={(e) => setAmountStr(e.target.value)}
-              className="flex h-11 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/40 pl-9 pr-3.5 py-2 text-sm font-mono font-bold text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#844DFE]/20"
+              className="flex h-11 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/40 pl-9 pr-3.5 py-2 text-sm font-mono font-bold text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/20"
               required
             />
           </div>
@@ -200,7 +200,7 @@ function AddTransactionForm({
             type="date"
             value={date}
             onChange={(e) => e.target.value && setDate(e.target.value)}
-            className="flex h-11 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/40 px-3.5 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#844DFE]/20"
+            className="flex h-11 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/40 px-3.5 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/20"
             required
           />
         </div>
@@ -220,7 +220,7 @@ function AddTransactionForm({
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer",
                 categoryId === cat.id
-                  ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-[#844DFE] ring-1 ring-[#844DFE]"
+                  ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-brand ring-1 ring-brand"
                   : "bg-white/60 dark:bg-zinc-900/30 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300"
               )}
             >
@@ -245,7 +245,7 @@ function AddTransactionForm({
               className={cn(
                 "py-2 rounded-xl text-xs font-medium border text-center transition-all cursor-pointer",
                 paymentMethod === pm.id
-                  ? "bg-[#844DFE]/10 text-[#844DFE] dark:text-[#b494ff] border-[#844DFE]/30 font-bold"
+                  ? "bg-brand/10 text-brand dark:text-brand-soft border-brand/30 font-bold"
                   : "bg-white/40 dark:bg-zinc-900/30 text-zinc-500 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300"
               )}
             >

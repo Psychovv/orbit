@@ -34,7 +34,7 @@ export function FinanceStats({ metrics }: { metrics: MonthlyMetrics }) {
             <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
               Saldo Livre
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#844DFE]/10 text-[#844DFE] dark:text-[#b494ff] border border-[#844DFE]/20">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand/10 text-brand dark:text-brand-soft border border-brand/20">
               <Wallet className="w-4 h-4" />
             </div>
           </div>
@@ -44,7 +44,7 @@ export function FinanceStats({ metrics }: { metrics: MonthlyMetrics }) {
               className={cn(
                 "text-2xl sm:text-3xl font-black font-mono tracking-tight",
                 netBalance >= 0
-                  ? "text-[#844DFE] dark:text-[#b494ff]"
+                  ? "text-brand dark:text-brand-soft"
                   : "text-rose-600 dark:text-rose-400"
               )}
             >
@@ -108,11 +108,11 @@ export function FinanceStats({ metrics }: { metrics: MonthlyMetrics }) {
               <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                 Fatura do Cartão
               </span>
-              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-[#844DFE]/15 text-[#844DFE] dark:text-[#b494ff]">
+              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-brand/15 text-brand dark:text-brand-soft">
                 Prevista
               </span>
             </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#844DFE]/10 dark:bg-[#844DFE]/20 text-[#844DFE] dark:text-[#b494ff] border border-[#844DFE]/30">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand/10 dark:bg-brand/20 text-brand dark:text-brand-soft border border-brand/30">
               <CreditCard className="w-4 h-4" />
             </div>
           </div>
@@ -132,7 +132,7 @@ export function FinanceStats({ metrics }: { metrics: MonthlyMetrics }) {
       <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-[#100e1e]/70 backdrop-blur-md p-4 sm:p-5 shadow-2xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-100 dark:border-zinc-800/80">
           <div className="flex items-center gap-2">
-            <Percent className="w-4 h-4 text-[#844DFE]" />
+            <Percent className="w-4 h-4 text-brand" />
             <h3 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100">
               Divisão Mensal de Recursos
             </h3>
@@ -148,7 +148,7 @@ export function FinanceStats({ metrics }: { metrics: MonthlyMetrics }) {
             <span className="text-zinc-300 dark:text-zinc-700">•</span>
             <span className="text-zinc-500 dark:text-zinc-400">
               Livre:{" "}
-              <strong className="text-[#844DFE] dark:text-[#b494ff]">
+              <strong className="text-brand dark:text-brand-soft">
                 {formatBRL(netBalance)} ({freeRate.toFixed(0)}%)
               </strong>
             </span>
@@ -165,7 +165,7 @@ export function FinanceStats({ metrics }: { metrics: MonthlyMetrics }) {
           />
           {/* Fatura do Cartão */}
           <div
-            className="h-full bg-[#844DFE] transition-all duration-300"
+            className="h-full bg-brand transition-all duration-300"
             style={{ width: `${Math.min(cardRate, 100 - dailyRate)}%` }}
             title={`Fatura do Cartão: ${formatBRL(creditCardExpenses)} (${cardRate.toFixed(1)}%)`}
           />
@@ -187,7 +187,7 @@ export function FinanceStats({ metrics }: { metrics: MonthlyMetrics }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#844DFE]" />
+            <span className="w-2.5 h-2.5 rounded-full bg-brand" />
             <span className="text-zinc-600 dark:text-zinc-400 font-medium">
               Fatura prevista do cartão: <strong className="font-mono text-zinc-800 dark:text-zinc-200">{formatBRL(creditCardExpenses)}</strong>
             </span>
