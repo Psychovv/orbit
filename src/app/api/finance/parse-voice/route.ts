@@ -22,26 +22,11 @@ export async function POST(req: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
 
-    const prompt = `
-Você é um assistente financeiro encarregado de extrair transações financeiras (receitas ou despesas) a partir de um texto falado pelo usuário.
-O usuário pode ter falado sobre UMA ou VÁRIAS transações.
-Sua saída deve ser EXCLUSIVAMENTE um array JSON válido (uma lista de objetos), sem markdown, onde cada objeto representa uma transação contendo os seguintes campos:
-- description: string (a descrição breve ou título da transação, ex: "Almoço", "Salário", "Uber").
-- amount: number (o valor numérico da transação, ex: 45.90. Se o usuário falar "45 e 90", entenda como 45.90).
-- type: string (deve ser OBRIGATORIAMENTE "expense" para despesas/gastos ou "income" para receitas/ganhos).
-- date: string opcional (a data inferida no formato YYYY-MM-DD. A data atual de referência é ${currentDate}).
-- categoryId: string opcional (o ID da categoria que melhor se encaixa, baseado na lista abaixo. Retorne nulo ou omita se não se encaixar).
-- paymentMethod: string opcional (deve ser OBRIGATORIAMENTE um destes: "pix", "cartao", "dinheiro", "boleto", "transferencia". Tente deduzir da fala. Se não for possível, retorne nulo).
-
-Lista de categorias disponíveis (id: name - type):
-${categories.map((c: any) => `- ${c.id}: ${c.name} (${c.type})`).join("\n")}
-
-Texto falado: "${text}"
-
-Lembre-se: Retorne SEMPRE um Array [ { ... } ], mesmo que haja apenas uma transação.
-`;
+    const prompt = `Extraia transações p/ JSON Array: [{description:string, amount:number, type:"income"|"expense", date?:YYYY-MM-DD, categoryId?:string, paymentMethod?:"pix"|"cartao"|"dinheiro"|"boleto"|"transferencia"}]. Hoje: ${currentDate}
+Cats: ${categories.map((c: any) => `${c.id}:${c.name}(${c.type})`).join(", ")}
+Texto: "${text}"`;
 
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],

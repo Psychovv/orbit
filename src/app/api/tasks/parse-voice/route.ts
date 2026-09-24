@@ -22,25 +22,11 @@ export async function POST(req: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Use gemini-3.5-flash since we are using structured JSON parsing.
-    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
 
-    const prompt = `
-Você é um assistente pessoal encarregado de extrair informações de tarefas a partir de um texto falado pelo usuário.
-O usuário pode ter falado sobre UMA ou VÁRIAS tarefas.
-Sua saída deve ser EXCLUSIVAMENTE um array JSON válido (uma lista de objetos), sem markdown, onde cada objeto representa uma tarefa contendo os seguintes campos:
-- title: string (o nome ou título principal da tarefa, extraído da fala).
-- date: string opcional (a data inferida no formato YYYY-MM-DD. A data atual de referência é ${currentDate}).
-- time: string opcional (o horário inferido no formato HH:MM).
-- categoryId: string opcional (o ID da categoria que melhor se encaixa, baseado na lista abaixo. Retorne nulo ou omita se não se encaixar em nenhuma).
-
-Lista de categorias disponíveis (id: name):
-${categories.map((c: any) => `- ${c.id}: ${c.name}`).join("\n")}
-
-Texto falado: "${text}"
-
-Lembre-se: Retorne SEMPRE um Array [ { ... } ], mesmo que haja apenas uma tarefa.
-`;
+    const prompt = `Extraia tarefas p/ JSON Array: [{title:string, date?:YYYY-MM-DD, time?:HH:MM, categoryId?:string}]. Hoje: ${currentDate}
+Cats: ${categories.map((c: any) => `${c.id}:${c.name}`).join(", ")}
+Texto: "${text}"`;
 
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
