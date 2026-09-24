@@ -6,6 +6,8 @@ import { clientKey, rateLimit } from "./rate-limit";
 const MODEL = "gemini-3.5-flash-lite";
 const RATE_LIMIT = { limit: 20, windowMs: 60_000 };
 
+const OVERLOAD_MESSAGE = "A Orbit AI está em sobrecarga. Tente novamente em poucos minutos.";
+
 class HttpError extends Error {
   constructor(
     readonly status: number,
@@ -13,6 +15,13 @@ class HttpError extends Error {
   ) {
     super(message);
   }
+}
+
+function isModelOverloaded(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  if ("status" in error && error.status === 503) return true;
+  const message = error instanceof Error ? error.message : "";
+  return /high demand|overloaded|unavailable/i.test(message);
 }
 
 async function generateJson(prompt: string): Promise<unknown> {
@@ -68,6 +77,9 @@ export function createAssistantRoute<Req extends z.ZodType, Res extends z.ZodTyp
         return NextResponse.json({ error: error.message }, { status: error.status });
       }
       console.error(`[${name}]`, error);
+      if (isModelOverloaded(error)) {
+        return NextResponse.json({ error: OVERLOAD_MESSAGE }, { status: 503 });
+      }
       return NextResponse.json({ error: "Não foi possível processar o pedido." }, { status: 500 });
     }
   };
