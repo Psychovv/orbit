@@ -1,0 +1,233 @@
+@import "tailwindcss";
+
+:root {
+  /* Fonts */
+  --font-title: 'Quicksand', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+  /* Space Dark Theme (Default) */
+  --bg: #0c0a18;
+  --bg-elev: #151128;
+  --bg-elev-2: #201a3a;
+  --line: #2e2652;
+  --line-strong: #453775;
+  --text: #f4f1fd;
+  --text-dim: #a49ec2;
+  --text-faint: #6e678d;
+  --accent: #9333ea;
+  --accent-light: #a855f7;
+  --accent-plasma: #c084fc;
+  --accent-glow: rgba(168, 85, 247, 0.25);
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+  --cosmic-nebula: radial-gradient(circle at 80% 10%, rgba(139, 92, 246, 0.08) 0%, transparent 60%),
+                    radial-gradient(circle at 10% 90%, rgba(56, 189, 248, 0.05) 0%, transparent 50%);
+}
+
+[data-theme="light"] {
+  --bg: #f8f6fc;
+  --bg-elev: #ffffff;
+  --bg-elev-2: #f1edfb;
+  --line: #e2daf2;
+  --line-strong: #cbbfeb;
+  --text: #1d1830;
+  --text-dim: #5c5477;
+  --text-faint: #9890b0;
+  --accent: #7e22ce;
+  --accent-light: #9333ea;
+  --accent-plasma: #a855f7;
+  --accent-glow: rgba(147, 51, 234, 0.15);
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --shadow-sm: 0 2px 8px rgba(126, 34, 206, 0.06);
+  --shadow-md: 0 8px 24px rgba(126, 34, 206, 0.08);
+  --shadow-lg: 0 16px 36px rgba(126, 34, 206, 0.12);
+  --cosmic-nebula: radial-gradient(circle at 80% 10%, rgba(168, 85, 247, 0.06) 0%, transparent 60%),
+                    radial-gradient(circle at 10% 90%, rgba(99, 102, 241, 0.04) 0%, transparent 50%);
+}
+
+@theme {
+  --color-bg: var(--bg);
+  --color-bg-elev: var(--bg-elev);
+  --color-bg-elev-2: var(--bg-elev-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-text-dim: var(--text-dim);
+  --color-text-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-accent-plasma: var(--accent-plasma);
+  --color-accent-glow: var(--accent-glow);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --font-title: var(--font-title);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-image: var(--cosmic-nebula);
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+
+/* Typography Helpers */
+.font-title {
+  font-family: var(--font-title);
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Quasar Visual Effects */
+@keyframes quasarOrbitSpin {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 24;
+  }
+}
+
+.quasar-orbital-dash {
+  animation: quasarOrbitSpin 12s linear infinite;
+}
+
+.quasar-brand-text {
+  background: linear-gradient(135deg, var(--text) 30%, var(--accent-plasma) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-light);
+}
+
+/* Custom interactive effects */
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent) 0%, #7c3aed 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 14px var(--accent-glow);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+  filter: brightness(1.08);
+}
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.card-cosmic {
+  background-color: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card-cosmic:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Checkbox animation */
+.task-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 1.8px solid var(--line-strong);
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  display: inline-grid;
+  place-content: center;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: transparent;
+  flex-shrink: 0;
+}
+.task-checkbox:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+  transform: scale(1.05);
+}
+.task-checkbox:checked::before {
+  content: "";
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+
+/* Subtle border glow on block completion */
+@keyframes subtleCompletePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px 2px rgba(16, 185, 129, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.completed-highlight {
+  animation: subtleCompletePulse 1.2s ease-out;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
