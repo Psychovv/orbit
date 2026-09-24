@@ -1,17 +1,18 @@
 "use client";
 
 import React from "react";
-import { Task, TaskCategory, WeekDayInfo } from "@/types/orbit";
+import { Task, TaskCategory, DayOfWeek } from "@/types/orbit";
+import { CalendarDayInfo } from "@/lib/date-utils";
 import { TaskItem } from "./task-item";
 import { Plus, Check, Orbit } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DayColumnProps {
-  dayInfo: WeekDayInfo;
+  dayInfo: CalendarDayInfo;
   tasks: Task[];
   categoriesMap: Map<string, TaskCategory>;
   isToday: boolean;
-  onAddTask: (dayKey: DayColumnProps["dayInfo"]["key"]) => void;
+  onAddTask: (date: string, dayKey: DayOfWeek) => void;
   onToggleComplete: (id: string) => void;
   onDeleteTask: (id: string) => void;
 }
@@ -46,24 +47,24 @@ export function DayColumn({
         <div>
           <div className="flex items-center gap-2">
             <h4 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
-              {dayInfo.name.split("-")[0]}
+              {dayInfo.dayName.split("-")[0]}
             </h4>
             <span
               className={cn(
-                "text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase",
+                "text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase font-mono tracking-tight",
                 isToday
                   ? "bg-[#844DFE] text-white shadow-xs"
                   : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
               )}
             >
-              {dayInfo.shortName}
+              {dayInfo.dayNumber} {dayInfo.monthName}
             </span>
             {isToday && (
-              <span className="flex h-1.5 w-1.5 rounded-full bg-[#844DFE]" />
+              <span className="flex h-1.5 w-1.5 rounded-full bg-[#844DFE] animate-pulse" />
             )}
           </div>
           <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
-            {dayInfo.description}
+            {isToday ? "Hoje • Órbita ativa" : `${dayInfo.shortName} • ${dayInfo.date}`}
           </p>
         </div>
 
@@ -116,7 +117,7 @@ export function DayColumn({
 
       {/* Quick Add Button */}
       <button
-        onClick={() => onAddTask(dayInfo.key)}
+        onClick={() => onAddTask(dayInfo.date, dayInfo.dayOfWeek)}
         className="mt-3 flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 hover:text-[#844DFE] dark:hover:text-[#b494ff] border border-dashed border-zinc-200 dark:border-zinc-800 transition-colors cursor-pointer"
       >
         <Plus className="w-3.5 h-3.5" />

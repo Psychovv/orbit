@@ -19,7 +19,17 @@ export const OrbitStorage = {
     if (typeof window === "undefined") return INITIAL_TASKS;
     try {
       const data = localStorage.getItem(STORAGE_KEYS.TASKS);
-      return data ? JSON.parse(data) : INITIAL_TASKS;
+      if (!data) return INITIAL_TASKS;
+      const parsed = JSON.parse(data) as Task[];
+      return parsed.map((t) => {
+        if (!t.date) {
+          return {
+            ...t,
+            date: t.createdAt ? t.createdAt.slice(0, 10) : "2026-09-23",
+          };
+        }
+        return t;
+      });
     } catch {
       return INITIAL_TASKS;
     }

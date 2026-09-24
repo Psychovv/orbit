@@ -19,7 +19,8 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  day: DayOfWeek;
+  date: string; // ISO date string YYYY-MM-DD
+  day?: DayOfWeek;
   categoryId: string;
   completed: boolean;
   priority: Priority;

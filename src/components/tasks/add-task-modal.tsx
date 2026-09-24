@@ -6,13 +6,17 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { WEEK_DAYS } from "@/lib/initial-data";
-import { Plus, Clock, Flag, Sparkles } from "lucide-react";
+import { formatDateKey, parseDateKey, getWeekDays } from "@/lib/date-utils";
+import { Plus, Clock, Flag, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const DAY_KEYS: DayOfWeek[] = ["dom", "seg", "ter", "qua", "qui", "sex", "sab"];
 
 interface AddTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   categories: TaskCategory[];
+  defaultDate?: string;
   defaultDay?: DayOfWeek;
   onAddTask: (task: Omit<Task, "id" | "createdAt" | "completed">) => void;
 }
@@ -21,25 +25,58 @@ export function AddTaskModal({
   isOpen,
   onClose,
   categories,
+  defaultDate,
   defaultDay = "seg",
   onAddTask,
 }: AddTaskModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [date, setDate] = useState<string>(defaultDate || formatDateKey(new Date()));
   const [day, setDay] = useState<DayOfWeek>(defaultDay);
   const [categoryId, setCategoryId] = useState<string>(categories[0]?.id || "");
   const [priority, setPriority] = useState<Priority>("media");
   const [time, setTime] = useState("");
 
-  // Sync defaultDay when opened
+  // Sync defaultDate and defaultDay when opened
   React.useEffect(() => {
     if (isOpen) {
-      setDay(defaultDay);
+      const initialDate = defaultDate || formatDateKey(new Date());
+      setDate(initialDate);
+      try {
+        const parsed = parseDateKey(initialDate);
+        setDay(DAY_KEYS[parsed.getDay()]);
+      } catch {
+        setDay(defaultDay);
+      }
       if (!categoryId && categories.length > 0) {
         setCategoryId(categories[0].id);
       }
     }
-  }, [isOpen, defaultDay, categories, categoryId]);
+  }, [isOpen, defaultDate, defaultDay, categories, categoryId]);
+
+  const handleDateChange = (newDate: string) => {
+    setDate(newDate);
+    try {
+      const parsed = parseDateKey(newDate);
+      setDay(DAY_KEYS[parsed.getDay()]);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleDaySelect = (dayKey: DayOfWeek) => {
+    setDay(dayKey);
+    try {
+      const base = parseDateKey(date);
+      const weekDays = getWeekDays(base);
+      const matched = weekDays.find((wd) => wd.dayOfWeek === dayKey);
+      if (matched) {
+        setDate(matched.date);
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +85,7 @@ export function AddTaskModal({
     onAddTask({
       title: title.trim(),
       description: description.trim() || undefined,
+      date,
       day,
       categoryId,
       priority,
@@ -85,17 +123,25 @@ export function AddTaskModal({
           autoFocus
         />
 
-        {/* Day of Week Selector */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 uppercase tracking-wider">
-            Dia da Semana
-          </label>
+        {/* Date & Day of Week Selector */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-[#844DFE]" /> Data da Tarefa
+            </label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => handleDateChange(e.target.value)}
+              className="text-xs font-mono font-medium px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/50 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-[#844DFE] cursor-pointer"
+            />
+          </div>
           <div className="grid grid-cols-7 gap-1.5">
             {WEEK_DAYS.map((wd) => (
               <button
                 type="button"
                 key={wd.key}
-                onClick={() => setDay(wd.key)}
+                onClick={() => handleDaySelect(wd.key)}
                 className={cn(
                   "flex flex-col items-center justify-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer border",
                   day === wd.key
