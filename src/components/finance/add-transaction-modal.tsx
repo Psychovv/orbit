@@ -13,6 +13,11 @@ interface AddTransactionModalProps {
   onClose: () => void;
   categories: FinanceCategory[];
   defaultDate?: string;
+  initialDescription?: string;
+  initialAmount?: number;
+  initialType?: TransactionType;
+  initialCategoryId?: string;
+  initialPaymentMethod?: Transaction["paymentMethod"];
   onAddTransaction: (tx: Omit<Transaction, "id">) => void;
 }
 
@@ -21,6 +26,11 @@ export function AddTransactionModal({
   onClose,
   categories,
   defaultDate,
+  initialDescription,
+  initialAmount,
+  initialType,
+  initialCategoryId,
+  initialPaymentMethod,
   onAddTransaction,
 }: AddTransactionModalProps) {
   const [type, setType] = useState<TransactionType>("expense");
@@ -38,11 +48,28 @@ export function AddTransactionModal({
       if (defaultDate) {
         setDate(defaultDate);
       }
-      if (filteredCategories.length > 0 && (!categoryId || !filteredCategories.some((c) => c.id === categoryId))) {
-        setCategoryId(filteredCategories[0].id);
+      if (initialType) {
+        setType(initialType);
       }
+      if (initialDescription) setDescription(initialDescription);
+      if (initialAmount) setAmountStr(initialAmount.toString());
+      if (initialPaymentMethod) setPaymentMethod(initialPaymentMethod);
+      
+      const targetType = initialType || type;
+      const targetFiltered = categories.filter(c => c.type === targetType);
+      
+      if (initialCategoryId && targetFiltered.some(c => c.id === initialCategoryId)) {
+        setCategoryId(initialCategoryId);
+      } else if (targetFiltered.length > 0) {
+        setCategoryId(targetFiltered[0].id);
+      }
+    } else {
+      // reset when closed if we want, or keep it. It's usually fine to keep
+      setDescription("");
+      setAmountStr("");
+      setNotes("");
     }
-  }, [isOpen, defaultDate, type, filteredCategories, categoryId]);
+  }, [isOpen, defaultDate, initialDescription, initialAmount, initialType, initialCategoryId, initialPaymentMethod, categories]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

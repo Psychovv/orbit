@@ -6,6 +6,7 @@ import { FinanceStats } from "./finance-stats";
 import { BudgetBreakdown } from "./budget-breakdown";
 import { TransactionsTable } from "./transactions-table";
 import { AddTransactionModal } from "./add-transaction-modal";
+import { VoiceFinanceButton } from "./voice-finance-button";
 import { Button } from "@/components/ui/button";
 import {
   addMonths,
@@ -42,6 +43,14 @@ export function FinanceModule({
   // Current active month state (defaults to current system month)
   const [currentMonthDate, setCurrentMonthDate] = useState<Date>(new Date());
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // Voice initial data states
+  const [modalInitialDescription, setModalInitialDescription] = useState<string | undefined>();
+  const [modalInitialAmount, setModalInitialAmount] = useState<number | undefined>();
+  const [modalInitialType, setModalInitialType] = useState<Transaction["type"] | undefined>();
+  const [modalInitialCategoryId, setModalInitialCategoryId] = useState<string | undefined>();
+  const [modalInitialPaymentMethod, setModalInitialPaymentMethod] = useState<Transaction["paymentMethod"] | undefined>();
+  const [modalInitialDate, setModalInitialDate] = useState<string | undefined>();
 
   // Month navigation helpers
   const monthKey = useMemo(() => getYearMonthKey(currentMonthDate), [currentMonthDate]);
@@ -110,6 +119,70 @@ export function FinanceModule({
     return `${monthKey}-01`;
   }, [isCurrentMonth, monthKey]);
 
+  const handleOpenAddModal = (initialData?: {
+    description?: string;
+    amount?: number;
+    type?: Transaction["type"];
+    categoryId?: string;
+    paymentMethod?: Transaction["paymentMethod"];
+    date?: string;
+  }) => {
+    setModalInitialDescription(initialData?.description);
+    setModalInitialAmount(initialData?.amount);
+    setModalInitialType(initialData?.type);
+    setModalInitialCategoryId(initialData?.categoryId);
+    setModalInitialPaymentMethod(initialData?.paymentMethod);
+    setModalInitialDate(initialData?.date);
+    setIsAddModalOpen(true);
+  };
+
+  const handleVoiceResult = (results: Array<{
+    description?: string;
+    amount?: number;
+    type?: Transaction["type"];
+    categoryId?: string;
+    date?: string;
+    paymentMethod?: Transaction["paymentMethod"];
+  }>) => {
+    if (!results || results.length === 0) return;
+
+    if (results.length === 1) {
+      const res = results[0];
+      handleOpenAddModal({
+        description: res.description,
+        amount: res.amount,
+        type: res.type,
+        categoryId: res.categoryId,
+        paymentMethod: res.paymentMethod,
+        date: res.date,
+      });
+    } else {
+      results.forEach((res) => {
+        if (!res.description || res.amount === undefined) return;
+        
+        let dateStr = res.date || formatDateKey(new Date());
+        const defaultPaymentMethod = res.paymentMethod || "pix";
+        
+        // Find a default category if none provided
+        let catId = res.categoryId;
+        if (!catId) {
+          const matchingCats = categories.filter(c => c.type === (res.type || "expense"));
+          catId = matchingCats.length > 0 ? matchingCats[0].id : "";
+        }
+
+        onAddTransaction({
+          description: res.description,
+          amount: res.amount,
+          type: res.type || "expense",
+          categoryId: catId,
+          date: dateStr,
+          paymentMethod: defaultPaymentMethod,
+          notes: "",
+        });
+      });
+    }
+  };
+
   return (
     <div className="space-y-5">
       {/* Top Banner & Quick Action */}
@@ -137,14 +210,17 @@ export function FinanceModule({
           </p>
         </div>
 
-        <Button
-          variant="primary"
-          onClick={() => setIsAddModalOpen(true)}
-          className="h-9.5 text-xs px-4"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Nova Transação</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <VoiceFinanceButton categories={categories} onVoiceResult={handleVoiceResult} />
+          <Button
+            variant="primary"
+            onClick={() => handleOpenAddModal()}
+            className="h-9.5 text-xs px-4"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nova Transação</span>
+          </Button>
+        </div>
       </div>
 
       {/* Month Navigation Bar */}
@@ -240,7 +316,12 @@ export function FinanceModule({
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         categories={categories}
-        defaultDate={defaultModalDate}
+        defaultDate={modalInitialDate || defaultModalDate}
+        initialDescription={modalInitialDescription}
+        initialAmount={modalInitialAmount}
+        initialType={modalInitialType}
+        initialCategoryId={modalInitialCategoryId}
+        initialPaymentMethod={modalInitialPaymentMethod}
         onAddTransaction={onAddTransaction}
       />
     </div>
