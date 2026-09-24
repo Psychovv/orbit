@@ -4,7 +4,6 @@ import React, { createContext, useContext, useMemo, useState } from "react";
 import { AddTaskModal, type TaskFormDefaults } from "./add-task-modal";
 import { ManageCategoriesModal } from "./manage-categories-modal";
 import { FocusBar } from "./focus-bar";
-import { FocusMode } from "./focus-mode";
 import { TaskDetailDialog } from "./task-detail-dialog";
 import { FocusSessionProvider, useFocusSession } from "../hooks/use-focus-session";
 import {
@@ -13,6 +12,7 @@ import {
   useDeleteTaskCategory,
   useTaskCategories,
   useTasks,
+  useUpdateTask,
 } from "../hooks/use-tasks";
 
 interface TaskDialogsContextValue {
@@ -42,30 +42,20 @@ function TaskDialogsInner({ children }: { children: React.ReactNode }) {
   const [addTaskDefaults, setAddTaskDefaults] = useState<TaskFormDefaults | null>(null);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
-  const [focusTaskId, setFocusTaskId] = useState<string | null>(null);
-  const [focusOpen, setFocusOpen] = useState(false);
 
   const { data: categories = [] } = useTaskCategories();
   const { data: tasks = [] } = useTasks();
   const session = useFocusSession();
   const createTask = useCreateTask();
+  const updateTask = useUpdateTask();
   const createCategory = useCreateTaskCategory();
   const deleteCategory = useDeleteTaskCategory();
 
   const detailTask = tasks.find((task) => task.id === openTaskId) ?? null;
-  const focusTask = tasks.find((task) => task.id === focusTaskId) ?? session.active;
   const detailCategory = detailTask?.categoryId
     ? categories.find((category) => category.id === detailTask.categoryId)
     : undefined;
-
-  const enterFocus = (taskId: string) => {
-    const task = tasks.find((item) => item.id === taskId);
-    if (!task) return;
-    setOpenTaskId(null);
-    setFocusTaskId(task.id);
-    setFocusOpen(true);
-    void session.start(task);
-  };
+  const barTask = session.active && session.active.id !== openTaskId ? session.active : null;
 
   const value = useMemo<TaskDialogsContextValue>(
     () => ({
@@ -98,34 +88,22 @@ function TaskDialogsInner({ children }: { children: React.ReactNode }) {
 
       <TaskDetailDialog
         task={detailTask}
+        categories={categories}
         category={detailCategory}
         elapsedSeconds={detailTask ? session.elapsed(detailTask) : 0}
         isRunning={detailTask?.id === session.active?.id}
         onClose={() => setOpenTaskId(null)}
-        onEnterFocus={() => detailTask && enterFocus(detailTask.id)}
-      />
-
-      <FocusMode
-        task={focusOpen ? focusTask : null}
-        isOpen={focusOpen && focusTask !== null}
-        elapsedSeconds={focusTask ? session.elapsed(focusTask) : 0}
-        isRunning={focusTask?.id === session.active?.id}
-        onPause={() => focusTask && void session.pause(focusTask)}
-        onResume={() => focusTask && void session.start(focusTask)}
-        onMinimize={() => setFocusOpen(false)}
-        onComplete={() => {
-          if (!focusTask) return;
-          void session.complete(focusTask);
-          setFocusOpen(false);
-          setFocusTaskId(null);
-        }}
+        onStart={() => detailTask && void session.start(detailTask)}
+        onPause={() => detailTask && void session.pause(detailTask)}
+        onComplete={() => detailTask && void session.complete(detailTask)}
+        onSave={(patch) => detailTask && updateTask.mutate({ id: detailTask.id, patch })}
       />
 
       <FocusBar
-        task={!focusOpen ? session.active : null}
-        elapsedSeconds={session.active ? session.elapsed(session.active) : 0}
-        onPause={() => session.active && void session.pause(session.active)}
-        onExpand={() => session.active && enterFocus(session.active.id)}
+        task={barTask}
+        elapsedSeconds={barTask ? session.elapsed(barTask) : 0}
+        onPause={() => barTask && void session.pause(barTask)}
+        onExpand={() => barTask && setOpenTaskId(barTask.id)}
       />
     </TaskDialogsContext.Provider>
   );

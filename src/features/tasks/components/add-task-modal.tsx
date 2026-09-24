@@ -7,14 +7,16 @@ import { Dialog } from "@/shared/ui/dialog";
 import { Input, Textarea } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
 import { type DayOfWeek, getDayOfWeek, getWeekDays, parseDateKey, todayKey } from "@/shared/lib/date-utils";
-import { Plus, Clock, Flag, Calendar } from "lucide-react";
+import { Plus, Clock, Flag, Calendar, Check } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
 export interface TaskFormDefaults {
   date?: string;
   title?: string;
+  description?: string;
   time?: string;
-  categoryId?: string;
+  categoryId?: string | null;
+  priority?: Priority;
 }
 
 interface AddTaskModalProps {
@@ -40,26 +42,56 @@ export function AddTaskModal({ isOpen, onClose, categories, defaults, onSubmit }
       description="Agende uma tarefa ou compromisso para a sua semana."
       className="max-w-lg"
     >
-      <AddTaskForm categories={categories} defaults={defaults} onClose={onClose} onSubmit={onSubmit} />
+      <TaskForm
+        categories={categories}
+        defaults={defaults}
+        onClose={onClose}
+        onSubmit={(input) =>
+          onSubmit({
+            ...input,
+            description: input.description ?? undefined,
+            time: input.time ?? undefined,
+          })
+        }
+        submitLabel="Adicionar Tarefa"
+      />
     </Dialog>
   );
 }
 
-function AddTaskForm({
+export function TaskForm({
   categories,
   defaults,
   onClose,
   onSubmit,
-}: Omit<AddTaskModalProps, "isOpen">) {
+  submitLabel,
+  allowEmptyCategory = false,
+}: {
+  categories: TaskCategory[];
+  defaults: TaskFormDefaults;
+  onClose: () => void;
+  onSubmit: (input: {
+    title: string;
+    description: string | null;
+    date: string;
+    time: string | null;
+    categoryId: string | null;
+    priority: Priority;
+  }) => void;
+  submitLabel: string;
+  allowEmptyCategory?: boolean;
+}) {
   const [title, setTitle] = useState(defaults.title ?? "");
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(defaults.description ?? "");
   const [date, setDate] = useState(defaults.date ?? todayKey());
   const [categoryId, setCategoryId] = useState<string | null>(
     defaults.categoryId && categories.some((c) => c.id === defaults.categoryId)
       ? defaults.categoryId
-      : categories[0]?.id ?? null
+      : allowEmptyCategory
+        ? (defaults.categoryId ?? null)
+        : categories[0]?.id ?? null
   );
-  const [priority, setPriority] = useState<Priority>("media");
+  const [priority, setPriority] = useState<Priority>(defaults.priority ?? "media");
   const [time, setTime] = useState(defaults.time ?? "");
 
   const day = getDayOfWeek(date);
@@ -71,13 +103,13 @@ function AddTaskForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || (categories.length > 0 && !categoryId)) return;
+    if (!title.trim() || (!allowEmptyCategory && categories.length > 0 && !categoryId)) return;
 
     onSubmit({
       title: title.trim(),
-      description: description.trim() || undefined,
+      description: description.trim() || null,
       date,
-      time: time || undefined,
+      time: time || null,
       categoryId,
       priority,
     });
@@ -134,6 +166,20 @@ function AddTaskForm({
           Categoria
         </label>
         <div className="flex flex-wrap gap-2">
+          {allowEmptyCategory && (
+            <button
+              type="button"
+              onClick={() => setCategoryId(null)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer border",
+                categoryId === null
+                  ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-[#844DFE] ring-1 ring-[#844DFE]"
+                  : "bg-white/60 dark:bg-zinc-900/30 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300"
+              )}
+            >
+              Geral
+            </button>
+          )}
           {categories.map((cat) => (
             <button
               type="button"
@@ -205,8 +251,8 @@ function AddTaskForm({
           Cancelar
         </Button>
         <Button type="submit" variant="primary">
-          <Plus className="w-4 h-4" />
-          Adicionar Tarefa
+          {submitLabel === "Adicionar Tarefa" ? <Plus className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+          {submitLabel}
         </Button>
       </div>
     </form>
