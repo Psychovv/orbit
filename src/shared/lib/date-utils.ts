@@ -180,6 +180,12 @@ export function parseYearMonthKey(key: string): Date {
   return new Date(y, m - 1, 1);
 }
 
+/** `"2026-09"` → `"Set/2026"`. */
+export function formatShortMonth(monthKey: string): string {
+  const [y, m] = monthKey.split("-").map(Number);
+  return `${MONTH_SHORT[m - 1]}/${y}`;
+}
+
 export function isSameMonth(d1: Date, d2: Date): boolean {
   return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth();
 }

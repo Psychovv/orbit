@@ -1,14 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, Calendar, House, Wallet, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { ThemeToggle } from "@/shared/ui/theme-toggle";
 import { OrbitMark } from "@/shared/ui/orbit-mark";
-import { useTasks } from "@/features/tasks/hooks/use-tasks";
-import { countCompleted } from "@/features/tasks/domain/task.selectors";
-import { useTransactions } from "@/features/finance/hooks/use-finance";
-import { netBalance } from "@/features/finance/domain/metrics";
+import { formatShortMonth } from "@/shared/lib/date-utils";
+import { useTodayTasksSummary } from "@/features/tasks/hooks/use-today-tasks";
+import { useFinanceViewState } from "@/features/finance/hooks/use-finance-view-state";
+import { useMonthBalance } from "@/features/finance/hooks/use-month-balance";
 import { formatBRL } from "@/features/finance/domain/money";
 
 interface OrbitHeaderProps {
@@ -37,9 +37,9 @@ export function OrbitHeader({ onOpenMobileMenu, isSidebarCollapsed = false, onTo
                 aria-label={isSidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
               >
                 {isSidebarCollapsed ? (
-                  <PanelLeftOpen className="w-5 h-5 text-[#844DFE]" />
+                  <PanelLeftOpen className="w-5 h-5 text-brand" />
                 ) : (
-                  <PanelLeftClose className="w-5 h-5 text-zinc-500 hover:text-[#844DFE]" />
+                  <PanelLeftClose className="w-5 h-5 text-zinc-500 hover:text-brand" />
                 )}
               </button>
             )}
@@ -65,17 +65,17 @@ export function OrbitHeader({ onOpenMobileMenu, isSidebarCollapsed = false, onTo
               <span className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                 {isFinance ? (
                   <>
-                    <Wallet className="w-4 h-4 text-[#844DFE]" />
+                    <Wallet className="w-4 h-4 text-brand" />
                     <span>Planejamento Financeiro</span>
                   </>
                 ) : isTasks ? (
                   <>
-                    <Calendar className="w-4 h-4 text-[#844DFE]" />
+                    <Calendar className="w-4 h-4 text-brand" />
                     <span>Tarefas & Calendário</span>
                   </>
                 ) : (
                   <>
-                    <House className="w-4 h-4 text-[#844DFE]" />
+                    <House className="w-4 h-4 text-brand" />
                     <span>Início</span>
                   </>
                 )}
@@ -85,7 +85,9 @@ export function OrbitHeader({ onOpenMobileMenu, isSidebarCollapsed = false, onTo
 
           {/* Right: Quick info & Theme toggle */}
           <div className="flex items-center gap-3">
-            {isFinance ? <BalanceSummary /> : isTasks ? <TasksSummary /> : null}
+            <Suspense fallback={null}>
+              {isFinance ? <BalanceSummary /> : isTasks ? <TasksSummary /> : null}
+            </Suspense>
             <ThemeToggle />
           </div>
         </div>
@@ -95,21 +97,22 @@ export function OrbitHeader({ onOpenMobileMenu, isSidebarCollapsed = false, onTo
 }
 
 function BalanceSummary() {
-  const { data } = useTransactions();
-  if (!data) return null;
+  const { monthKey, isCurrentMonth } = useFinanceViewState();
+  const balance = useMonthBalance(monthKey);
+  if (balance === null) return null;
   return (
     <div className="text-xs font-mono font-bold text-zinc-700 dark:text-zinc-300 px-3 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/80">
-      Saldo: {formatBRL(netBalance(data))}
+      {isCurrentMonth ? "Saldo do mês" : `Saldo de ${formatShortMonth(monthKey)}`}: {formatBRL(balance)}
     </div>
   );
 }
 
 function TasksSummary() {
-  const { data } = useTasks();
-  if (!data) return null;
+  const today = useTodayTasksSummary();
+  if (!today) return null;
   return (
     <div className="text-xs font-mono font-medium text-zinc-500 dark:text-zinc-400 hidden sm:block">
-      {countCompleted(data)} de {data.length} concluídas
+      {today.total === 0 ? "Nada para hoje" : `Hoje: ${today.completed} de ${today.total} concluídas`}
     </div>
   );
 }

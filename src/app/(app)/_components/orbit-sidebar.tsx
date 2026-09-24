@@ -21,8 +21,9 @@ import {
 } from "lucide-react";
 import { dataSource, resetLocalData } from "@/config/data-source";
 import { useTaskDialogs } from "@/features/tasks/components/task-dialogs";
-import { ALL_CATEGORIES, countByCategory, countCompleted } from "@/features/tasks/domain/task.selectors";
+import { ALL_CATEGORIES, countByCategory } from "@/features/tasks/domain/task.selectors";
 import { useTaskCategories, useTasks } from "@/features/tasks/hooks/use-tasks";
+import { useTodayTasksSummary } from "@/features/tasks/hooks/use-today-tasks";
 import { TASKS_PATH, tasksHref } from "@/features/tasks/hooks/use-tasks-view-state";
 import { ThemeToggle } from "@/shared/ui/theme-toggle";
 import { OrbitMark } from "@/shared/ui/orbit-mark";
@@ -47,8 +48,8 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
   const [isTaskCategoriesExpanded, setIsTaskCategoriesExpanded] = useState(true);
   const dialogs = useTaskDialogs();
   const queryClient = useQueryClient();
-  const { data: tasks = [] } = useTasks();
-  const completedTasks = countCompleted(tasks);
+  const today = useTodayTasksSummary();
+  const todayLabel = today ? `${today.completed}/${today.total}` : "–";
 
   const handleResetData = () => {
     if (window.confirm("Deseja restaurar as tarefas e finanças para os dados de demonstração?")) {
@@ -65,7 +66,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
         <Link href="/" onClick={onCloseMobile} className="flex items-center gap-2.5">
           <div className="relative flex h-9 w-9 items-center justify-center">
             <OrbitMark className="h-9 w-9" />
-            <div className="absolute inset-[-2px] rounded-xl border border-[#844DFE]/40 pointer-events-none" />
+            <div className="absolute inset-[-2px] rounded-xl border border-brand/40 pointer-events-none" />
           </div>
 
           <div>
@@ -73,7 +74,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
               <span className="text-base font-black tracking-wider text-zinc-900 dark:text-zinc-100">
                 ORBIT
               </span>
-              <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.2 rounded-full bg-[#844DFE]/10 text-[#844DFE] dark:text-[#b494ff] border border-[#844DFE]/20">
+              <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.2 rounded-full bg-brand/10 text-brand dark:text-brand-soft border border-brand/20">
                 v1.0
               </span>
             </div>
@@ -119,11 +120,11 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
               className={cn(
                 "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer",
                 activeModule === "home"
-                  ? "bg-[#844DFE]/10 text-[#844DFE] dark:text-[#b494ff] font-semibold"
+                  ? "bg-brand/10 text-brand dark:text-brand-soft font-semibold"
                   : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
               )}
             >
-              <House className={cn("w-4 h-4", activeModule === "home" ? "text-[#844DFE]" : "text-zinc-400")} />
+              <House className={cn("w-4 h-4", activeModule === "home" ? "text-brand" : "text-zinc-400")} />
               <span>Início</span>
             </Link>
 
@@ -143,7 +144,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
                 className={cn(
                   "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer",
                   activeModule === "tasks"
-                    ? "bg-[#844DFE]/10 text-[#844DFE] dark:text-[#b494ff] font-semibold"
+                    ? "bg-brand/10 text-brand dark:text-brand-soft font-semibold"
                     : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
                 )}
               >
@@ -151,15 +152,18 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
                   <Calendar
                     className={cn(
                       "w-4 h-4",
-                      activeModule === "tasks" ? "text-[#844DFE]" : "text-zinc-400"
+                      activeModule === "tasks" ? "text-brand" : "text-zinc-400"
                     )}
                   />
                   <span>Tarefas</span>
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
-                    {completedTasks}/{tasks.length}
+                  <span
+                    title="Concluídas hoje"
+                    className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
+                  >
+                    {todayLabel}
                   </span>
                   {activeModule === "tasks" && (
                     <span className="text-zinc-400">
@@ -183,7 +187,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
                     transition={{ duration: 0.2, ease: "easeInOut" }}
                     className="overflow-hidden"
                   >
-                    <div className="ml-4 pl-2.5 my-1.5 border-l-2 border-[#844DFE]/20 space-y-0.5">
+                    <div className="ml-4 pl-2.5 my-1.5 border-l-2 border-brand/20 space-y-0.5">
                       <div className="flex items-center justify-between pr-2 py-1">
                         <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
                           Categorias
@@ -214,7 +218,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
                 className={cn(
                   "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer",
                   activeModule === "finance"
-                    ? "bg-[#844DFE]/10 text-[#844DFE] dark:text-[#b494ff] font-semibold"
+                    ? "bg-brand/10 text-brand dark:text-brand-soft font-semibold"
                     : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
                 )}
               >
@@ -222,7 +226,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
                   <Wallet
                     className={cn(
                       "w-4 h-4",
-                      activeModule === "finance" ? "text-[#844DFE]" : "text-zinc-400"
+                      activeModule === "finance" ? "text-brand" : "text-zinc-400"
                     )}
                   />
                   <span>Finanças</span>
@@ -241,7 +245,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
             dialogs.openAddTask();
             onCloseMobile();
           }}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#844DFE] hover:bg-[#723ce6] text-white text-xs font-semibold shadow-sm shadow-[#844DFE]/25 transition-all cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-brand hover:bg-brand-strong text-white text-xs font-semibold shadow-sm shadow-brand/25 transition-all cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Nova Tarefa</span>
@@ -275,7 +279,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
       <div className="flex flex-col items-center gap-3">
         <button
           onClick={onToggleCollapse}
-          className="relative flex h-10 w-10 items-center justify-center cursor-pointer hover:scale-105 transition-transform shadow-sm shadow-[#844DFE]/30 rounded-xl"
+          className="relative flex h-10 w-10 items-center justify-center cursor-pointer hover:scale-105 transition-transform shadow-sm shadow-brand/30 rounded-xl"
           title="Orbit • Clique para expandir"
         >
           <OrbitMark className="h-10 w-10" />
@@ -284,7 +288,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="p-2 rounded-xl text-zinc-400 hover:text-[#844DFE] hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            className="p-2 rounded-xl text-zinc-400 hover:text-brand hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
             title="Expandir barra lateral"
             aria-label="Expandir barra lateral"
           >
@@ -301,7 +305,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
             className={cn(
               "flex h-10 w-10 items-center justify-center rounded-xl transition-all cursor-pointer",
               activeModule === "home"
-                ? "bg-[#844DFE] text-white shadow-sm shadow-[#844DFE]/30"
+                ? "bg-brand text-white shadow-sm shadow-brand/30"
                 : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             )}
             aria-label="Início"
@@ -320,7 +324,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
             className={cn(
               "flex h-10 w-10 items-center justify-center rounded-xl transition-all cursor-pointer",
               activeModule === "tasks"
-                ? "bg-[#844DFE] text-white shadow-sm shadow-[#844DFE]/30"
+                ? "bg-brand text-white shadow-sm shadow-brand/30"
                 : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             )}
             aria-label="Módulo de Tarefas"
@@ -330,7 +334,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
 
           {/* Hover Tooltip */}
           <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-zinc-900 text-white text-xs font-semibold whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-lg z-50">
-            Tarefas ({completedTasks}/{tasks.length})
+            Tarefas · hoje {todayLabel}
           </div>
         </div>
 
@@ -341,7 +345,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
             className={cn(
               "flex h-10 w-10 items-center justify-center rounded-xl transition-all cursor-pointer",
               activeModule === "finance"
-                ? "bg-[#844DFE] text-white shadow-sm shadow-[#844DFE]/30"
+                ? "bg-brand text-white shadow-sm shadow-brand/30"
                 : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             )}
             aria-label="Módulo de Finanças"
@@ -359,7 +363,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
         <div className="relative group pt-2">
           <button
             onClick={() => dialogs.openAddTask()}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#844DFE]/15 hover:bg-[#844DFE] text-[#844DFE] hover:text-white transition-all cursor-pointer"
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand/15 hover:bg-brand text-brand hover:text-white transition-all cursor-pointer"
             aria-label="Adicionar tarefa"
           >
             <Plus className="w-4 h-4" />
@@ -459,7 +463,7 @@ function CategoryLinks({ onNavigate }: { onNavigate: () => void }) {
           className={cn(
             "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer",
             selectedCategoryId === cat.id
-              ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-semibold shadow-2xs border border-[#844DFE]/30"
+              ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-semibold shadow-2xs border border-brand/30"
               : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-900/40"
           )}
         >

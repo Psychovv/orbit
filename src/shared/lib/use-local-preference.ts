@@ -41,3 +41,25 @@ export function useLocalBoolean(key: string, fallback = false): [boolean, (next:
 
   return [value === null ? fallback : value === "true", set];
 }
+
+/** Preferência de texto persistida no localStorage (ex.: nome exibido na Home). Vazio apaga a chave. */
+export function useLocalString(key: string): [string | null, (next: string) => void] {
+  const value = useSyncExternalStore(
+    subscribe,
+    () => read(key),
+    () => null
+  );
+
+  const set = useCallback(
+    (next: string) => {
+      try {
+        if (next) window.localStorage.setItem(key, next);
+        else window.localStorage.removeItem(key);
+      } catch {}
+      listeners.forEach((listener) => listener());
+    },
+    [key]
+  );
+
+  return [value, set];
+}
