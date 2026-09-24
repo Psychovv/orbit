@@ -162,17 +162,47 @@ export function TasksModule({
     setIsAddModalOpen(true);
   };
 
-  const handleVoiceResult = (result: { title?: string, date?: string, time?: string, categoryId?: string }) => {
-    let dayKey: DayOfWeek | undefined;
-    if (result.date) {
-      try {
-        const parsed = parseDateKey(result.date);
-        const dayIdx = parsed.getDay();
-        const map: Record<number, DayOfWeek> = { 0: "dom", 1: "seg", 2: "ter", 3: "qua", 4: "qui", 5: "sex", 6: "sab" };
-        dayKey = map[dayIdx];
-      } catch {}
+  const handleVoiceResult = (results: Array<{ title?: string, date?: string, time?: string, categoryId?: string }>) => {
+    if (!results || results.length === 0) return;
+
+    if (results.length === 1) {
+      const result = results[0];
+      let dayKey: DayOfWeek | undefined;
+      if (result.date) {
+        try {
+          const parsed = parseDateKey(result.date);
+          const dayIdx = parsed.getDay();
+          const map: Record<number, DayOfWeek> = { 0: "dom", 1: "seg", 2: "ter", 3: "qua", 4: "qui", 5: "sex", 6: "sab" };
+          dayKey = map[dayIdx];
+        } catch {}
+      }
+      handleOpenAddModal(result.date, dayKey, { title: result.title, time: result.time, categoryId: result.categoryId });
+    } else {
+      // Se vieram múltiplas tarefas, criamos todas diretamente
+      results.forEach((res) => {
+        if (!res.title) return; // ignora se não conseguiu nem extrair título
+        
+        let dateStr = res.date || formatDateKey(new Date());
+        let dayKey: DayOfWeek = "seg";
+        try {
+          const parsed = parseDateKey(dateStr);
+          const dayIdx = parsed.getDay();
+          const map: Record<number, DayOfWeek> = { 0: "dom", 1: "seg", 2: "ter", 3: "qua", 4: "qui", 5: "sex", 6: "sab" };
+          dayKey = map[dayIdx];
+        } catch {}
+
+        const defaultCategoryId = categories.length > 0 ? categories[0].id : "";
+
+        onAddTask({
+          title: res.title,
+          date: dateStr,
+          day: dayKey,
+          time: res.time || "",
+          categoryId: res.categoryId || defaultCategoryId,
+          priority: "media",
+        });
+      });
     }
-    handleOpenAddModal(result.date, dayKey, { title: result.title, time: result.time, categoryId: result.categoryId });
   };
 
   const handleSwitchToWeekView = (dateStr: string) => {

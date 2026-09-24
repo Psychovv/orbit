@@ -27,7 +27,8 @@ export async function POST(req: Request) {
 
     const prompt = `
 Você é um assistente pessoal encarregado de extrair informações de tarefas a partir de um texto falado pelo usuário.
-Sua saída deve ser EXCLUSIVAMENTE um objeto JSON válido, sem markdown, contendo os seguintes campos:
+O usuário pode ter falado sobre UMA ou VÁRIAS tarefas.
+Sua saída deve ser EXCLUSIVAMENTE um array JSON válido (uma lista de objetos), sem markdown, onde cada objeto representa uma tarefa contendo os seguintes campos:
 - title: string (o nome ou título principal da tarefa, extraído da fala).
 - date: string opcional (a data inferida no formato YYYY-MM-DD. A data atual de referência é ${currentDate}).
 - time: string opcional (o horário inferido no formato HH:MM).
@@ -37,6 +38,8 @@ Lista de categorias disponíveis (id: name):
 ${categories.map((c: any) => `- ${c.id}: ${c.name}`).join("\n")}
 
 Texto falado: "${text}"
+
+Lembre-se: Retorne SEMPRE um Array [ { ... } ], mesmo que haja apenas uma tarefa.
 `;
 
     const result = await model.generateContent({

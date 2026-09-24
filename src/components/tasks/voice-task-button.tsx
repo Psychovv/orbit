@@ -8,12 +8,12 @@ import { cn } from "@/lib/utils";
 
 interface VoiceTaskButtonProps {
   categories: TaskCategory[];
-  onVoiceResult: (result: {
+  onVoiceResult: (results: Array<{
     title?: string;
     date?: string;
     time?: string;
     categoryId?: string;
-  }) => void;
+  }>) => void;
 }
 
 export function VoiceTaskButton({ categories, onVoiceResult }: VoiceTaskButtonProps) {
