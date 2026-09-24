@@ -22,8 +22,8 @@ export async function POST(req: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Use gemini-1.5-pro or gemini-1.5-flash since we are using structured JSON parsing.
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Use gemini-3.5-flash since we are using structured JSON parsing.
+    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
     const prompt = `
 Você é um assistente pessoal encarregado de extrair informações de tarefas a partir de um texto falado pelo usuário.
@@ -46,14 +46,16 @@ Texto falado: "${text}"
       },
     });
 
-    const responseText = result.response.text();
+    let responseText = result.response.text();
+    // Strip markdown formatting if the model still returns it
+    responseText = responseText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
     const parsed = JSON.parse(responseText);
 
     return NextResponse.json(parsed);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error parsing voice task:", error);
     return NextResponse.json(
-      { error: "Failed to parse voice task" },
+      { error: "Failed to parse voice task", details: error.message || String(error) },
       { status: 500 }
     );
   }
