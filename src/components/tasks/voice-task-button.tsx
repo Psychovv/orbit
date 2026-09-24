@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 interface AiTaskButtonProps {
   categories: TaskCategory[];
-  pendingTasks: Array<{ id: string; title: string; date: string }>;
+  pendingTasks: Array<{ id: string; title: string; date: string; completed?: boolean }>;
   onVoiceResult: (result: any) => void;
 }
 

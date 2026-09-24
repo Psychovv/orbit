@@ -181,9 +181,21 @@ export function TasksModule({
       });
     }
 
+    if (data.deleteIds && data.deleteIds.length > 0) {
+      data.deleteIds.forEach((id: string) => {
+        if (tasks.some((t) => t.id === id)) {
+          onDeleteTask(id);
+        }
+      });
+    }
+
+    const hasTaskActions =
+      (data.completeIds && data.completeIds.length > 0) ||
+      (data.deleteIds && data.deleteIds.length > 0);
+
     // 2. Process creations
     const results = data.create || [];
-    if (results.length === 1 && (!data.completeIds || data.completeIds.length === 0)) {
+    if (results.length === 1 && !hasTaskActions) {
       // Only 1 task to create and no tasks completed -> open modal
       const res = results[0];
       let dayKey: DayOfWeek | undefined;
@@ -324,7 +336,7 @@ export function TasksModule({
           {/* Voice Task Button */}
           <VoiceTaskButton
             categories={categories}
-            pendingTasks={tasks.filter((t) => !t.completed).map((t) => ({ id: t.id, title: t.title, date: t.date }))}
+            pendingTasks={tasks.map((t) => ({ id: t.id, title: t.title, date: t.date, completed: t.completed }))}
             onVoiceResult={handleVoiceResult}
           />
 
