@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Calendar,
+  House,
   Wallet,
   Plus,
   SlidersHorizontal,
@@ -38,7 +39,11 @@ interface OrbitSidebarProps {
 
 export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false, onToggleCollapse }: OrbitSidebarProps) {
   const pathname = usePathname();
-  const activeModule = pathname.startsWith(FINANCE_PATH) ? "finance" : "tasks";
+  const activeModule = pathname.startsWith(FINANCE_PATH)
+    ? "finance"
+    : pathname.startsWith(TASKS_PATH)
+      ? "tasks"
+      : "home";
   const [isTaskCategoriesExpanded, setIsTaskCategoriesExpanded] = useState(true);
   const dialogs = useTaskDialogs();
   const queryClient = useQueryClient();
@@ -57,7 +62,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
     <div className="flex flex-col h-full">
       {/* Brand Header with Collapse Toggle */}
       <div className="flex items-center justify-between p-4.5 border-b border-zinc-200/80 dark:border-zinc-800/80">
-        <div className="flex items-center gap-2.5">
+        <Link href="/" onClick={onCloseMobile} className="flex items-center gap-2.5">
           <div className="relative flex h-9 w-9 items-center justify-center">
             <OrbitMark className="h-9 w-9" />
             <div className="absolute inset-[-2px] rounded-xl border border-[#844DFE]/40 pointer-events-none" />
@@ -76,7 +81,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
               Hub Pessoal
             </p>
           </div>
-        </div>
+        </Link>
 
         {/* Desktop Collapse Button */}
         {onToggleCollapse && (
@@ -108,6 +113,20 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
           </p>
 
           <div className="space-y-1">
+            <Link
+              href="/"
+              onClick={onCloseMobile}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer",
+                activeModule === "home"
+                  ? "bg-[#844DFE]/10 text-[#844DFE] dark:text-[#b494ff] font-semibold"
+                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
+              )}
+            >
+              <House className={cn("w-4 h-4", activeModule === "home" ? "text-[#844DFE]" : "text-zinc-400")} />
+              <span>Início</span>
+            </Link>
+
             {/* Item 1: Tarefas & Categorias Agrupadas */}
             <div>
               <Link
@@ -276,6 +295,24 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
 
       {/* Middle: Icon Module Navigation with Tooltips */}
       <div className="space-y-3 flex flex-col items-center">
+        <div className="relative group">
+          <Link
+            href="/"
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-xl transition-all cursor-pointer",
+              activeModule === "home"
+                ? "bg-[#844DFE] text-white shadow-sm shadow-[#844DFE]/30"
+                : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            )}
+            aria-label="Início"
+          >
+            <House className="w-5 h-5" />
+          </Link>
+          <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-zinc-900 text-white text-xs font-semibold whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-lg z-50">
+            Início
+          </div>
+        </div>
+
         {/* Tarefas Icon */}
         <div className="relative group">
           <Link

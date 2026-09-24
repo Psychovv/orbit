@@ -2,7 +2,7 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { Menu, Calendar, Wallet, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Menu, Calendar, House, Wallet, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { ThemeToggle } from "@/shared/ui/theme-toggle";
 import { OrbitMark } from "@/shared/ui/orbit-mark";
 import { useTasks } from "@/features/tasks/hooks/use-tasks";
@@ -18,7 +18,9 @@ interface OrbitHeaderProps {
 }
 
 export function OrbitHeader({ onOpenMobileMenu, isSidebarCollapsed = false, onToggleSidebarCollapse }: OrbitHeaderProps) {
-  const isFinance = usePathname().startsWith("/finance");
+  const pathname = usePathname();
+  const isFinance = pathname.startsWith("/finance");
+  const isTasks = pathname.startsWith("/tasks");
 
   return (
     <header className="sticky top-0 z-20 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-[#090812]/85 backdrop-blur-xl transition-colors">
@@ -66,10 +68,15 @@ export function OrbitHeader({ onOpenMobileMenu, isSidebarCollapsed = false, onTo
                     <Wallet className="w-4 h-4 text-[#844DFE]" />
                     <span>Planejamento Financeiro</span>
                   </>
-                ) : (
+                ) : isTasks ? (
                   <>
                     <Calendar className="w-4 h-4 text-[#844DFE]" />
                     <span>Tarefas & Calendário</span>
+                  </>
+                ) : (
+                  <>
+                    <House className="w-4 h-4 text-[#844DFE]" />
+                    <span>Início</span>
                   </>
                 )}
               </span>
@@ -78,7 +85,7 @@ export function OrbitHeader({ onOpenMobileMenu, isSidebarCollapsed = false, onTo
 
           {/* Right: Quick info & Theme toggle */}
           <div className="flex items-center gap-3">
-            {isFinance ? <BalanceSummary /> : <TasksSummary />}
+            {isFinance ? <BalanceSummary /> : isTasks ? <TasksSummary /> : null}
             <ThemeToggle />
           </div>
         </div>
