@@ -7,30 +7,39 @@ import { DayColumn } from "./day-column";
 import { AddTaskModal } from "./add-task-modal";
 import { ManageCategoriesModal } from "./manage-categories-modal";
 import { Button } from "@/components/ui/button";
-import { Plus, SlidersHorizontal, Filter } from "lucide-react";
+import { Plus, SlidersHorizontal, X } from "lucide-react";
 
 interface TasksModuleProps {
   tasks: Task[];
   categories: TaskCategory[];
+  selectedCategoryId: string;
+  onSelectCategory: (categoryId: string) => void;
   onAddTask: (task: Omit<Task, "id" | "createdAt" | "completed">) => void;
   onToggleComplete: (id: string) => void;
   onDeleteTask: (id: string) => void;
   onAddCategory: (category: TaskCategory) => void;
   onDeleteCategory: (id: string) => void;
+  isAddModalOpen: boolean;
+  setIsAddModalOpen: (open: boolean) => void;
+  isCategoriesModalOpen: boolean;
+  setIsCategoriesModalOpen: (open: boolean) => void;
 }
 
 export function TasksModule({
   tasks,
   categories,
+  selectedCategoryId,
+  onSelectCategory,
   onAddTask,
   onToggleComplete,
   onDeleteTask,
   onAddCategory,
   onDeleteCategory,
+  isAddModalOpen,
+  setIsAddModalOpen,
+  isCategoriesModalOpen,
+  setIsCategoriesModalOpen,
 }: TasksModuleProps) {
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isCategoriesModalOpen, setIsCategoriesModalOpen] = useState(false);
   const [modalDefaultDay, setModalDefaultDay] = useState<DayOfWeek>("seg");
 
   // Map of categories by ID
@@ -63,6 +72,7 @@ export function TasksModule({
 
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t) => t.completed).length;
+  const activeCategory = categories.find((c) => c.id === selectedCategoryId);
 
   const handleOpenAddModal = (dayKey?: DayOfWeek) => {
     setModalDefaultDay(dayKey || currentDayKey);
@@ -74,9 +84,24 @@ export function TasksModule({
       {/* Clean, Uncluttered Header with Generous Whitespace */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Semana
-          </h2>
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+              Semana
+            </h2>
+            {activeCategory && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[#844DFE]/10 text-[#844DFE] dark:text-[#b494ff] border border-[#844DFE]/20">
+                <span>{activeCategory.icon}</span>
+                <span>{activeCategory.name}</span>
+                <button
+                  onClick={() => onSelectCategory("all")}
+                  className="hover:opacity-75 cursor-pointer ml-0.5"
+                  title="Limpar filtro"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+          </div>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
             Segunda a Domingo &bull; {completedTasks} de {totalTasks} concluídas
           </p>
@@ -88,7 +113,7 @@ export function TasksModule({
           <div className="relative">
             <select
               value={selectedCategoryId}
-              onChange={(e) => setSelectedCategoryId(e.target.value)}
+              onChange={(e) => onSelectCategory(e.target.value)}
               className="h-9.5 pl-3 pr-8 text-xs font-medium rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-[#121020]/80 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-[#844DFE]/20 cursor-pointer transition-colors"
             >
               <option value="all">Todas as categorias</option>

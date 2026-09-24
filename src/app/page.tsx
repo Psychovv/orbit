@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { OrbitHeader } from "@/components/header/orbit-header";
+import { OrbitSidebar } from "@/components/sidebar/orbit-sidebar";
 import { CosmicBackground } from "@/components/magic/cosmic-background";
 import { TasksModule } from "@/components/tasks/tasks-module";
 import { FinanceModule } from "@/components/finance/finance-module";
@@ -14,7 +15,7 @@ import {
   INITIAL_TRANSACTIONS,
   INITIAL_FINANCE_CATEGORIES,
 } from "@/lib/initial-data";
-import { Orbit, Sparkles, Heart } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 export default function OrbitApp() {
   const [activeModule, setActiveModule] = useState<"tasks" | "finance">("tasks");
@@ -22,6 +23,10 @@ export default function OrbitApp() {
   const [taskCategories, setTaskCategories] = useState<TaskCategory[]>(INITIAL_TASK_CATEGORIES);
   const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
   const [financeCategories, setFinanceCategories] = useState<FinanceCategory[]>(INITIAL_FINANCE_CATEGORIES);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
+  const [isCategoriesModalOpen, setIsCategoriesModalOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load saved data on client mount
@@ -86,6 +91,9 @@ export default function OrbitApp() {
 
   const handleDeleteCategory = (catId: string) => {
     setTaskCategories((prev) => prev.filter((c) => c.id !== catId));
+    if (selectedCategoryId === catId) {
+      setSelectedCategoryId("all");
+    }
   };
 
   // Finance handlers
@@ -109,13 +117,13 @@ export default function OrbitApp() {
       setTaskCategories(INITIAL_TASK_CATEGORIES);
       setTransactions(INITIAL_TRANSACTIONS);
       setFinanceCategories(INITIAL_FINANCE_CATEGORIES);
+      setSelectedCategoryId("all");
     }
   };
 
-  // Calculations for Header
+  // Calculations
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t) => t.completed).length;
-  const tasksCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   const netBalance = useMemo(() => {
     return transactions.reduce((acc, tx) => {
@@ -128,72 +136,95 @@ export default function OrbitApp() {
       {/* Cosmic background with canvas stars & meteors */}
       <CosmicBackground />
 
-      {/* Persistent Navigation Header */}
-      <OrbitHeader
+      {/* Fixed Sidebar on Left (Desktop) & Drawer (Mobile) */}
+      <OrbitSidebar
         activeModule={activeModule}
         onSelectModule={setActiveModule}
-        tasksCompletionRate={tasksCompletionRate}
-        totalCompletedTasks={completedTasks}
-        totalTasks={totalTasks}
-        netBalance={netBalance}
+        categories={taskCategories}
+        tasks={tasks}
+        selectedCategoryId={selectedCategoryId}
+        onSelectCategory={setSelectedCategoryId}
+        onOpenCategoriesModal={() => setIsCategoriesModalOpen(true)}
+        onOpenAddTaskModal={() => setIsAddTaskModalOpen(true)}
         onResetData={handleResetData}
+        isOpenMobile={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
-      {/* Main Module Content with Page Transitions */}
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <AnimatePresence mode="wait">
-          {activeModule === "tasks" ? (
-            <motion.div
-              key="tasks-module"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-            >
-              <TasksModule
-                tasks={tasks}
-                categories={taskCategories}
-                onAddTask={handleAddTask}
-                onToggleComplete={handleToggleComplete}
-                onDeleteTask={handleDeleteTask}
-                onAddCategory={handleAddCategory}
-                onDeleteCategory={handleDeleteCategory}
-              />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="finance-module"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-            >
-              <FinanceModule
-                transactions={transactions}
-                categories={financeCategories}
-                onAddTransaction={handleAddTransaction}
-                onDeleteTransaction={handleDeleteTransaction}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
+      {/* Main Content Area - Shifted Right on Desktop */}
+      <div className="flex-1 flex flex-col md:pl-64 transition-all duration-300">
+        {/* Streamlined Top Header */}
+        <OrbitHeader
+          activeModule={activeModule}
+          onSelectModule={setActiveModule}
+          onOpenMobileMenu={() => setIsMobileSidebarOpen(true)}
+          netBalance={netBalance}
+          totalCompletedTasks={completedTasks}
+          totalTasks={totalTasks}
+        />
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-zinc-200/80 dark:border-zinc-800/80 py-6 mt-12 bg-white/60 dark:bg-[#070512]/60 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-          <div className="flex items-center gap-2">
-            <span className="text-[#844DFE] font-bold">ORBIT</span>
-            <span>&bull;</span>
-            <span>Hub Pessoal de Organização & Finanças</span>
-          </div>
+        {/* Main Content View with Page Transitions */}
+        <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <AnimatePresence mode="wait">
+            {activeModule === "tasks" ? (
+              <motion.div
+                key="tasks-module"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+              >
+                <TasksModule
+                  tasks={tasks}
+                  categories={taskCategories}
+                  selectedCategoryId={selectedCategoryId}
+                  onSelectCategory={setSelectedCategoryId}
+                  onAddTask={handleAddTask}
+                  onToggleComplete={handleToggleComplete}
+                  onDeleteTask={handleDeleteTask}
+                  onAddCategory={handleAddCategory}
+                  onDeleteCategory={handleDeleteCategory}
+                  isAddModalOpen={isAddTaskModalOpen}
+                  setIsAddModalOpen={setIsAddTaskModalOpen}
+                  isCategoriesModalOpen={isCategoriesModalOpen}
+                  setIsCategoriesModalOpen={setIsCategoriesModalOpen}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="finance-module"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+              >
+                <FinanceModule
+                  transactions={transactions}
+                  categories={financeCategories}
+                  onAddTransaction={handleAddTransaction}
+                  onDeleteTransaction={handleDeleteTransaction}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </main>
 
-          <div className="flex items-center gap-1.5 text-zinc-400">
-            <span>Sua vida em harmonia</span>
-            <Sparkles className="w-3.5 h-3.5 text-[#844DFE]" />
+        {/* Footer */}
+        <footer className="relative z-10 border-t border-zinc-200/80 dark:border-zinc-800/80 py-6 mt-12 bg-white/60 dark:bg-[#070512]/60 backdrop-blur-md">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+            <div className="flex items-center gap-2">
+              <span className="text-[#844DFE] font-bold">ORBIT</span>
+              <span>&bull;</span>
+              <span>Hub Pessoal de Organização & Finanças</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-zinc-400">
+              <span>Sua vida em harmonia</span>
+              <Sparkles className="w-3.5 h-3.5 text-[#844DFE]" />
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 }
