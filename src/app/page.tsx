@@ -88,7 +88,7 @@ export default function OrbitApp() {
   const handleAddTask = (newTaskData: Omit<Task, "id" | "createdAt" | "completed">) => {
     const newTask: Task = {
       ...newTaskData,
-      id: `task-${Date.now()}`,
+      id: `task-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
       completed: false,
       createdAt: new Date().toISOString(),
     };
@@ -120,7 +120,7 @@ export default function OrbitApp() {
   const handleAddTransaction = (newTxData: Omit<Transaction, "id">) => {
     const newTx: Transaction = {
       ...newTxData,
-      id: `tx-${Date.now()}`,
+      id: `tx-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
     };
     setTransactions((prev) => [newTx, ...prev]);
   };
