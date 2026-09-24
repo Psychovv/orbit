@@ -5,6 +5,7 @@ import { PAYMENT_METHOD_LABELS, type FinanceCategory, type Transaction } from ".
 import { formatBRL } from "../domain/money";
 import { formatShortDate } from "@/shared/lib/date-utils";
 import { GlowCard } from "@/shared/effects/glow-card";
+import { SegmentedControl } from "@/shared/ui/segmented-control";
 import {
   Search,
   ArrowUpRight,
@@ -21,8 +22,26 @@ interface TransactionsTableProps {
   transactions: Transaction[];
   categories: FinanceCategory[];
   onEditTransaction: (transaction: Transaction) => void;
-  onDeleteTransaction: (id: string) => void;
+  onDeleteTransaction: (transaction: Transaction) => void;
 }
+
+const TYPE_FILTER_OPTIONS = [
+  { value: "all", label: "Todas", activeClassName: "bg-brand text-white shadow-xs" },
+  {
+    value: "income",
+    label: "Receitas",
+    icon: ArrowUpRight,
+    activeClassName: "bg-emerald-500 text-white shadow-xs",
+    hoverClassName: "hover:text-emerald-500",
+  },
+  {
+    value: "expense",
+    label: "Despesas",
+    icon: ArrowDownRight,
+    activeClassName: "bg-rose-500 text-white shadow-xs",
+    hoverClassName: "hover:text-rose-500",
+  },
+] as const;
 
 export function TransactionsTable({
   transactions,
@@ -62,7 +81,7 @@ export function TransactionsTable({
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div>
           <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-            <Layers className="w-5 h-5 text-[#844DFE]" />
+            <Layers className="w-5 h-5 text-brand" />
             <span>Extrato Mensal de Lançamentos</span>
           </h3>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
@@ -80,54 +99,22 @@ export function TransactionsTable({
               placeholder="Buscar transação..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-9 pl-9 pr-3 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#844DFE]/20 text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400"
+              className="w-full h-9 pl-9 pr-3 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-brand/20 text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400"
             />
           </div>
 
-          {/* Type Filter Buttons */}
-          <div className="flex items-center p-1 rounded-xl bg-zinc-100/80 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800/80 text-xs font-semibold">
-            <button
-              onClick={() => setTypeFilter("all")}
-              className={cn(
-                "px-2.5 py-1 rounded-lg transition-all cursor-pointer",
-                typeFilter === "all"
-                  ? "bg-[#844DFE] text-white shadow-xs"
-                  : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
-              )}
-            >
-              Todas
-            </button>
-            <button
-              onClick={() => setTypeFilter("income")}
-              className={cn(
-                "px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1",
-                typeFilter === "income"
-                  ? "bg-emerald-500 text-white shadow-xs"
-                  : "text-zinc-500 hover:text-emerald-500 dark:text-zinc-400"
-              )}
-            >
-              <ArrowUpRight className="w-3.5 h-3.5" />
-              <span>Receitas</span>
-            </button>
-            <button
-              onClick={() => setTypeFilter("expense")}
-              className={cn(
-                "px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1",
-                typeFilter === "expense"
-                  ? "bg-rose-500 text-white shadow-xs"
-                  : "text-zinc-500 hover:text-rose-500 dark:text-zinc-400"
-              )}
-            >
-              <ArrowDownRight className="w-3.5 h-3.5" />
-              <span>Despesas</span>
-            </button>
-          </div>
+          <SegmentedControl
+            label="Filtrar por tipo"
+            value={typeFilter}
+            options={TYPE_FILTER_OPTIONS}
+            onChange={setTypeFilter}
+          />
 
           {/* Category Dropdown Filter */}
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="h-9 px-3 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#844DFE]/20 text-zinc-800 dark:text-zinc-200 cursor-pointer"
+            className="h-9 px-3 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-brand/20 text-zinc-800 dark:text-zinc-200 cursor-pointer"
           >
             <option value="all">Todas as Categorias</option>
             {categories.map((c) => (
@@ -248,7 +235,7 @@ export function TransactionsTable({
                           <button
                             type="button"
                             onClick={() => onEditTransaction(tx)}
-                            className="p-1.5 rounded-lg text-zinc-400 hover:text-[#844DFE] hover:bg-[#844DFE]/10 transition-all cursor-pointer"
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-brand hover:bg-brand/10 transition-all cursor-pointer"
                             title="Editar lançamento"
                             aria-label={`Editar ${tx.description}`}
                           >
@@ -256,7 +243,7 @@ export function TransactionsTable({
                           </button>
                           <button
                             type="button"
-                            onClick={() => onDeleteTransaction(tx.id)}
+                            onClick={() => onDeleteTransaction(tx)}
                             className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer"
                             title="Excluir lançamento"
                             aria-label={`Excluir ${tx.description}`}

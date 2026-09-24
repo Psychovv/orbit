@@ -4,10 +4,13 @@ import React, { useMemo, useState } from "react";
 import { computeMonthlyMetrics } from "../domain/metrics";
 import { toCents } from "../domain/money";
 import {
+  useCreateFinanceCategory,
   useCreateTransaction,
-  useDeleteTransaction,
+  useDeleteFinanceCategory,
+  useDeleteTransactionWithUndo,
   useFinanceCategories,
   useTransactions,
+  useUpdateFinanceCategory,
   useUpdateTransaction,
 } from "../hooks/use-finance";
 import type { Transaction } from "../domain/finance.schema";
@@ -17,8 +20,10 @@ import { FinanceStats } from "./finance-stats";
 import { BudgetBreakdown } from "./budget-breakdown";
 import { TransactionsTable } from "./transactions-table";
 import { AddTransactionModal, type TransactionFormDefaults } from "./add-transaction-modal";
+import { ManageFinanceCategoriesModal } from "./manage-finance-categories-modal";
 import { AssistantButton } from "@/features/assistant/components/assistant-button";
 import { Button } from "@/shared/ui/button";
+import { PeriodNavigator, pickerInputClass } from "@/shared/ui/period-navigator";
 import { ViewSkeleton } from "@/shared/ui/view-skeleton";
 import {
   addMonths,
@@ -28,16 +33,7 @@ import {
   parseYearMonthKey,
   todayKey,
 } from "@/shared/lib/date-utils";
-import {
-  Plus,
-  Wallet,
-  ShieldCheck,
-  ChevronLeft,
-  ChevronRight,
-  Calendar,
-  RotateCcw,
-  AlertTriangle,
-} from "lucide-react";
+import { Plus, Wallet, ShieldCheck, AlertTriangle, SlidersHorizontal } from "lucide-react";
 
 type TransactionDraft =
   | { mode: "create"; defaults: TransactionFormDefaults }
@@ -46,13 +42,17 @@ type TransactionDraft =
 export function FinanceView() {
   const { monthKey, isCurrentMonth, setMonthKey } = useFinanceViewState();
   const [draft, setDraft] = useState<TransactionDraft | null>(null);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
 
   const range = useMemo(() => monthRange(monthKey), [monthKey]);
   const transactionsQuery = useTransactions(range);
   const categoriesQuery = useFinanceCategories();
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
-  const deleteTransaction = useDeleteTransaction();
+  const deleteTransaction = useDeleteTransactionWithUndo();
+  const createCategory = useCreateFinanceCategory();
+  const updateCategory = useUpdateFinanceCategory();
+  const deleteCategory = useDeleteFinanceCategory();
   const runAssistant = useFinanceAssistant({
     onSingleDraft: ({ amount, ...next }) =>
       setDraft({
@@ -93,7 +93,7 @@ export function FinanceView() {
         <div>
           <div className="flex items-center gap-2.5">
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-[#844DFE]" />
+              <Wallet className="w-5 h-5 text-brand" />
               <span>Planejamento Financeiro</span>
             </h2>
             {metrics.netBalance >= 0 ? (
@@ -113,7 +113,16 @@ export function FinanceView() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsCategoriesOpen(true)}
+            className="h-9.5 text-xs text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-400" />
+            <span className="hidden sm:inline">Categorias</span>
+          </Button>
           <AssistantButton
             title="Orbit AI - Finanças"
             placeholder="Ex: Gastei 45 no McDonald's no cartão..."
@@ -126,80 +135,45 @@ export function FinanceView() {
         </div>
       </div>
 
-      {/* Month Navigation Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-white/70 dark:bg-[#100e1e]/70 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800/80 shadow-2xs">
-        {/* Navigation arrows & Current Month Title */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-0.5">
-            <button
-              onClick={() => shiftMonth(-1)}
-              title="Mês anterior"
-              className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => shiftMonth(1)}
-              title="Próximo mês"
-              className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 pl-1">
-            <Calendar className="w-4 h-4 text-[#844DFE]" />
-            <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              {formatMonthYear(currentMonthDate)}
-            </span>
-          </div>
-        </div>
-
-        {/* Quick Return to Current Month & Month Picker Jump */}
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          {!isCurrentMonth && (
-            <button
-              onClick={() => setMonthKey(getYearMonthKey(new Date()))}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#844DFE]/10 hover:bg-[#844DFE]/20 text-[#844DFE] dark:text-[#b494ff] border border-[#844DFE]/30 transition-colors cursor-pointer shadow-2xs"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Mês Atual</span>
-            </button>
-          )}
-
-          {isCurrentMonth && (
-            <span className="px-2.5 py-1 rounded-xl text-xs font-medium text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/50">
-              Mês Vigente
-            </span>
-          )}
-
-          {/* Jump to specific month input */}
-          <div className="relative flex items-center">
-            <input
-              type="month"
-              value={monthKey}
-              onChange={(e) => {
-                if (e.target.value) setMonthKey(e.target.value);
-              }}
-              title="Selecionar mês específico"
-              className="text-xs font-mono px-2 py-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-[#844DFE] cursor-pointer"
-            />
-          </div>
-        </div>
-      </div>
+      <PeriodNavigator
+        label={formatMonthYear(currentMonthDate)}
+        prevTitle="Mês anterior"
+        nextTitle="Próximo mês"
+        onPrev={() => shiftMonth(-1)}
+        onNext={() => shiftMonth(1)}
+        isCurrent={isCurrentMonth}
+        resetLabel="Mês atual"
+        currentLabel="Mês vigente"
+        onReset={() => setMonthKey(getYearMonthKey(new Date()))}
+      >
+        <input
+          type="month"
+          value={monthKey}
+          onChange={(e) => {
+            if (e.target.value) setMonthKey(e.target.value);
+          }}
+          title="Selecionar mês específico"
+          aria-label="Selecionar mês específico"
+          className={pickerInputClass}
+        />
+      </PeriodNavigator>
 
       {/* 4 Metric Cards & Nubank Monthly Planning Breakdown */}
       <FinanceStats metrics={metrics} />
 
       {/* Budget Breakdown & Planning for the selected month */}
-      <BudgetBreakdown categories={categories} transactions={monthlyTransactions} />
+      <BudgetBreakdown
+        categories={categories}
+        transactions={monthlyTransactions}
+        onEditBudgets={() => setIsCategoriesOpen(true)}
+      />
 
       {/* Transactions Table & History for the selected month */}
       <TransactionsTable
         transactions={monthlyTransactions}
         categories={categories}
         onEditTransaction={openEditModal}
-        onDeleteTransaction={(id) => deleteTransaction.mutate(id)}
+        onDeleteTransaction={deleteTransaction}
       />
 
       <AddTransactionModal
@@ -219,6 +193,15 @@ export function FinanceView() {
           }
           createTransaction.mutate(input);
         }}
+      />
+
+      <ManageFinanceCategoriesModal
+        isOpen={isCategoriesOpen}
+        onClose={() => setIsCategoriesOpen(false)}
+        categories={categories}
+        onCreate={(input) => createCategory.mutate(input)}
+        onUpdate={(id, patch) => updateCategory.mutate({ id, patch })}
+        onDelete={(id) => deleteCategory.mutate(id)}
       />
     </div>
   );

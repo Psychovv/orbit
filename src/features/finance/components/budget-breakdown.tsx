@@ -5,15 +5,17 @@ import type { FinanceCategory, Transaction } from "../domain/finance.schema";
 import { computeBudgetUsage } from "../domain/metrics";
 import { formatBRL } from "../domain/money";
 import { GlowCard } from "@/shared/effects/glow-card";
-import { Target, AlertCircle } from "lucide-react";
+import { Button } from "@/shared/ui/button";
+import { Target, AlertCircle, Pencil } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
 interface BudgetBreakdownProps {
   categories: FinanceCategory[];
   transactions: Transaction[];
+  onEditBudgets: () => void;
 }
 
-export function BudgetBreakdown({ categories, transactions }: BudgetBreakdownProps) {
+export function BudgetBreakdown({ categories, transactions, onEditBudgets }: BudgetBreakdownProps) {
   const { items, totalBudgetCents, totalSpentCents, totalProgress } = computeBudgetUsage(categories, transactions);
 
   return (
@@ -21,7 +23,7 @@ export function BudgetBreakdown({ categories, transactions }: BudgetBreakdownPro
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-100 dark:border-zinc-800/80">
         <div>
           <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-            <Target className="w-5 h-5 text-[#844DFE]" />
+            <Target className="w-5 h-5 text-brand" />
             <span>Planejamento Orçamentário por Categoria</span>
           </h3>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
@@ -31,17 +33,34 @@ export function BudgetBreakdown({ categories, transactions }: BudgetBreakdownPro
 
         {/* Total Budget Summary Badge */}
         <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={onEditBudgets} className="text-xs">
+            <Pencil className="w-3.5 h-3.5" />
+            Editar tetos
+          </Button>
           <div className="text-right">
             <div className="text-xs text-zinc-500 dark:text-zinc-400">Total Planejado</div>
-            <div className="text-sm font-mono font-bold text-[#844DFE] dark:text-[#b494ff]">
+            <div className="text-sm font-mono font-bold text-brand dark:text-brand-soft">
               {formatBRL(totalSpentCents)} / {formatBRL(totalBudgetCents)}
             </div>
           </div>
-          <div className="w-12 h-12 rounded-full border-4 border-zinc-200 dark:border-zinc-800 flex items-center justify-center font-mono text-xs font-bold text-[#844DFE] dark:text-[#b494ff]">
+          <div className="w-12 h-12 rounded-full border-4 border-zinc-200 dark:border-zinc-800 flex items-center justify-center font-mono text-xs font-bold text-brand dark:text-brand-soft">
             {Math.round(totalProgress)}%
           </div>
         </div>
       </div>
+
+      {items.length === 0 && (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-zinc-200 py-10 text-center dark:border-zinc-800">
+          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">Nenhum teto de gasto definido</p>
+          <p className="max-w-xs text-xs text-zinc-400">
+            Defina um limite mensal para as categorias de despesa e acompanhe o quanto já foi usado.
+          </p>
+          <Button variant="secondary" size="sm" onClick={onEditBudgets}>
+            <Target className="w-3.5 h-3.5" />
+            Definir tetos
+          </Button>
+        </div>
+      )}
 
       {/* Grid of Categories */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -79,7 +98,7 @@ export function BudgetBreakdown({ categories, transactions }: BudgetBreakdownPro
               <div
                 className={cn(
                   "h-full rounded-full transition-all duration-300",
-                  isOver ? "bg-rose-500" : isWarning ? "bg-amber-500" : "bg-[#844DFE]"
+                  isOver ? "bg-rose-500" : isWarning ? "bg-amber-500" : "bg-brand"
                 )}
                 style={{ width: `${Math.min(ratio, 100)}%` }}
               />

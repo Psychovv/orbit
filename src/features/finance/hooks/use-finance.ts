@@ -11,7 +11,16 @@ import { repositories } from "@/config/data-source";
 import { isInRange, type DateRange } from "@/shared/lib/date-utils";
 import { createId, nowIso } from "@/shared/lib/id";
 import { patchRangedLists, rangedListKey } from "@/shared/lib/query-cache";
-import type { CreateTransactionInput, Transaction, UpdateTransactionInput } from "../domain/finance.schema";
+import { toast } from "@/shared/ui/toast";
+import type {
+  CreateFinanceCategoryInput,
+  CreateTransactionInput,
+  FinanceCategory,
+  Transaction,
+  UpdateFinanceCategoryInput,
+  UpdateTransactionInput,
+} from "../domain/finance.schema";
+import { formatBRL } from "../domain/money";
 
 const TRANSACTIONS = "transactions";
 const FINANCE_CATEGORIES = "finance-categories";
@@ -91,5 +100,78 @@ export function useDeleteTransaction() {
       patchRangedLists<Transaction>(queryClient, TRANSACTIONS, (txs) => txs.filter((tx) => tx.id !== id)),
     onError: (_error, _id, rollback) => rollback?.(),
     onSettled: () => queryClient.invalidateQueries({ queryKey: [TRANSACTIONS] }),
+  });
+}
+
+export function useRestoreTransaction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (tx: Transaction) => repositories.transactions.restore(tx),
+    onMutate: (tx) =>
+      patchRangedLists<Transaction>(queryClient, TRANSACTIONS, (txs, range) =>
+        !range || isInRange(tx.date, range) ? [tx, ...txs.filter((t) => t.id !== tx.id)] : txs
+      ),
+    onError: (_error, _tx, rollback) => rollback?.(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: [TRANSACTIONS] }),
+  });
+}
+
+/** Exclui o lançamento e mostra um toast com "Desfazer". */
+export function useDeleteTransactionWithUndo() {
+  const deleteTransaction = useDeleteTransaction();
+  const restoreTransaction = useRestoreTransaction();
+  return (tx: Transaction) =>
+    deleteTransaction.mutate(tx.id, {
+      onSuccess: () =>
+        toast({
+          message: "Lançamento excluído",
+          description: `${tx.description} · ${formatBRL(tx.amountCents)}`,
+          action: { label: "Desfazer", onClick: () => restoreTransaction.mutate(tx) },
+        }),
+    });
+}
+
+export function useCreateFinanceCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateFinanceCategoryInput) => repositories.financeCategories.create(input),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: [FINANCE_CATEGORIES] }),
+  });
+}
+
+export function useUpdateFinanceCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: UpdateFinanceCategoryInput }) =>
+      repositories.financeCategories.update(id, patch),
+    onMutate: async ({ id, patch }) => {
+      await queryClient.cancelQueries({ queryKey: [FINANCE_CATEGORIES] });
+      const previous = queryClient.getQueryData<FinanceCategory[]>([FINANCE_CATEGORIES]);
+      queryClient.setQueryData<FinanceCategory[]>([FINANCE_CATEGORIES], (categories) =>
+        categories?.map((c) => {
+          if (c.id !== id) return c;
+          const { monthlyBudgetCents, ...rest } = patch;
+          const next: FinanceCategory = { ...c, ...rest };
+          if (monthlyBudgetCents === null) delete next.monthlyBudgetCents;
+          else if (monthlyBudgetCents !== undefined) next.monthlyBudgetCents = monthlyBudgetCents;
+          return next;
+        })
+      );
+      return () => queryClient.setQueryData([FINANCE_CATEGORIES], previous);
+    },
+    onError: (_error, _vars, rollback) => rollback?.(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: [FINANCE_CATEGORIES] }),
+  });
+}
+
+export function useDeleteFinanceCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => repositories.financeCategories.remove(id),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: [FINANCE_CATEGORIES] }),
+        queryClient.invalidateQueries({ queryKey: [TRANSACTIONS] }),
+      ]),
   });
 }

@@ -2,9 +2,11 @@ import { isInRange } from "@/shared/lib/date-utils";
 import { createId, nowIso } from "@/shared/lib/id";
 import { loadVersionedList, withStoreLock, writeJson } from "@/shared/lib/local-store";
 import {
+  CreateFinanceCategorySchema,
   CreateTransactionSchema,
   FinanceCategorySchema,
   TransactionSchema,
+  UpdateFinanceCategorySchema,
   UpdateTransactionSchema,
   type FinanceCategory,
   type Transaction,
@@ -119,9 +121,56 @@ export function createLocalTransactionsRepository(): TransactionsRepository {
           txs.filter((tx) => tx.id !== id)
         );
       }),
+
+    restore: (transaction) =>
+      withStoreLock(async () => {
+        const restored = TransactionSchema.parse(transaction);
+        const txs = await loadTransactions();
+        writeJson(FINANCE_STORAGE_KEYS.transactions, [restored, ...txs.filter((tx) => tx.id !== restored.id)]);
+        return restored;
+      }),
   };
 }
 
 export function createLocalFinanceCategoriesRepository(): FinanceCategoriesRepository {
-  return { list: () => withStoreLock(loadCategories) };
+  return {
+    list: () => withStoreLock(loadCategories),
+
+    create: (input) =>
+      withStoreLock(async () => {
+        const category: FinanceCategory = { ...CreateFinanceCategorySchema.parse(input), id: createId() };
+        writeJson(FINANCE_STORAGE_KEYS.categories, [...(await loadCategories()), category]);
+        return category;
+      }),
+
+    update: (id, patch) =>
+      withStoreLock(async () => {
+        const data = UpdateFinanceCategorySchema.parse(patch);
+        const categories = await loadCategories();
+        const current = categories.find((c) => c.id === id);
+        if (!current) throw new Error(`Finance category ${id} not found`);
+        const next: Record<string, unknown> = { ...current, ...data };
+        if (next.monthlyBudgetCents == null) delete next.monthlyBudgetCents;
+        const updated = FinanceCategorySchema.parse(next);
+        writeJson(
+          FINANCE_STORAGE_KEYS.categories,
+          categories.map((c) => (c.id === id ? updated : c))
+        );
+        return updated;
+      }),
+
+    remove: (id) =>
+      withStoreLock(async () => {
+        const categories = await loadCategories();
+        writeJson(
+          FINANCE_STORAGE_KEYS.categories,
+          categories.filter((c) => c.id !== id)
+        );
+        const txs = await loadTransactions();
+        writeJson(
+          FINANCE_STORAGE_KEYS.transactions,
+          txs.map((tx) => (tx.categoryId === id ? { ...tx, categoryId: null, updatedAt: nowIso() } : tx))
+        );
+      }),
+  };
 }

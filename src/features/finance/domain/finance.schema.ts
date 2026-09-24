@@ -25,6 +25,14 @@ export const FinanceCategorySchema = z.object({
 });
 export type FinanceCategory = z.infer<typeof FinanceCategorySchema>;
 
+export const CreateFinanceCategorySchema = FinanceCategorySchema.omit({ id: true });
+export type CreateFinanceCategoryInput = z.infer<typeof CreateFinanceCategorySchema>;
+
+export const UpdateFinanceCategorySchema = CreateFinanceCategorySchema.partial().extend({
+  monthlyBudgetCents: z.number().int().positive().nullable().optional(),
+});
+export type UpdateFinanceCategoryInput = z.infer<typeof UpdateFinanceCategorySchema>;
+
 export const TransactionSchema = z.object({
   id: z.string().min(1),
   description: z.string().trim().min(1).max(200),
