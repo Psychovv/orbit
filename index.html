@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Orbit — Painel Pessoal de Planejamento, Cronograma de Estudos e Metas" />
+    <title>Orbit — Painel Pessoal</title>
+    <!-- Preconnect & Fonts: Quicksand, Nunito, JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Nunito:wght@400;500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Pre-paint Theme script to prevent F.O.U.C. -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('orbit_state');
+          var theme = 'dark';
+          if (saved) {
+            var parsed = JSON.parse(saved);
+            if (parsed && parsed.theme) {
+              theme = parsed.theme;
+            }
+          } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            theme = 'light';
+          }
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
