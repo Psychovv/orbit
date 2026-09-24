@@ -16,9 +16,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Orbit — Hub Pessoal Cósmico",
   description: "Organização semanal de tarefas, objetivos e controle financeiro em uma atmosfera espacial fluida.",
-  icons: {
-    icon: "/favicon.ico",
-  },
 };
 
 export default function RootLayout({
