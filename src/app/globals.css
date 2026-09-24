@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #fbfbfe;
+  --foreground: #12101c;
+  --card: #ffffff;
+  --card-foreground: #12101c;
+  --popover: #ffffff;
+  --popover-foreground: #12101c;
+  --primary: #844DFE;
+  --primary-foreground: #ffffff;
+  --secondary: #f1edfe;
+  --secondary-foreground: #5a2fd4;
+  --muted: #f4f3f9;
+  --muted-foreground: #6c687e;
+  --accent: #f5f2ff;
+  --accent-foreground: #844DFE;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e9e7f2;
+  --input: #e9e7f2;
+  --ring: #844DFE;
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: #090812;
+  --foreground: #f4f3fa;
+  --card: #100e1e;
+  --card-foreground: #f4f3fa;
+  --popover: #121022;
+  --popover-foreground: #f4f3fa;
+  --primary: #844DFE;
+  --primary-foreground: #ffffff;
+  --secondary: #1a152d;
+  --secondary-foreground: #cbb4ff;
+  --muted: #151324;
+  --muted-foreground: #9a94b0;
+  --accent: #1e1936;
+  --accent-foreground: #d9cbff;
+  --destructive: #f43f5e;
+  --destructive-foreground: #ffffff;
+  --border: #231f38;
+  --input: #231f38;
+  --ring: #844DFE;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(132, 77, 254, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(132, 77, 254, 0.5);
+}
