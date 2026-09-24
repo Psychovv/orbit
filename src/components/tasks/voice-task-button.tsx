@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Mic, Loader2, Square } from "lucide-react";
+import { Mic, Loader2, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TaskCategory } from "@/types/orbit";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,7 @@ export function VoiceTaskButton({ categories, onVoiceResult }: VoiceTaskButtonPr
   
   const recognitionRef = useRef<any>(null);
   const transcriptRef = useRef("");
+  const isCancelledRef = useRef(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -33,7 +34,7 @@ export function VoiceTaskButton({ categories, onVoiceResult }: VoiceTaskButtonPr
         const recognition = new SpeechRecognition();
         recognition.lang = "pt-BR";
         recognition.interimResults = true;
-        recognition.continuous = true; // Use continuous to allow manual stop without cutting off
+        recognition.continuous = true;
 
         recognition.onresult = (event: any) => {
           let current = "";
@@ -51,8 +52,7 @@ export function VoiceTaskButton({ categories, onVoiceResult }: VoiceTaskButtonPr
 
         recognition.onend = () => {
           setIsListening(false);
-          // When recognition ends (either manually stopped or timed out), process the text
-          if (transcriptRef.current.trim()) {
+          if (!isCancelledRef.current && transcriptRef.current.trim()) {
             processVoiceText(transcriptRef.current);
           }
         };
@@ -91,7 +91,8 @@ export function VoiceTaskButton({ categories, onVoiceResult }: VoiceTaskButtonPr
         const data = await response.json();
         onVoiceResult(data);
       } else {
-        console.error("Failed to parse voice text");
+        const errorText = await response.text();
+        console.error("Failed to parse voice text:", errorText);
       }
     } catch (error) {
       console.error("Error calling parse-voice API", error);
@@ -102,15 +103,27 @@ export function VoiceTaskButton({ categories, onVoiceResult }: VoiceTaskButtonPr
     }
   };
 
+  const handleCancel = () => {
+    isCancelledRef.current = true;
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {}
+    }
+    setIsListening(false);
+    setTranscript("");
+    transcriptRef.current = "";
+  };
+
   const handleToggleListen = () => {
     if (!recognitionRef.current) return;
 
     if (isListening) {
-      // Stopping it will trigger onend, which processes the text
       recognitionRef.current.stop();
       setIsListening(false);
     } else {
       try {
+        isCancelledRef.current = false;
         setTranscript("");
         transcriptRef.current = "";
         recognitionRef.current.start();
@@ -128,8 +141,20 @@ export function VoiceTaskButton({ categories, onVoiceResult }: VoiceTaskButtonPr
   return (
     <div className="relative flex items-center">
       {/* Transcript Fixed Overlay */}
-      {(isListening || isProcessing) && transcript && (
+      {(isListening || isProcessing) && (
         <div className="fixed inset-x-0 bottom-10 md:bottom-24 mx-auto w-[90%] max-w-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800/80 rounded-3xl p-6 md:p-8 shadow-2xl z-[100] animate-in slide-in-from-bottom-8 fade-in duration-300">
+          
+          {/* Cancel Button */}
+          {isListening && (
+            <button
+              onClick={handleCancel}
+              className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+              title="Cancelar gravação"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+
           <div className="flex flex-col items-center text-center gap-4">
             {isProcessing ? (
               <Loader2 className="w-8 h-8 text-[#844DFE] animate-spin" />
@@ -142,8 +167,10 @@ export function VoiceTaskButton({ categories, onVoiceResult }: VoiceTaskButtonPr
             <div className="text-lg md:text-2xl font-medium text-zinc-800 dark:text-zinc-100 max-h-[30vh] overflow-y-auto w-full px-2">
               {isProcessing ? (
                 <span className="text-zinc-500 dark:text-zinc-400 italic animate-pulse">Processando sua fala com IA...</span>
-              ) : (
+              ) : transcript ? (
                 <span>"{transcript}"</span>
+              ) : (
+                <span className="text-zinc-400 dark:text-zinc-500 italic">Ouvindo... (Pode falar)</span>
               )}
             </div>
           </div>
