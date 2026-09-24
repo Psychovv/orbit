@@ -6,13 +6,13 @@ Para que a funcionalidade de criação de tarefas por voz funcione, o sistema pr
 
 ### 1. Obtenha sua API Key do Gemini
 1. Acesse o [Google AI Studio](https://aistudio.google.com/app/apikey).
-2. Faça login com sua conta do Google (você mencionou que já tem a assinatura Pro, então a cota será aplicada na mesma conta).
+2. Faça login com sua conta do Google.
 3. Clique em **"Create API key"** (Criar chave de API).
 4. Selecione um projeto ou crie um novo para gerar a chave.
 5. Copie a chave gerada (ela começa com `AIza...`).
 
 ### 2. Configure o arquivo local
-1. Na raiz do projeto Orbit, criamos um arquivo chamado `.env.local` (ele já foi criado para você).
+1. Na raiz do projeto Orbit, crie um arquivo chamado `.env.local` (ou renomeie o `.env.example` para `.env.local`).
 2. Abra o arquivo `.env.local` no seu editor de código.
 3. Cole a sua chave entre as aspas:
    ```env
