@@ -1,29 +1,29 @@
 "use client";
 
 import React, { useState } from "react";
-import { TaskCategory } from "@/types/orbit";
-import { Dialog } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Tag } from "lucide-react";
+import type { CreateTaskCategoryInput, TaskCategory } from "../domain/task.schema";
+import { Dialog } from "@/shared/ui/dialog";
+import { Input } from "@/shared/ui/input";
+import { Button } from "@/shared/ui/button";
+import { Plus, Trash2 } from "lucide-react";
 
 interface ManageCategoriesModalProps {
   isOpen: boolean;
   onClose: () => void;
   categories: TaskCategory[];
-  onAddCategory: (category: TaskCategory) => void;
+  onAddCategory: (category: CreateTaskCategoryInput) => void;
   onDeleteCategory: (id: string) => void;
 }
 
 const PRESET_ICONS = ["🎸", "📚", "🎓", "⚡", "🚀", "🌿", "💻", "🎨", "🧘", "🎯", "🔬", "🪐"];
 
 const PRESET_COLORS = [
-  { name: "Orbit Violet", color: "#844DFE", bgLight: "bg-zinc-100", bgDark: "dark:bg-zinc-800/80", textLight: "text-zinc-700", textDark: "dark:text-zinc-300", borderLight: "border-zinc-200", borderDark: "dark:border-zinc-700/60" },
-  { name: "Azul Nebulosa", color: "#3b82f6", bgLight: "bg-zinc-100", bgDark: "dark:bg-zinc-800/80", textLight: "text-zinc-700", textDark: "dark:text-zinc-300", borderLight: "border-zinc-200", borderDark: "dark:border-zinc-700/60" },
-  { name: "Ciano Estelar", color: "#06b6d4", bgLight: "bg-zinc-100", bgDark: "dark:bg-zinc-800/80", textLight: "text-zinc-700", textDark: "dark:text-zinc-300", borderLight: "border-zinc-200", borderDark: "dark:border-zinc-700/60" },
-  { name: "Âmbar Solar", color: "#f59e0b", bgLight: "bg-zinc-100", bgDark: "dark:bg-zinc-800/80", textLight: "text-zinc-700", textDark: "dark:text-zinc-300", borderLight: "border-zinc-200", borderDark: "dark:border-zinc-700/60" },
-  { name: "Esmeralda", color: "#10b981", bgLight: "bg-zinc-100", bgDark: "dark:bg-zinc-800/80", textLight: "text-zinc-700", textDark: "dark:text-zinc-300", borderLight: "border-zinc-200", borderDark: "dark:border-zinc-700/60" },
-  { name: "Rosa Aurora", color: "#ec4899", bgLight: "bg-zinc-100", bgDark: "dark:bg-zinc-800/80", textLight: "text-zinc-700", textDark: "dark:text-zinc-300", borderLight: "border-zinc-200", borderDark: "dark:border-zinc-700/60" },
+  { name: "Orbit Violet", color: "#844DFE" },
+  { name: "Azul Nebulosa", color: "#3b82f6" },
+  { name: "Ciano Estelar", color: "#06b6d4" },
+  { name: "Âmbar Solar", color: "#f59e0b" },
+  { name: "Esmeralda", color: "#10b981" },
+  { name: "Rosa Aurora", color: "#ec4899" },
 ];
 
 export function ManageCategoriesModal({
@@ -41,21 +41,11 @@ export function ManageCategoriesModal({
     e.preventDefault();
     if (!name.trim()) return;
 
-    const chosenColor = PRESET_COLORS[selectedColorIdx];
-    const newCategory: TaskCategory = {
-      id: `cat-${Date.now()}`,
+    onAddCategory({
       name: name.trim(),
       icon: selectedIcon,
-      color: chosenColor.color,
-      bgLight: chosenColor.bgLight,
-      bgDark: chosenColor.bgDark,
-      textLight: chosenColor.textLight,
-      textDark: chosenColor.textDark,
-      borderLight: chosenColor.borderLight,
-      borderDark: chosenColor.borderDark,
-    };
-
-    onAddCategory(newCategory);
+      color: PRESET_COLORS[selectedColorIdx].color,
+    });
     setName("");
   };
 

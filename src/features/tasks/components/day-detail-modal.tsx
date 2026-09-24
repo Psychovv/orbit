@@ -1,12 +1,13 @@
 "use client";
 
 import React from "react";
-import { Task, TaskCategory } from "@/types/orbit";
-import { Dialog } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import type { Task, TaskCategory } from "../domain/task.schema";
+import { countCompleted, tasksOnDate } from "../domain/task.selectors";
+import { Dialog } from "@/shared/ui/dialog";
+import { Button } from "@/shared/ui/button";
 import { TaskItem } from "./task-item";
 import { Plus, Calendar, ArrowRight, Orbit } from "lucide-react";
-import { parseDateKey } from "@/lib/date-utils";
+import { formatLongDate } from "@/shared/lib/date-utils";
 
 interface DayDetailModalProps {
   isOpen: boolean;
@@ -15,20 +16,10 @@ interface DayDetailModalProps {
   tasks: Task[];
   categoriesMap: Map<string, TaskCategory>;
   onAddTaskForDate: (dateStr: string) => void;
-  onToggleComplete: (id: string) => void;
+  onToggleComplete: (task: Task) => void;
   onDeleteTask: (id: string) => void;
   onSwitchToWeekView?: (dateStr: string) => void;
 }
-
-const MONTH_NAMES = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-];
-
-const DAY_NAMES = [
-  "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira",
-  "Quinta-feira", "Sexta-feira", "Sábado"
-];
 
 export function DayDetailModal({
   isOpen,
@@ -43,12 +34,9 @@ export function DayDetailModal({
 }: DayDetailModalProps) {
   if (!dateStr) return null;
 
-  const dateObj = parseDateKey(dateStr);
-  const dayName = DAY_NAMES[dateObj.getDay()];
-  const formattedDate = `${dateObj.getDate()} de ${MONTH_NAMES[dateObj.getMonth()]} de ${dateObj.getFullYear()}`;
-
-  const dayTasks = tasks.filter((t) => t.date === dateStr);
-  const completedCount = dayTasks.filter((t) => t.completed).length;
+  const { dayName, date: formattedDate } = formatLongDate(dateStr);
+  const dayTasks = tasksOnDate(tasks, dateStr);
+  const completedCount = countCompleted(dayTasks);
 
   return (
     <Dialog
@@ -101,7 +89,7 @@ export function DayDetailModal({
               <TaskItem
                 key={task.id}
                 task={task}
-                category={categoriesMap.get(task.categoryId)}
+                category={task.categoryId ? categoriesMap.get(task.categoryId) : undefined}
                 onToggleComplete={onToggleComplete}
                 onDelete={onDeleteTask}
               />

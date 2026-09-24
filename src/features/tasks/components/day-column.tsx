@@ -1,19 +1,20 @@
 "use client";
 
 import React from "react";
-import { Task, TaskCategory, DayOfWeek } from "@/types/orbit";
-import { CalendarDayInfo } from "@/lib/date-utils";
+import type { Task, TaskCategory } from "../domain/task.schema";
+import { countCompleted } from "../domain/task.selectors";
+import type { CalendarDayInfo } from "@/shared/lib/date-utils";
 import { TaskItem } from "./task-item";
 import { Plus, Check, Orbit } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 
 interface DayColumnProps {
   dayInfo: CalendarDayInfo;
   tasks: Task[];
   categoriesMap: Map<string, TaskCategory>;
   isToday: boolean;
-  onAddTask: (date: string, dayKey: DayOfWeek) => void;
-  onToggleComplete: (id: string) => void;
+  onAddTask: (date: string) => void;
+  onToggleComplete: (task: Task) => void;
   onDeleteTask: (id: string) => void;
 }
 
@@ -27,7 +28,7 @@ export function DayColumn({
   onDeleteTask,
 }: DayColumnProps) {
   const total = tasks.length;
-  const completed = tasks.filter((t) => t.completed).length;
+  const completed = countCompleted(tasks);
   const isAllDone = total > 0 && completed === total;
   const progressPercent = total > 0 ? (completed / total) * 100 : 0;
 
@@ -107,7 +108,7 @@ export function DayColumn({
             <TaskItem
               key={task.id}
               task={task}
-              category={categoriesMap.get(task.categoryId)}
+              category={task.categoryId ? categoriesMap.get(task.categoryId) : undefined}
               onToggleComplete={onToggleComplete}
               onDelete={onDeleteTask}
             />
@@ -117,7 +118,7 @@ export function DayColumn({
 
       {/* Quick Add Button */}
       <button
-        onClick={() => onAddTask(dayInfo.date, dayInfo.dayOfWeek)}
+        onClick={() => onAddTask(dayInfo.date)}
         className="mt-3 flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 hover:text-[#844DFE] dark:hover:text-[#b494ff] border border-dashed border-zinc-200 dark:border-zinc-800 transition-colors cursor-pointer"
       >
         <Plus className="w-3.5 h-3.5" />

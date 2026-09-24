@@ -2,29 +2,27 @@
 
 import React from "react";
 import { motion } from "motion/react";
-import { Task, TaskCategory } from "@/types/orbit";
+import type { Task, TaskCategory } from "../domain/task.schema";
+import { isCompleted } from "../domain/task.selectors";
 import { Check, Clock, Trash2 } from "lucide-react";
-import { triggerCosmicCelebration } from "@/components/magic/confetti";
-import { cn } from "@/lib/utils";
+import { triggerCosmicCelebration } from "@/shared/effects/confetti";
+import { cn } from "@/shared/lib/utils";
 
 interface TaskItemProps {
   task: Task;
   category?: TaskCategory;
-  onToggleComplete: (id: string) => void;
+  onToggleComplete: (task: Task) => void;
   onDelete: (id: string) => void;
 }
 
-export function TaskItem({
-  task,
-  category,
-  onToggleComplete,
-  onDelete,
-}: TaskItemProps) {
+export function TaskItem({ task, category, onToggleComplete, onDelete }: TaskItemProps) {
+  const completed = isCompleted(task);
+
   const handleToggle = () => {
-    if (!task.completed) {
+    if (!completed) {
       triggerCosmicCelebration();
     }
-    onToggleComplete(task.id);
+    onToggleComplete(task);
   };
 
   return (
@@ -36,7 +34,7 @@ export function TaskItem({
       transition={{ duration: 0.18 }}
       className={cn(
         "group relative flex flex-col gap-2 rounded-xl p-3.5 transition-all duration-200 border",
-        task.completed
+        completed
           ? "bg-zinc-50/70 dark:bg-zinc-900/30 border-zinc-200/50 dark:border-zinc-800/40 opacity-60"
           : "bg-white dark:bg-[#121020] border-zinc-200/80 dark:border-zinc-800/80 shadow-xs hover:border-[#844DFE]/40 dark:hover:border-[#844DFE]/30"
       )}
@@ -47,13 +45,13 @@ export function TaskItem({
           onClick={handleToggle}
           className={cn(
             "relative mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-md border transition-all cursor-pointer",
-            task.completed
+            completed
               ? "bg-[#844DFE] border-[#844DFE] text-white shadow-xs"
               : "border-zinc-300 dark:border-zinc-600 bg-white/50 dark:bg-zinc-800/50 hover:border-[#844DFE] dark:hover:border-[#844DFE]"
           )}
-          aria-label={task.completed ? "Desmarcar tarefa" : "Concluir tarefa"}
+          aria-label={completed ? "Desmarcar tarefa" : "Concluir tarefa"}
         >
-          {task.completed && (
+          {completed && (
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -69,7 +67,7 @@ export function TaskItem({
           <p
             className={cn(
               "text-sm font-medium leading-relaxed whitespace-normal break-words transition-colors",
-              task.completed
+              completed
                 ? "line-through text-zinc-400 dark:text-zinc-500"
                 : "text-zinc-900 dark:text-zinc-100"
             )}

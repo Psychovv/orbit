@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Task, TaskCategory } from "@/types/orbit";
-import { getMonthGrid, MonthGridDay } from "@/lib/date-utils";
+import type { Task, TaskCategory } from "../domain/task.schema";
+import { countCompleted, groupByDate, isCompleted } from "../domain/task.selectors";
+import { getMonthGrid, type MonthGridDay } from "@/shared/lib/date-utils";
 import { Plus, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 
 interface MonthCalendarViewProps {
   baseDate: Date;
@@ -33,15 +34,7 @@ export function MonthCalendarView({
   }, [year, month]);
 
   // Group tasks by date
-  const tasksByDate = useMemo(() => {
-    const map = new Map<string, Task[]>();
-    tasks.forEach((t) => {
-      const list = map.get(t.date) || [];
-      list.push(t);
-      map.set(t.date, list);
-    });
-    return map;
-  }, [tasks]);
+  const tasksByDate = useMemo(() => groupByDate(tasks), [tasks]);
 
   return (
     <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-[#100e1e]/70 backdrop-blur-md overflow-hidden shadow-xs">
@@ -62,7 +55,7 @@ export function MonthCalendarView({
       <div className="grid grid-cols-7 divide-x divide-y divide-zinc-200/60 dark:divide-zinc-800/60">
         {monthGrid.map((cell: MonthGridDay) => {
           const dayTasks = tasksByDate.get(cell.date) || [];
-          const completedCount = dayTasks.filter((t) => t.completed).length;
+          const completedCount = countCompleted(dayTasks);
 
           return (
             <div
@@ -108,13 +101,13 @@ export function MonthCalendarView({
               {/* Task list preview (up to 3 items) */}
               <div className="space-y-1 flex-1 overflow-hidden">
                 {dayTasks.slice(0, 3).map((task) => {
-                  const cat = categoriesMap.get(task.categoryId);
+                  const cat = task.categoryId ? categoriesMap.get(task.categoryId) : undefined;
                   return (
                     <div
                       key={task.id}
                       className={cn(
                         "flex items-center gap-1.5 px-1.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-medium truncate transition-colors",
-                        task.completed
+                        isCompleted(task)
                           ? "line-through text-zinc-400 dark:text-zinc-500 bg-zinc-100/60 dark:bg-zinc-900/40"
                           : "text-zinc-700 dark:text-zinc-200 bg-white/80 dark:bg-zinc-800/80 border border-zinc-200/50 dark:border-zinc-700/50 shadow-2xs"
                       )}
