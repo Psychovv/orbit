@@ -16,6 +16,7 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/header/theme-toggle";
+import { OrbitMark } from "@/components/orbit-mark";
 import { Task, TaskCategory } from "@/types/orbit";
 import { cn } from "@/lib/utils";
 
@@ -59,8 +60,8 @@ export function OrbitSidebar({
       {/* Brand Header with Collapse Toggle */}
       <div className="flex items-center justify-between p-4.5 border-b border-zinc-200/80 dark:border-zinc-800/80">
         <div className="flex items-center gap-2.5">
-          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-[#844DFE] shadow-sm shadow-[#844DFE]/30 text-white">
-            <span className="text-base">🪐</span>
+          <div className="relative flex h-9 w-9 items-center justify-center">
+            <OrbitMark className="h-9 w-9" />
             <div className="absolute inset-[-2px] rounded-xl border border-[#844DFE]/40 pointer-events-none" />
           </div>
 
@@ -302,10 +303,10 @@ export function OrbitSidebar({
       <div className="flex flex-col items-center gap-3">
         <button
           onClick={onToggleCollapse}
-          className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-[#844DFE] shadow-sm shadow-[#844DFE]/30 text-white cursor-pointer hover:scale-105 transition-transform"
+          className="relative flex h-10 w-10 items-center justify-center cursor-pointer hover:scale-105 transition-transform shadow-sm shadow-[#844DFE]/30 rounded-xl"
           title="Orbit • Clique para expandir"
         >
-          <span className="text-lg">🪐</span>
+          <OrbitMark className="h-10 w-10" />
         </button>
 
         {onToggleCollapse && (

@@ -3,6 +3,7 @@
 import React from "react";
 import { Menu, Calendar, Wallet, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
+import { OrbitMark } from "@/components/orbit-mark";
 
 interface OrbitHeaderProps {
   activeModule: "tasks" | "finance";
@@ -61,7 +62,7 @@ export function OrbitHeader({
 
             {/* Mobile Logo */}
             <div className="flex items-center gap-2 md:hidden">
-              <span className="text-base">🪐</span>
+              <OrbitMark className="h-8 w-8" />
               <span className="font-bold text-sm tracking-wider text-zinc-900 dark:text-zinc-100">
                 ORBIT
               </span>
