@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { FinanceCommandResponseSchema, TaskCommandRequestSchema, TaskCommandResponseSchema } from "./actions";
 import { bulkTaskIds, prefersStrongerTaskModel } from "./bulk-commands";
+import { localFinanceCommand, localTaskCommand } from "./local-commands";
 
 describe("TaskCommandResponseSchema", () => {
   it("accepts the legacy array format as creations", () => {
@@ -72,5 +73,42 @@ describe("prefersStrongerTaskModel", () => {
   it("uses the stronger model for a relative date on a long list", () => {
     expect(prefersStrongerTaskModel("conclua a tarefa de sexta", 40)).toBe(true);
     expect(prefersStrongerTaskModel("jogar valorant dia 27", 40)).toBe(true);
+  });
+});
+
+describe("localTaskCommand", () => {
+  const tasks = [
+    { id: "1", title: "Corrida intervalada", date: "2026-09-23", completed: false },
+    { id: "2", title: "Ler", date: "2026-09-24", completed: false },
+  ];
+
+  it("creates a task on a day of the month without the model", () => {
+    expect(localTaskCommand("pfv crie uma task para o dia 27 jogar valorant", "2026-09-24", [])).toEqual({
+      create: [{ title: "jogar valorant", date: "2026-09-27" }],
+      completeIds: [],
+      deleteIds: [],
+    });
+  });
+
+  it("rolls the day into the next month when it already passed", () => {
+    expect(localTaskCommand("cria tarefa dia 2 pagar internet", "2026-09-24", [])?.create[0]?.date).toBe("2026-10-02");
+  });
+
+  it("completes or deletes only when one title matches", () => {
+    expect(localTaskCommand("conclua a corrida intervalada", "2026-09-24", tasks)?.completeIds).toEqual(["1"]);
+    expect(localTaskCommand("apaga ler", "2026-09-24", tasks)?.deleteIds).toEqual(["2"]);
+    expect(localTaskCommand("conclua isso", "2026-09-24", tasks)).toBeNull();
+  });
+});
+
+describe("localFinanceCommand", () => {
+  it("reads a single expense", () => {
+    expect(localFinanceCommand("gastei 45 no almoço no pix", "2026-09-24")).toEqual([
+      { description: "almoço", amount: 45, type: "expense", date: "2026-09-24", paymentMethod: "pix" },
+    ]);
+  });
+
+  it("ignores text without a clear type", () => {
+    expect(localFinanceCommand("almoço 45", "2026-09-24")).toBeNull();
   });
 });

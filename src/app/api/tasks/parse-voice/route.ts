@@ -3,6 +3,7 @@ import {
   TaskCommandResponseSchema,
 } from "@/features/assistant/domain/actions";
 import { addCalendarDays, bulkTaskIds, prefersStrongerTaskModel } from "@/features/assistant/domain/bulk-commands";
+import { localTaskCommand } from "@/features/assistant/domain/local-commands";
 import { formatDateKey } from "@/shared/lib/date-utils";
 import { createAssistantRoute } from "../../_lib/assistant-route";
 
@@ -31,6 +32,9 @@ Texto: "${text}"`;
   },
 
   useStrongerModel: ({ text, pendingTasks }) => prefersStrongerTaskModel(text, pendingTasks.length),
+
+  resolveLocally: ({ text, currentDate, pendingTasks }) =>
+    localTaskCommand(text, currentDate ?? formatDateKey(new Date()), pendingTasks),
 
   postProcess: (output, { text, currentDate, pendingTasks }) => {
     const today = currentDate ?? formatDateKey(new Date());

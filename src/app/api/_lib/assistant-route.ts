@@ -80,7 +80,11 @@ async function callModel(
   return JSON.parse(text);
 }
 
-async function generateJson(prompt: string, useStrongerModel: boolean): Promise<unknown> {
+async function generateJson(
+  prompt: string,
+  useStrongerModel: boolean,
+  recoverLocally: () => unknown | null
+): Promise<unknown> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new HttpError(500, "GEMINI_API_KEY não configurada no servidor.");
 
@@ -89,6 +93,10 @@ async function generateJson(prompt: string, useStrongerModel: boolean): Promise<
     return await callModel(apiKey, first, prompt);
   } catch (error) {
     if (!isRetryable(error)) throw error;
+    if (isModelOverloaded(error)) {
+      const local = recoverLocally();
+      if (local) return local;
+    }
     console.error(`[assistant] ${first.id} falhou, tentando ${second.id}`, error);
     return callModel(apiKey, second, prompt);
   }
@@ -103,6 +111,8 @@ interface AssistantRouteOptions<Req extends z.ZodType, Res extends z.ZodType> {
   postProcess?: (output: z.infer<Res>, input: z.infer<Req>) => z.infer<Res>;
   /** Data relativa com lista longa: começa pelo 3.5 Flash-Lite. */
   useStrongerModel?: (input: z.infer<Req>) => boolean;
+  /** Pedido óbvio resolvido no servidor quando o Gemini não responde. */
+  resolveLocally?: (input: z.infer<Req>) => unknown | null;
 }
 
 /** Route Handler padrão da Orbit AI: rate limit, validação da entrada, chamada ao Gemini e validação da saída. */
@@ -113,6 +123,7 @@ export function createAssistantRoute<Req extends z.ZodType, Res extends z.ZodTyp
   buildPrompt,
   postProcess,
   useStrongerModel,
+  resolveLocally,
 }: AssistantRouteOptions<Req, Res>) {
   return async function POST(req: Request) {
     try {
@@ -123,11 +134,24 @@ export function createAssistantRoute<Req extends z.ZodType, Res extends z.ZodTyp
       const body = request.safeParse(await req.json().catch(() => null));
       if (!body.success) throw new HttpError(400, "Pedido inválido.");
 
-      const raw = await generateJson(buildPrompt(body.data), useStrongerModel?.(body.data) ?? false);
-      const output = response.safeParse(raw);
-      if (!output.success) throw new HttpError(502, "A IA respondeu em um formato inesperado.");
+      const respond = (raw: unknown) => {
+        const output = response.safeParse(raw);
+        if (!output.success) throw new HttpError(502, "A IA respondeu em um formato inesperado.");
+        return NextResponse.json(postProcess ? postProcess(output.data, body.data) : output.data);
+      };
 
-      return NextResponse.json(postProcess ? postProcess(output.data, body.data) : output.data);
+      try {
+        const raw = await generateJson(
+          buildPrompt(body.data),
+          useStrongerModel?.(body.data) ?? false,
+          () => resolveLocally?.(body.data) ?? null
+        );
+        return respond(raw);
+      } catch (error) {
+        const local = resolveLocally?.(body.data);
+        if (local) return respond(local);
+        throw error;
+      }
     } catch (error) {
       if (error instanceof HttpError) {
         return NextResponse.json({ error: error.message }, { status: error.status });
