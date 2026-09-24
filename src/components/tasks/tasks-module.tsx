@@ -324,7 +324,7 @@ export function TasksModule({
           {/* Voice Task Button */}
           <VoiceTaskButton
             categories={categories}
-            pendingTasks={tasks.filter((t) => !t.completed).map((t) => ({ id: t.id, title: t.title }))}
+            pendingTasks={tasks.filter((t) => !t.completed).map((t) => ({ id: t.id, title: t.title, date: t.date }))}
             onVoiceResult={handleVoiceResult}
           />
 

@@ -5,11 +5,12 @@ import { Mic, Loader2, Square, X, Sparkles, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TaskCategory } from "@/types/orbit";
+import { formatDateKey } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
 
 interface AiTaskButtonProps {
   categories: TaskCategory[];
-  pendingTasks: Array<{ id: string, title: string }>;
+  pendingTasks: Array<{ id: string; title: string; date: string }>;
   onVoiceResult: (result: any) => void;
 }
 
@@ -82,7 +83,7 @@ export function VoiceTaskButton({ categories, pendingTasks, onVoiceResult }: AiT
         },
         body: JSON.stringify({
           text,
-          currentDate: new Date().toISOString(),
+          currentDate: formatDateKey(new Date()),
           categories: categories.map((c) => ({ id: c.id, name: c.name })),
           pendingTasks,
         }),
