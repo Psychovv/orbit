@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import type { Task, TaskCategory, UpdateTaskInput } from "../domain/task.schema";
 import { formatFocusClock, formatFocusDuration } from "../domain/focus";
 import { isCompleted } from "../domain/task.selectors";
+import { useFocusElapsed } from "../hooks/use-focus-session";
 import { TaskForm } from "./add-task-modal";
 import { Dialog } from "@/shared/ui/dialog";
 import { Button } from "@/shared/ui/button";
@@ -14,7 +15,6 @@ interface TaskDetailDialogProps {
   task: Task | null;
   categories: TaskCategory[];
   category?: TaskCategory;
-  elapsedSeconds: number;
   isRunning: boolean;
   onClose: () => void;
   onStart: () => void;
@@ -29,7 +29,6 @@ export function TaskDetailDialog({
   task,
   categories,
   category,
-  elapsedSeconds,
   isRunning,
   onClose,
   onStart,
@@ -51,7 +50,6 @@ export function TaskDetailDialog({
         task={task}
         categories={categories}
         category={category}
-        elapsedSeconds={elapsedSeconds}
         isRunning={isRunning}
         onClose={onClose}
         onStart={onStart}
@@ -67,7 +65,6 @@ function TaskDetailBody({
   task,
   categories,
   category,
-  elapsedSeconds,
   isRunning,
   onClose,
   onStart,
@@ -78,7 +75,6 @@ function TaskDetailBody({
   task: Task;
   categories: TaskCategory[];
   category?: TaskCategory;
-  elapsedSeconds: number;
   isRunning: boolean;
   onClose: () => void;
   onStart: () => void;
@@ -87,6 +83,7 @@ function TaskDetailBody({
   onSave: (patch: UpdateTaskInput) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const elapsedSeconds = useFocusElapsed(task);
   const { dayName, date } = formatLongDate(task.date);
 
   return editing ? (
@@ -122,7 +119,7 @@ function TaskDetailBody({
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-medium bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-200 border border-zinc-200/60 dark:border-zinc-700/50">
               <span
                 className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: category?.color || "#844DFE" }}
+                style={{ backgroundColor: category?.color || "var(--color-brand)" }}
               />
               {category ? `${category.icon} ${category.name}` : "Geral"}
             </span>
@@ -146,8 +143,8 @@ function TaskDetailBody({
             <p className="text-sm text-zinc-400">Sem observações.</p>
           )}
 
-          <div className="rounded-2xl border border-[#844DFE]/25 bg-[#844DFE]/5 px-5 py-6 text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#844DFE] dark:text-[#b494ff]">
+          <div className="rounded-2xl border border-brand/25 bg-brand/5 px-5 py-6 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand dark:text-brand-soft">
               Modo foco
             </p>
             <p className="mt-3 font-mono text-5xl sm:text-6xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">

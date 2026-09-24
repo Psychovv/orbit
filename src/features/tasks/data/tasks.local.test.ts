@@ -80,4 +80,16 @@ describe("local tasks repository", () => {
     const week = await repo.list({ from: "2026-09-21", to: "2026-09-27" });
     expect(week.map((t) => t.title)).toEqual(["in"]);
   });
+
+  it("restores a removed task with the same id", async () => {
+    store.set(TASKS_STORAGE_KEYS.tasks, "[]");
+    const repo = createLocalTasksRepository();
+    const created = await repo.create({ title: "Volta", date: "2026-09-24", categoryId: null, priority: "media" });
+
+    await repo.remove(created.id);
+    expect(await repo.list()).toEqual([]);
+
+    await repo.restore(created);
+    expect(await repo.list()).toEqual([created]);
+  });
 });

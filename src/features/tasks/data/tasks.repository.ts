@@ -13,6 +13,8 @@ export interface TasksRepository {
   create(input: CreateTaskInput): Promise<Task>;
   update(id: string, patch: UpdateTaskInput): Promise<Task>;
   remove(id: string): Promise<void>;
+  /** Regrava uma tarefa excluída com o mesmo id (desfazer). */
+  restore(task: Task): Promise<Task>;
 }
 
 export interface TaskCategoriesRepository {

@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import type { Task, TaskCategory } from "../domain/task.schema";
 import { countCompleted } from "../domain/task.selectors";
 import type { CalendarDayInfo } from "@/shared/lib/date-utils";
 import { TaskItem } from "./task-item";
-import { Plus, Check, Orbit } from "lucide-react";
+import { Plus, Check, Orbit, Maximize2 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
 interface DayColumnProps {
@@ -13,9 +14,10 @@ interface DayColumnProps {
   tasks: Task[];
   categoriesMap: Map<string, TaskCategory>;
   isToday: boolean;
-  onAddTask: (date: string) => void;
+  onAddTask: (date: string, title?: string) => void;
+  onQuickAdd: (date: string, title: string) => void;
   onToggleComplete: (task: Task) => void;
-  onDeleteTask: (id: string) => void;
+  onDeleteTask: (task: Task) => void;
 }
 
 export function DayColumn({
@@ -24,9 +26,11 @@ export function DayColumn({
   categoriesMap,
   isToday,
   onAddTask,
+  onQuickAdd,
   onToggleComplete,
   onDeleteTask,
 }: DayColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({ id: dayInfo.date });
   const total = tasks.length;
   const completed = countCompleted(tasks);
   const isAllDone = total > 0 && completed === total;
@@ -34,13 +38,16 @@ export function DayColumn({
 
   return (
     <div
+      ref={setNodeRef}
       className={cn(
         "flex flex-col rounded-2xl p-4.5 transition-all duration-200 shrink-0",
         "w-[310px] sm:w-[325px] md:w-[340px]", // Generous width ensuring task texts never feel squeezed
         "bg-white/80 dark:bg-[#100e1e]/80 backdrop-blur-md border",
-        isToday
-          ? "border-[#844DFE]/60 ring-1 ring-[#844DFE]/30 shadow-xs"
-          : "border-zinc-200/80 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700"
+        isOver
+          ? "border-brand ring-2 ring-brand/40 bg-brand/5 dark:bg-brand/10"
+          : isToday
+            ? "border-brand/60 ring-1 ring-brand/30 shadow-xs"
+            : "border-zinc-200/80 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700"
       )}
     >
       {/* Column Header */}
@@ -54,14 +61,14 @@ export function DayColumn({
               className={cn(
                 "text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase font-mono tracking-tight",
                 isToday
-                  ? "bg-[#844DFE] text-white shadow-xs"
+                  ? "bg-brand text-white shadow-xs"
                   : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
               )}
             >
               {dayInfo.dayNumber} {dayInfo.monthName}
             </span>
             {isToday && (
-              <span className="flex h-1.5 w-1.5 rounded-full bg-[#844DFE] animate-pulse" />
+              <span className="flex h-1.5 w-1.5 rounded-full bg-brand animate-pulse" />
             )}
           </div>
           <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
@@ -89,7 +96,7 @@ export function DayColumn({
         <div
           className={cn(
             "h-full rounded-full transition-all duration-300",
-            isAllDone ? "bg-emerald-500" : "bg-[#844DFE]"
+            isAllDone ? "bg-emerald-500" : "bg-brand"
           )}
           style={{ width: `${progressPercent}%` }}
         />
@@ -101,11 +108,11 @@ export function DayColumn({
           <div className="h-full min-h-[140px] flex flex-col items-center justify-center p-4 text-center text-zinc-400 dark:text-zinc-600 border border-dashed border-zinc-200 dark:border-zinc-800/80 rounded-xl my-2">
             <Orbit className="w-5 h-5 stroke-[1.5] mb-1.5 opacity-30 text-zinc-400" />
             <p className="text-xs font-medium">Nenhuma tarefa</p>
-            <p className="text-[10px] mt-0.5">Toque abaixo para agendar</p>
+            <p className="text-[10px] mt-0.5">Adicione abaixo ou arraste uma tarefa para cá</p>
           </div>
         ) : (
           tasks.map((task) => (
-            <TaskItem
+            <DraggableTaskItem
               key={task.id}
               task={task}
               category={task.categoryId ? categoriesMap.get(task.categoryId) : undefined}
@@ -116,13 +123,77 @@ export function DayColumn({
         )}
       </div>
 
-      {/* Quick Add Button */}
+      <QuickAdd
+        onSubmit={(title) => onQuickAdd(dayInfo.date, title)}
+        onExpand={(title) => onAddTask(dayInfo.date, title)}
+      />
+    </div>
+  );
+}
+
+function DraggableTaskItem(props: React.ComponentProps<typeof TaskItem>) {
+  const { setNodeRef, listeners, isDragging } = useDraggable({
+    id: props.task.id,
+    data: { task: props.task },
+    disabled: props.task.id.startsWith("temp-"),
+  });
+
+  return (
+    <div ref={setNodeRef} {...listeners} className={cn("touch-manipulation", isDragging && "opacity-40")}>
+      <TaskItem {...props} />
+    </div>
+  );
+}
+
+/** Campo inline: Enter cria e mantém o campo aberto para a próxima tarefa; Esc fecha. */
+function QuickAdd({ onSubmit, onExpand }: { onSubmit: (title: string) => void; onExpand: (title: string) => void }) {
+  const [title, setTitle] = useState<string | null>(null);
+
+  if (title === null) {
+    return (
       <button
-        onClick={() => onAddTask(dayInfo.date)}
-        className="mt-3 flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 hover:text-[#844DFE] dark:hover:text-[#b494ff] border border-dashed border-zinc-200 dark:border-zinc-800 transition-colors cursor-pointer"
+        onClick={() => setTitle("")}
+        className="mt-3 flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 hover:text-brand dark:hover:text-brand-soft border border-dashed border-zinc-200 dark:border-zinc-800 transition-colors cursor-pointer"
       >
         <Plus className="w-3.5 h-3.5" />
         <span>Adicionar tarefa</span>
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-3 flex items-center gap-1.5 rounded-xl border border-brand/40 bg-white dark:bg-[#121020] pl-3 pr-1 py-1 focus-within:ring-2 focus-within:ring-brand/20">
+      <input
+        autoFocus
+        value={title}
+        maxLength={200}
+        placeholder="Nova tarefa e Enter"
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setTitle(null);
+          if (e.key === "Enter" && title.trim()) {
+            onSubmit(title.trim());
+            setTitle("");
+          }
+        }}
+        onBlur={() => {
+          if (title.trim()) onSubmit(title.trim());
+          setTitle(null);
+        }}
+        className="min-w-0 flex-1 bg-transparent text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none"
+      />
+      <button
+        type="button"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => {
+          onExpand(title.trim());
+          setTitle(null);
+        }}
+        title="Mais opções"
+        aria-label="Abrir formulário completo"
+        className="p-1.5 rounded-lg text-zinc-400 hover:text-brand hover:bg-brand/10 cursor-pointer"
+      >
+        <Maximize2 className="w-3.5 h-3.5" />
       </button>
     </div>
   );

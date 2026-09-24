@@ -90,7 +90,6 @@ function TaskDialogsInner({ children }: { children: React.ReactNode }) {
         task={detailTask}
         categories={categories}
         category={detailCategory}
-        elapsedSeconds={detailTask ? session.elapsed(detailTask) : 0}
         isRunning={detailTask?.id === session.active?.id}
         onClose={() => setOpenTaskId(null)}
         onStart={() => detailTask && void session.start(detailTask)}
@@ -101,7 +100,6 @@ function TaskDialogsInner({ children }: { children: React.ReactNode }) {
 
       <FocusBar
         task={barTask}
-        elapsedSeconds={barTask ? session.elapsed(barTask) : 0}
         onPause={() => barTask && void session.pause(barTask)}
         onExpand={() => barTask && setOpenTaskId(barTask.id)}
       />

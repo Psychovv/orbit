@@ -17,7 +17,7 @@ interface DayDetailModalProps {
   categoriesMap: Map<string, TaskCategory>;
   onAddTaskForDate: (dateStr: string) => void;
   onToggleComplete: (task: Task) => void;
-  onDeleteTask: (id: string) => void;
+  onDeleteTask: (task: Task) => void;
   onSwitchToWeekView?: (dateStr: string) => void;
 }
 
@@ -50,7 +50,7 @@ export function DayDetailModal({
         {/* Progress overview */}
         <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/80 dark:border-zinc-800/80 text-xs">
           <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
-            <Calendar className="w-4 h-4 text-[#844DFE]" />
+            <Calendar className="w-4 h-4 text-brand" />
             <span className="font-medium">
               {dayTasks.length === 0
                 ? "Nenhuma tarefa para este dia"
@@ -64,7 +64,7 @@ export function DayDetailModal({
                 onSwitchToWeekView(dateStr);
                 onClose();
               }}
-              className="inline-flex items-center gap-1 font-semibold text-[#844DFE] dark:text-[#b494ff] hover:underline cursor-pointer"
+              className="inline-flex items-center gap-1 font-semibold text-brand dark:text-brand-soft hover:underline cursor-pointer"
             >
               <span>Ver na semana</span>
               <ArrowRight className="w-3.5 h-3.5" />

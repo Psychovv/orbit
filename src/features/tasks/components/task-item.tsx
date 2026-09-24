@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import type { Task, TaskCategory } from "../domain/task.schema";
 import { formatFocusDuration } from "../domain/focus";
 import { isCompleted } from "../domain/task.selectors";
-import { useFocusSession } from "../hooks/use-focus-session";
+import { useFocusElapsed, useFocusSession } from "../hooks/use-focus-session";
 import { useTaskDialogs } from "./task-dialogs";
 import { Check, Clock, Timer, Trash2 } from "lucide-react";
 import { triggerCosmicCelebration } from "@/shared/effects/confetti";
@@ -15,14 +15,14 @@ interface TaskItemProps {
   task: Task;
   category?: TaskCategory;
   onToggleComplete: (task: Task) => void;
-  onDelete: (id: string) => void;
+  onDelete: (task: Task) => void;
 }
 
 export function TaskItem({ task, category, onToggleComplete, onDelete }: TaskItemProps) {
   const completed = isCompleted(task);
   const dialogs = useTaskDialogs();
   const session = useFocusSession();
-  const elapsed = session.elapsed(task);
+  const elapsed = useFocusElapsed(task);
   const running = session.active?.id === task.id;
 
   const handleToggle = () => {
@@ -43,11 +43,11 @@ export function TaskItem({ task, category, onToggleComplete, onDelete }: TaskIte
         "group relative flex flex-col gap-2 rounded-xl p-3.5 transition-all duration-200 border",
         completed
           ? "bg-zinc-50/70 dark:bg-zinc-900/30 border-zinc-200/50 dark:border-zinc-800/40 opacity-60"
-          : "bg-white dark:bg-[#121020] border-zinc-200/80 dark:border-zinc-800/80 shadow-xs hover:border-[#844DFE]/40 dark:hover:border-[#844DFE]/30"
+          : "bg-white dark:bg-[#121020] border-zinc-200/80 dark:border-zinc-800/80 shadow-xs hover:border-brand/40 dark:hover:border-brand/30"
       )}
     >
       <div className="flex items-start gap-3">
-        {/* Checkbox with #844DFE completion */}
+        {/* Checkbox */}
         <button
           onClick={(event) => {
             event.stopPropagation();
@@ -56,8 +56,8 @@ export function TaskItem({ task, category, onToggleComplete, onDelete }: TaskIte
           className={cn(
             "relative mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-md border transition-all cursor-pointer",
             completed
-              ? "bg-[#844DFE] border-[#844DFE] text-white shadow-xs"
-              : "border-zinc-300 dark:border-zinc-600 bg-white/50 dark:bg-zinc-800/50 hover:border-[#844DFE] dark:hover:border-[#844DFE]"
+              ? "bg-brand border-brand text-white shadow-xs"
+              : "border-zinc-300 dark:border-zinc-600 bg-white/50 dark:bg-zinc-800/50 hover:border-brand dark:hover:border-brand"
           )}
           aria-label={completed ? "Desmarcar tarefa" : "Concluir tarefa"}
         >
@@ -100,10 +100,11 @@ export function TaskItem({ task, category, onToggleComplete, onDelete }: TaskIte
         <button
           onClick={(event) => {
             event.stopPropagation();
-            onDelete(task.id);
+            onDelete(task);
           }}
-          className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer shrink-0"
+          className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 p-1 rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer shrink-0"
           title="Excluir tarefa"
+          aria-label={`Excluir ${task.title}`}
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -116,7 +117,7 @@ export function TaskItem({ task, category, onToggleComplete, onDelete }: TaskIte
           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/50">
             <span
               className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ backgroundColor: category.color || "#844DFE" }}
+              style={{ backgroundColor: category.color || "var(--color-brand)" }}
             />
             <span>{category.name}</span>
           </span>
@@ -128,8 +129,8 @@ export function TaskItem({ task, category, onToggleComplete, onDelete }: TaskIte
         <span className="inline-flex items-center gap-2 text-[11px] text-zinc-400 dark:text-zinc-500 font-mono">
           {(running || elapsed > 0) && (
             <span className="inline-flex items-center gap-1">
-              <Timer className={cn("w-3 h-3", running && "text-[#844DFE]")} />
-              <span className={cn(running && "text-[#844DFE] dark:text-[#b494ff]")}>
+              <Timer className={cn("w-3 h-3", running && "text-brand")} />
+              <span className={cn(running && "text-brand dark:text-brand-soft")}>
                 {formatFocusDuration(elapsed)}
               </span>
             </span>

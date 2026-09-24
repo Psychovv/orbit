@@ -1,17 +1,38 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import type { TaskCategory } from "../domain/task.schema";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import type { Task, TaskCategory } from "../domain/task.schema";
 import { ALL_CATEGORIES, countCompleted, filterByCategory, groupByDate } from "../domain/task.selectors";
-import { useDeleteTask, useTaskCategories, useTasks, useToggleTaskCompletion } from "../hooks/use-tasks";
+import {
+  useCreateTask,
+  useDeleteTaskWithUndo,
+  useMoveTask,
+  useTaskCategories,
+  useTasks,
+  useToggleTaskCompletion,
+} from "../hooks/use-tasks";
 import { useTasksViewState } from "../hooks/use-tasks-view-state";
 import { useTaskAssistant } from "../hooks/use-task-assistant";
 import { useTaskDialogs } from "./task-dialogs";
 import { DayColumn } from "./day-column";
 import { MonthCalendarView } from "./month-calendar-view";
 import { DayDetailModal } from "./day-detail-modal";
+import { TaskItem } from "./task-item";
 import { AssistantButton } from "@/features/assistant/components/assistant-button";
+import { useAssistantReview } from "@/features/assistant/components/assistant-review-dialog";
 import { Button } from "@/shared/ui/button";
+import { PeriodNavigator, pickerInputClass } from "@/shared/ui/period-navigator";
+import { SegmentedControl } from "@/shared/ui/segmented-control";
 import { ViewSkeleton } from "@/shared/ui/view-skeleton";
 import {
   getWeekDays,
@@ -21,28 +42,25 @@ import {
   formatMonthYear,
   formatDateKey,
   getYearMonthKey,
+  isSameMonth,
   monthGridRange,
   parseDateKey,
   weekRange,
 } from "@/shared/lib/date-utils";
-import {
-  Plus,
-  SlidersHorizontal,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Calendar as CalendarIcon,
-  Columns,
-  LayoutGrid,
-  RotateCcw,
-} from "lucide-react";
-import { cn } from "@/shared/lib/utils";
+import { Plus, SlidersHorizontal, X, Columns, LayoutGrid } from "lucide-react";
+
+const VIEW_OPTIONS = [
+  { value: "week", label: "Semana", icon: Columns },
+  { value: "month", label: "Mês", icon: LayoutGrid },
+] as const;
 
 export function TasksView() {
   const { view: viewMode, baseDate, categoryId: categoryParam, setView, setBaseDate, setCategory, showWeekOf } =
     useTasksViewState();
   const [selectedDayForDetail, setSelectedDayForDetail] = useState<string | null>(null);
+  const [draggingTask, setDraggingTask] = useState<Task | null>(null);
   const dialogs = useTaskDialogs();
+  const review = useAssistantReview();
 
   const range = useMemo(
     () => (viewMode === "week" ? weekRange(baseDate) : monthGridRange(baseDate)),
@@ -51,8 +69,18 @@ export function TasksView() {
   const tasksQuery = useTasks(range);
   const categoriesQuery = useTaskCategories();
   const toggleComplete = useToggleTaskCompletion();
-  const deleteTask = useDeleteTask();
-  const runAssistant = useTaskAssistant({ onSingleDraft: (draft) => dialogs.openAddTask(draft) });
+  const deleteTask = useDeleteTaskWithUndo();
+  const moveTask = useMoveTask();
+  const createTask = useCreateTask();
+  const runAssistant = useTaskAssistant({
+    onSingleDraft: (draft) => dialogs.openAddTask(draft),
+    review: review.request,
+  });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 6 } })
+  );
 
   const categories = useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data]);
   const activeCategory = categories.find((c) => c.id === categoryParam);
@@ -65,7 +93,9 @@ export function TasksView() {
   }, [categories]);
 
   const weekDays = useMemo(() => getWeekDays(baseDate), [baseDate]);
-  const isCurrentWeek = weekRange(baseDate).from === weekRange(new Date()).from;
+  const today = new Date();
+  const isCurrentPeriod =
+    viewMode === "week" ? weekRange(baseDate).from === weekRange(today).from : isSameMonth(baseDate, today);
 
   const filteredTasks = useMemo(
     () => filterByCategory(tasksQuery.data ?? [], selectedCategoryId),
@@ -81,9 +111,23 @@ export function TasksView() {
 
   const handlePrev = () => setBaseDate(viewMode === "week" ? addWeeks(baseDate, -1) : addMonths(baseDate, -1));
   const handleNext = () => setBaseDate(viewMode === "week" ? addWeeks(baseDate, 1) : addMonths(baseDate, 1));
-  const handleGoToday = () => setBaseDate(null);
-  const handleOpenAddModal = (date?: string) => dialogs.openAddTask({ date });
-  const handleDeleteTask = (id: string) => deleteTask.mutate(id);
+  const handleOpenAddModal = (date?: string, title?: string) => dialogs.openAddTask({ date, title });
+  const handleQuickAdd = (date: string, title: string) =>
+    createTask.mutate({
+      title,
+      date,
+      categoryId: activeCategory?.id ?? categories[0]?.id ?? null,
+      priority: "media",
+    });
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setDraggingTask((event.active.data.current?.task as Task | undefined) ?? null);
+  };
+  const handleDragEnd = (event: DragEndEvent) => {
+    setDraggingTask(null);
+    const task = event.active.data.current?.task as Task | undefined;
+    if (task && event.over) moveTask(task, String(event.over.id));
+  };
 
   if (tasksQuery.isPending || categoriesQuery.isPending) return <ViewSkeleton />;
 
@@ -97,7 +141,7 @@ export function TasksView() {
               {viewMode === "week" ? "Visão Semanal" : "Calendário Mensal"}
             </h2>
             {activeCategory && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[#844DFE]/10 text-[#844DFE] dark:text-[#b494ff] border border-[#844DFE]/20">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-medium bg-brand/10 text-brand dark:text-brand-soft border border-brand/20">
                 <span>{activeCategory.icon}</span>
                 <span>{activeCategory.name}</span>
                 <button
@@ -118,40 +162,15 @@ export function TasksView() {
 
         {/* Minimal Actions: View Mode Switcher, Category filter, Manage categories, Add task */}
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* View Mode Switcher: Semana / Mês */}
-          <div className="inline-flex items-center p-1 rounded-xl bg-zinc-100/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80">
-            <button
-              onClick={() => setView("week")}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-                viewMode === "week"
-                  ? "bg-white dark:bg-[#18152c] text-[#844DFE] dark:text-[#b494ff] shadow-2xs"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
-              )}
-            >
-              <Columns className="w-3.5 h-3.5" />
-              <span>Semana</span>
-            </button>
-            <button
-              onClick={() => setView("month")}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-                viewMode === "month"
-                  ? "bg-white dark:bg-[#18152c] text-[#844DFE] dark:text-[#b494ff] shadow-2xs"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
-              )}
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span>Mês</span>
-            </button>
-          </div>
+          <SegmentedControl label="Modo de visualização" value={viewMode} options={VIEW_OPTIONS} onChange={setView} />
 
           {/* Discreet Category Filter */}
           <div className="relative">
             <select
               value={selectedCategoryId}
               onChange={(e) => setCategory(e.target.value)}
-              className="h-9.5 pl-3 pr-8 text-xs font-medium rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-[#121020]/80 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-[#844DFE]/20 cursor-pointer transition-colors"
+              aria-label="Filtrar por categoria"
+              className="h-9.5 pl-3 pr-8 text-xs font-medium rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-[#121020]/80 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand/20 cursor-pointer transition-colors"
             >
               <option value={ALL_CATEGORIES}>Todas as categorias</option>
               {categories.map((c) => (
@@ -175,7 +194,7 @@ export function TasksView() {
 
           <AssistantButton placeholder="Ex: Comprar leite amanhã de manhã..." onSubmit={runAssistant} />
 
-          {/* Primary Add Task Button using #844DFE */}
+          {/* Primary Add Task Button */}
           <Button
             variant="primary"
             size="sm"
@@ -188,90 +207,68 @@ export function TasksView() {
         </div>
       </div>
 
-      {/* Calendar Navigation Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-white/70 dark:bg-[#100e1e]/70 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800/80 shadow-2xs">
-        {/* Navigation arrows & Current Range Title */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-0.5">
-            <button
-              onClick={handlePrev}
-              title={viewMode === "week" ? "Semana anterior" : "Mês anterior"}
-              className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleNext}
-              title={viewMode === "week" ? "Próxima semana" : "Próximo mês"}
-              className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 pl-1">
-            <CalendarIcon className="w-4 h-4 text-[#844DFE]" />
-            <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              {viewMode === "week" ? formatWeekRange(baseDate) : formatMonthYear(baseDate)}
-            </span>
-          </div>
-        </div>
-
-        {/* Quick Return to Today & Date Picker Jump */}
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          {!isCurrentWeek && (
-            <button
-              onClick={handleGoToday}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#844DFE]/10 hover:bg-[#844DFE]/20 text-[#844DFE] dark:text-[#b494ff] border border-[#844DFE]/30 transition-colors cursor-pointer shadow-2xs"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Semana Atual</span>
-            </button>
-          )}
-
-          {isCurrentWeek && (
-            <button
-              onClick={handleGoToday}
-              className="px-2.5 py-1.5 rounded-xl text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer"
-            >
-              Hoje
-            </button>
-          )}
-
-          {/* Jump to specific date */}
-          <div className="relative flex items-center">
-            <input
-              type="date"
-              value={formatDateKey(baseDate)}
-              onChange={(e) => {
-                if (e.target.value) setBaseDate(parseDateKey(e.target.value));
-              }}
-              title="Ir para data específica"
-              className="text-xs font-mono px-2 py-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-[#844DFE] cursor-pointer"
-            />
-          </div>
-        </div>
-      </div>
+      <PeriodNavigator
+        label={viewMode === "week" ? formatWeekRange(baseDate) : formatMonthYear(baseDate)}
+        prevTitle={viewMode === "week" ? "Semana anterior" : "Mês anterior"}
+        nextTitle={viewMode === "week" ? "Próxima semana" : "Próximo mês"}
+        onPrev={handlePrev}
+        onNext={handleNext}
+        isCurrent={isCurrentPeriod}
+        resetLabel={viewMode === "week" ? "Semana atual" : "Mês atual"}
+        currentLabel={viewMode === "week" ? "Esta semana" : "Este mês"}
+        onReset={() => setBaseDate(null)}
+      >
+        <input
+          type="date"
+          value={formatDateKey(baseDate)}
+          onChange={(e) => {
+            if (e.target.value) setBaseDate(parseDateKey(e.target.value));
+          }}
+          title="Ir para data específica"
+          aria-label="Ir para data específica"
+          className={pickerInputClass}
+        />
+      </PeriodNavigator>
 
       {/* Main View: Week (7 Columns) or Month (Grid) */}
       {viewMode === "week" ? (
-        <div className="relative">
-          <div className="flex gap-4 sm:gap-5 overflow-x-auto pb-6 pt-1 scrollbar-thin scroll-smooth snap-x">
-            {weekDays.map((wd) => (
-              <div key={wd.date} className="snap-start">
-                <DayColumn
-                  dayInfo={wd}
-                  tasks={tasksByDate.get(wd.date) ?? []}
-                  categoriesMap={categoriesMap}
-                  isToday={wd.isToday}
-                  onAddTask={handleOpenAddModal}
-                  onToggleComplete={toggleComplete}
-                  onDeleteTask={handleDeleteTask}
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => setDraggingTask(null)}
+        >
+          <div className="relative">
+            <div className="flex gap-4 sm:gap-5 overflow-x-auto pb-6 pt-1 scrollbar-thin scroll-smooth snap-x">
+              {weekDays.map((wd) => (
+                <div key={wd.date} className="snap-start">
+                  <DayColumn
+                    dayInfo={wd}
+                    tasks={tasksByDate.get(wd.date) ?? []}
+                    categoriesMap={categoriesMap}
+                    isToday={wd.isToday}
+                    onAddTask={handleOpenAddModal}
+                    onQuickAdd={handleQuickAdd}
+                    onToggleComplete={toggleComplete}
+                    onDeleteTask={deleteTask}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          <DragOverlay dropAnimation={null}>
+            {draggingTask && (
+              <div className="w-[290px] rotate-2 cursor-grabbing shadow-2xl shadow-brand/20 rounded-xl">
+                <TaskItem
+                  task={draggingTask}
+                  category={draggingTask.categoryId ? categoriesMap.get(draggingTask.categoryId) : undefined}
+                  onToggleComplete={() => {}}
+                  onDelete={() => {}}
                 />
               </div>
-            ))}
-          </div>
-        </div>
+            )}
+          </DragOverlay>
+        </DndContext>
       ) : (
         <MonthCalendarView
           baseDate={baseDate}
@@ -291,9 +288,11 @@ export function TasksView() {
         categoriesMap={categoriesMap}
         onAddTaskForDate={handleOpenAddModal}
         onToggleComplete={toggleComplete}
-        onDeleteTask={handleDeleteTask}
+        onDeleteTask={deleteTask}
         onSwitchToWeekView={showWeekOf}
       />
+
+      {review.dialog}
     </div>
   );
 }

@@ -128,6 +128,14 @@ export function createLocalTasksRepository(): TasksRepository {
           tasks.filter((t) => t.id !== id)
         );
       }),
+
+    restore: (task) =>
+      withStoreLock(async () => {
+        const restored = TaskSchema.parse(task);
+        const tasks = await loadTasks();
+        writeJson(TASKS_STORAGE_KEYS.tasks, [restored, ...tasks.filter((t) => t.id !== restored.id)]);
+        return restored;
+      }),
   };
 }
 

@@ -8,9 +8,10 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { repositories } from "@/config/data-source";
-import { isInRange, type DateRange } from "@/shared/lib/date-utils";
+import { formatShortDate, isInRange, type DateRange } from "@/shared/lib/date-utils";
 import { createId, nowIso } from "@/shared/lib/id";
 import { patchRangedLists, rangedListKey } from "@/shared/lib/query-cache";
+import { toast } from "@/shared/ui/toast";
 import type {
   CreateTaskCategoryInput,
   CreateTaskInput,
@@ -113,6 +114,56 @@ export function useDeleteTask() {
     onError: (_error, _id, rollback) => rollback?.(),
     onSettled: () => queryClient.invalidateQueries({ queryKey: [TASKS] }),
   });
+}
+
+export function useRestoreTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (task: Task) => repositories.tasks.restore(task),
+    onMutate: (task) =>
+      patchRangedLists<Task>(queryClient, TASKS, (tasks, range) =>
+        !range || isInRange(task.date, range) ? [task, ...tasks.filter((t) => t.id !== task.id)] : tasks
+      ),
+    onError: (_error, _task, rollback) => rollback?.(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: [TASKS] }),
+  });
+}
+
+/** Exclui a tarefa e mostra um toast com "Desfazer". */
+export function useDeleteTaskWithUndo() {
+  const deleteTask = useDeleteTask();
+  const restoreTask = useRestoreTask();
+  return (task: Task) =>
+    deleteTask.mutate(task.id, {
+      onSuccess: () =>
+        toast({
+          message: "Tarefa excluída",
+          description: task.title,
+          action: { label: "Desfazer", onClick: () => restoreTask.mutate(task) },
+        }),
+    });
+}
+
+/** Reagenda a tarefa para outro dia, com "Desfazer". */
+export function useMoveTask() {
+  const update = useUpdateTask();
+  return (task: Task, date: string) => {
+    if (task.date === date) return;
+    update.mutate(
+      { id: task.id, patch: { date } },
+      {
+        onSuccess: () =>
+          toast({
+            message: `Movida para ${formatShortDate(date)}`,
+            description: task.title,
+            action: {
+              label: "Desfazer",
+              onClick: () => update.mutate({ id: task.id, patch: { date: task.date } }),
+            },
+          }),
+      }
+    );
+  };
 }
 
 export function useCreateTaskCategory() {
