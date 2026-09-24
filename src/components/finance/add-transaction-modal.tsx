@@ -12,6 +12,7 @@ interface AddTransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
   categories: FinanceCategory[];
+  defaultDate?: string;
   onAddTransaction: (tx: Omit<Transaction, "id">) => void;
 }
 
@@ -19,23 +20,29 @@ export function AddTransactionModal({
   isOpen,
   onClose,
   categories,
+  defaultDate,
   onAddTransaction,
 }: AddTransactionModalProps) {
   const [type, setType] = useState<TransactionType>("expense");
   const [description, setDescription] = useState("");
   const [amountStr, setAmountStr] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(defaultDate || new Date().toISOString().split("T")[0]);
   const [paymentMethod, setPaymentMethod] = useState<Transaction["paymentMethod"]>("pix");
   const [notes, setNotes] = useState("");
 
   const filteredCategories = categories.filter((c) => c.type === type);
 
   React.useEffect(() => {
-    if (filteredCategories.length > 0 && (!categoryId || !filteredCategories.some((c) => c.id === categoryId))) {
-      setCategoryId(filteredCategories[0].id);
+    if (isOpen) {
+      if (defaultDate) {
+        setDate(defaultDate);
+      }
+      if (filteredCategories.length > 0 && (!categoryId || !filteredCategories.some((c) => c.id === categoryId))) {
+        setCategoryId(filteredCategories[0].id);
+      }
     }
-  }, [type, filteredCategories, categoryId]);
+  }, [isOpen, defaultDate, type, filteredCategories, categoryId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

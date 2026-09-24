@@ -156,3 +156,18 @@ export function formatWeekRange(baseDate: Date): string {
 export function formatMonthYear(date: Date): string {
   return `${MONTH_NAMES[date.getMonth()]} de ${date.getFullYear()}`;
 }
+
+export function getYearMonthKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+export function parseYearMonthKey(key: string): Date {
+  const [y, m] = key.split("-").map(Number);
+  return new Date(y, m - 1, 1);
+}
+
+export function isSameMonth(d1: Date, d2: Date): boolean {
+  return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth();
+}

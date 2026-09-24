@@ -81,10 +81,10 @@ export function TransactionsTable({
         <div>
           <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
             <Layers className="w-5 h-5 text-[#844DFE]" />
-            <span>Extrato e Fluxo de Recursos</span>
+            <span>Extrato Mensal de Lançamentos</span>
           </h3>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-            {filteredTransactions.length} de {transactions.length} transações listadas
+            {filteredTransactions.length} de {transactions.length} transações no mês
           </p>
         </div>
 
