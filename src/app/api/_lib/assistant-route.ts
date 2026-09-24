@@ -42,10 +42,11 @@ class HttpError extends Error {
 }
 
 function isModelOverloaded(error: unknown): boolean {
+  if (error instanceof GoogleGenerativeAIAbortError) return true;
   if (!error || typeof error !== "object") return false;
   if ("status" in error && error.status === 503) return true;
   const message = error instanceof Error ? error.message : "";
-  return /high demand|overloaded|unavailable/i.test(message);
+  return /high demand|overloaded|unavailable|aborted|timeout|deadline/i.test(message);
 }
 
 function isRetryable(error: unknown): boolean {
