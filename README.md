@@ -20,7 +20,20 @@ Orbit é um aplicativo web de organização pessoal e planejamento financeiro, c
 ### Interface
 
 - Tema claro e escuro.
-- Dados salvos no navegador (`localStorage`), com opção de restaurar os dados iniciais.
+- Rotas `/tasks` e `/finance` (`/` redireciona para `/tasks`). Visão, data, categoria e mês ficam na URL (`/tasks?view=month&date=2026-10-01&category=estudos`, `/finance?month=2026-08`).
+- Dados salvos no navegador (`localStorage`), com opção de restaurar os dados iniciais. Dados do formato antigo (`*_v1`) são migrados automaticamente.
+
+## Estrutura
+
+```
+src/
+  app/          rotas, layout, providers e Route Handlers da IA
+  features/     tasks, finance e assistant (components, hooks, data, domain)
+  shared/       ui, efeitos visuais e utilitários
+  config/       escolha da fonte de dados (NEXT_PUBLIC_DATA_SOURCE)
+```
+
+Detalhes e próximos passos em [`documents/arquitetura.md`](documents/arquitetura.md).
 
 ## Tecnologias
 
@@ -30,6 +43,8 @@ Orbit é um aplicativo web de organização pessoal e planejamento financeiro, c
 - [Motion](https://motion.dev/)
 - [Lucide](https://lucide.dev/)
 - [next-themes](https://github.com/pacocoursey/next-themes)
+- [TanStack Query](https://tanstack.com/query) e [Zod](https://zod.dev/)
+- [Vitest](https://vitest.dev/) para testes
 - [Google Gemini](https://ai.google.dev/) para a Orbit AI
 
 ## Como executar
@@ -69,4 +84,11 @@ Lint:
 
 ```bash
 pnpm lint
+```
+
+Tipos e testes:
+
+```bash
+pnpm typecheck
+pnpm test
 ```
