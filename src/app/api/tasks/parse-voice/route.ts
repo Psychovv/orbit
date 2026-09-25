@@ -17,9 +17,10 @@ export const POST = createAssistantRoute({
     const yesterday = addCalendarDays(today, -1);
     const tomorrow = addCalendarDays(today, 1);
 
-    return `Retorne um JSON EXATO: { "create": [{title:string, date?:YYYY-MM-DD, time?:HH:MM, categoryId?:string}], "updates": [{id:string, title?:string, date?:YYYY-MM-DD, time?:HH:MM, categoryId?:string, priority?:"baixa"|"media"|"alta"}], "completeIds": [string], "deleteIds": [string], "createCategories": [{name:string}], "answer"?: string }.
+    return `Retorne um JSON EXATO: { "create": [{title:string, date?:YYYY-MM-DD, time?:HH:MM, categoryId?:string, recurrence?:{pattern:"daily"|"weekly"|"monthly", count:number}}], "updates": [{id:string, title?:string, date?:YYYY-MM-DD, time?:HH:MM, categoryId?:string, priority?:"baixa"|"media"|"alta"}], "completeIds": [string], "deleteIds": [string], "createCategories": [{name:string}], "answer"?: string }.
 Regras:
 1. 'create' tem tarefas novas. Datas relativas: hoje=${today}, ontem=${yesterday}, amanhã=${tomorrow}.
+   Se o usuário pedir repetição (ex: "todo dia por 1 mês", "toda sexta"), inclua "recurrence". pattern pode ser daily, weekly ou monthly, e count é o total de repetições.
 2. 'updates' altera tarefas existentes (remarcar, renomear, mudar categoria/prioridade/horário). Use o ID exato. Remarcar NÃO é criar. Não invente IDs.
 3. 'completeIds' tem os IDs exatos das tarefas que o usuário pediu para finalizar/concluir. Não invente IDs.
 4. 'deleteIds' tem os IDs exatos das tarefas que o usuário pediu para excluir, apagar, remover ou deletar. Excluir não é concluir. Não invente IDs.

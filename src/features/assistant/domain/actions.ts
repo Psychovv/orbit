@@ -48,11 +48,17 @@ export const TaskCommandRequestSchema = z.object({
 export type TaskCommandRequest = z.input<typeof TaskCommandRequestSchema>;
 export type ExistingTaskRef = z.infer<typeof TaskCommandRequestSchema>["pendingTasks"][number];
 
+export const RecurrenceSchema = z.object({
+  pattern: loose(z.enum(["daily", "weekly", "monthly"])),
+  count: loose(z.number().int().min(2).max(100)),
+});
+
 export const TaskDraftSchema = z.object({
   title: z.string().trim().min(1).max(200),
   date: loose(DateKeySchema),
   time: loose(TimeSchema),
   categoryId: loose(z.string().min(1)),
+  recurrence: loose(RecurrenceSchema),
 });
 export type TaskDraft = z.infer<typeof TaskDraftSchema>;
 

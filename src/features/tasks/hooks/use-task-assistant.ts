@@ -5,6 +5,7 @@ import { requestTaskCommand, notifyLocalFallback } from "@/features/assistant/da
 import type { ReviewItem } from "@/features/assistant/components/assistant-review-dialog";
 import type { TaskDraft } from "@/features/assistant/domain/actions";
 import { addCalendarDays } from "@/features/assistant/domain/bulk-commands";
+import { generateRecurrentTasks } from "../domain/recurrence";
 import { formatShortDate, todayKey } from "@/shared/lib/date-utils";
 import { nowIso } from "@/shared/lib/id";
 import { pluralSummary } from "@/shared/lib/utils";
@@ -95,10 +96,14 @@ export function useTaskAssistant({ onSingleDraft, review, showAnswer }: Options)
       if (Object.keys(patch).length === 0) return [];
       return [{ task, patch, update: u }];
     });
-    let drafts = result.create.map((draft) => ({
-      ...draft,
-      categoryId: draft.categoryId && categoryIds.has(draft.categoryId) ? draft.categoryId : undefined,
-    }));
+    let drafts = result.create.flatMap((draft) => {
+      const { recurrence, ...baseDraft } = {
+        ...draft,
+        categoryId: draft.categoryId && categoryIds.has(draft.categoryId) ? draft.categoryId : undefined,
+        date: draft.date ?? today,
+      };
+      return generateRecurrentTasks(baseDraft, recurrence);
+    });
     let categoryDrafts = result.createCategories.filter(
       (c) => !categories.some((existing) => existing.name.toLowerCase() === c.name.toLowerCase())
     );
