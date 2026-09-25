@@ -34,7 +34,7 @@ export function UserProfileButton() {
     <>
       <button
         onClick={handleOpen}
-        className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:ring-2 hover:ring-brand/50 transition-all cursor-pointer"
+        className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:ring-2 hover:ring-brand/50 transition-all cursor-pointer"
         title="Meu Perfil"
       >
         {profile?.photo ? (

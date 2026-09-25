@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { X } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
@@ -41,7 +42,10 @@ export function Dialog({
     };
   }, [isOpen, onClose]);
 
-  return (
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+
+  const content = (
     <AnimatePresence>
       {isOpen && (
         <div className={cn("fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6", containerClassName)}>
@@ -103,4 +107,6 @@ export function Dialog({
       )}
     </AnimatePresence>
   );
+
+  return mounted && typeof document !== 'undefined' ? createPortal(content, document.body) : null;
 }
