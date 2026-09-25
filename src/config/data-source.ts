@@ -7,6 +7,10 @@ import {
   createLocalTransactionsRepository,
   FINANCE_STORAGE_KEYS,
 } from "@/features/finance/data/finance.local";
+import {
+  createHttpFinanceCategoriesRepository,
+  createHttpTransactionsRepository,
+} from "@/features/finance/data/finance.http";
 import type {
   TaskCategoriesRepository,
   TasksRepository,
@@ -16,6 +20,10 @@ import {
   createLocalTasksRepository,
   TASKS_STORAGE_KEYS,
 } from "@/features/tasks/data/tasks.local";
+import {
+  createHttpTaskCategoriesRepository,
+  createHttpTasksRepository,
+} from "@/features/tasks/data/tasks.http";
 import { removeKeys } from "@/shared/lib/local-store";
 
 export type DataSource = "local" | "http";
@@ -32,9 +40,12 @@ export const dataSource: DataSource =
 
 function createRepositories(source: DataSource): Repositories {
   if (source === "http") {
-    throw new Error(
-      "NEXT_PUBLIC_DATA_SOURCE=http ainda não tem implementação. Crie os repositórios *.http.ts em cada feature."
-    );
+    return {
+      tasks: createHttpTasksRepository(),
+      taskCategories: createHttpTaskCategoriesRepository(),
+      transactions: createHttpTransactionsRepository(),
+      financeCategories: createHttpFinanceCategoriesRepository(),
+    };
   }
   return {
     tasks: createLocalTasksRepository(),
