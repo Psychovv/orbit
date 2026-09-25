@@ -1,5 +1,4 @@
-import type { Profile, ProfileRepository } from "./profile.repository";
-import { useLocalString } from "@/shared/lib/use-local-preference";
+import type { ProfileRepository } from "./profile.repository";
 
 export const PROFILE_STORAGE_KEYS = {
   NAME: "orbit_user_name",

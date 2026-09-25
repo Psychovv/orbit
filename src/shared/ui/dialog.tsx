@@ -43,6 +43,7 @@ export function Dialog({
   }, [isOpen, onClose]);
 
   const [mounted, setMounted] = React.useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   React.useEffect(() => setMounted(true), []);
 
   const content = (

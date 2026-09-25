@@ -1,4 +1,4 @@
-import type { Profile, ProfileRepository } from "./profile.repository";
+import type { ProfileRepository } from "./profile.repository";
 
 export function createHttpProfileRepository(): ProfileRepository {
   return {

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth } from "@/server/auth-guard";
 import { profilesRepository } from "@/server/db/repositories/profiles.server";
 
-export async function GET(request: Request) {
+export async function GET() {
   const authResponse = await requireAuth();
   if (authResponse) return authResponse;
 

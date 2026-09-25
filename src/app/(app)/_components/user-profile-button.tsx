@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { User, Image as ImageIcon } from "lucide-react";
 import { Dialog } from "@/shared/ui/dialog";
 import { useProfile, useUpdateProfile } from "@/features/profile/hooks/use-profile";
@@ -38,6 +38,7 @@ export function UserProfileButton() {
         title="Meu Perfil"
       >
         {profile?.photo ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={profile.photo} alt="Avatar" className="h-full w-full object-cover" />
         ) : (
           <User className="h-4 w-4" />
@@ -54,6 +55,7 @@ export function UserProfileButton() {
           <div className="flex flex-col items-center gap-3">
             <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800 border-2 border-dashed border-zinc-300 dark:border-zinc-700">
               {draftPhoto ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={draftPhoto} alt="Avatar Preview" className="h-full w-full object-cover" />
               ) : (
                 <ImageIcon className="h-8 w-8 text-zinc-400" />

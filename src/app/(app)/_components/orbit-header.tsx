@@ -14,11 +14,9 @@ import { formatBRL } from "@/features/finance/domain/money";
 
 interface OrbitHeaderProps {
   onOpenMobileMenu: () => void;
-  isSidebarCollapsed?: boolean;
-  onToggleSidebarCollapse?: () => void;
 }
 
-export function OrbitHeader({ onOpenMobileMenu, isSidebarCollapsed = false, onToggleSidebarCollapse }: OrbitHeaderProps) {
+export function OrbitHeader({ onOpenMobileMenu }: OrbitHeaderProps) {
   const pathname = usePathname();
   const isFinance = pathname.startsWith("/finance");
   const isTasks = pathname.startsWith("/tasks");
