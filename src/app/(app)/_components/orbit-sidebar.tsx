@@ -18,6 +18,8 @@ import {
   ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
+  Settings,
+  LogOut,
 } from "lucide-react";
 import { dataSource, resetLocalData } from "@/config/data-source";
 import { useTaskDialogs } from "@/features/tasks/components/task-dialogs";
@@ -30,6 +32,7 @@ import { OrbitMark } from "@/shared/ui/orbit-mark";
 import { cn } from "@/shared/lib/utils";
 
 const FINANCE_PATH = "/finance";
+const SETTINGS_PATH = "/settings";
 
 interface OrbitSidebarProps {
   isOpenMobile: boolean;
@@ -44,8 +47,11 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
     ? "finance"
     : pathname.startsWith(TASKS_PATH)
       ? "tasks"
-      : "home";
+      : pathname.startsWith(SETTINGS_PATH)
+        ? "settings"
+        : "home";
   const [isTaskCategoriesExpanded, setIsTaskCategoriesExpanded] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const dialogs = useTaskDialogs();
   const queryClient = useQueryClient();
   const today = useTodayTasksSummary();
@@ -55,6 +61,16 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
     if (window.confirm("Deseja restaurar as tarefas e finanças para os dados de demonstração?")) {
       resetLocalData();
       queryClient.resetQueries();
+    }
+  };
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      window.location.href = "/login";
     }
   };
 
@@ -251,9 +267,36 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
           <span>Nova Tarefa</span>
         </button>
 
+        <div className="flex items-center gap-2">
+          <Link
+            href={SETTINGS_PATH}
+            onClick={onCloseMobile}
+            title="Configurações"
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer border",
+              activeModule === "settings"
+                ? "bg-brand/10 text-brand dark:text-brand-soft border-brand/25"
+                : "text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
+            )}
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span>Config</span>
+          </Link>
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            title="Sair da conta"
+            className="flex flex-1 items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900/50 transition-all cursor-pointer disabled:opacity-60"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>{isLoggingOut ? "Saindo…" : "Sair"}</span>
+          </button>
+        </div>
+
         {/* Reset Data */}
-        <div className="flex items-center justify-between pt-1">
-          {dataSource === "local" ? (
+        {dataSource === "local" ? (
+          <div className="flex items-center justify-between pt-0.5">
             <button
               onClick={handleResetData}
               title="Restaurar dados iniciais"
@@ -262,10 +305,8 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
               <RotateCcw className="w-3 h-3" />
               <span>Restaurar</span>
             </button>
-          ) : (
-            <span />
-          )}
-        </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -373,7 +414,41 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
         </div>
       </div>
 
+      {/* Bottom: Settings & Logout */}
+      <div className="flex flex-col items-center gap-2 pb-1">
+        <div className="relative group">
+          <Link
+            href={SETTINGS_PATH}
+            className={cn(
+              "flex h-9 w-9 items-center justify-center rounded-xl transition-all cursor-pointer",
+              activeModule === "settings"
+                ? "bg-brand text-white shadow-sm shadow-brand/30"
+                : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            )}
+            aria-label="Configurações"
+          >
+            <Settings className="w-4.5 h-4.5" />
+          </Link>
+          <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-zinc-900 text-white text-xs font-semibold whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-lg z-50">
+            Configurações
+          </div>
+        </div>
 
+        <div className="relative group">
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-zinc-500 hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer disabled:opacity-60"
+            aria-label="Sair"
+          >
+            <LogOut className="w-4.5 h-4.5" />
+          </button>
+          <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-zinc-900 text-white text-xs font-semibold whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-lg z-50">
+            Sair
+          </div>
+        </div>
+      </div>
     </div>
   );
 

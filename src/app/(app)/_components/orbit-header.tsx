@@ -2,9 +2,7 @@
 
 import React, { Suspense } from "react";
 import { usePathname } from "next/navigation";
-import { Menu, Calendar, House, Wallet } from "lucide-react";
-import { ThemeToggle } from "@/shared/ui/theme-toggle";
-import { UserProfileButton } from "./user-profile-button";
+import { Menu, Calendar, House, Settings, Wallet } from "lucide-react";
 import { OrbitMark } from "@/shared/ui/orbit-mark";
 import { formatShortMonth } from "@/shared/lib/date-utils";
 import { useTodayTasksSummary } from "@/features/tasks/hooks/use-today-tasks";
@@ -20,6 +18,7 @@ export function OrbitHeader({ onOpenMobileMenu }: OrbitHeaderProps) {
   const pathname = usePathname();
   const isFinance = pathname.startsWith("/finance");
   const isTasks = pathname.startsWith("/tasks");
+  const isSettings = pathname.startsWith("/settings");
 
   return (
     <header className="sticky top-0 z-20 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-[#090812]/85 backdrop-blur-xl transition-colors">
@@ -56,6 +55,11 @@ export function OrbitHeader({ onOpenMobileMenu }: OrbitHeaderProps) {
                     <Calendar className="w-4 h-4 text-brand" />
                     <span>Tarefas & Calendário</span>
                   </>
+                ) : isSettings ? (
+                  <>
+                    <Settings className="w-4 h-4 text-brand" />
+                    <span>Configurações</span>
+                  </>
                 ) : (
                   <>
                     <House className="w-4 h-4 text-brand" />
@@ -66,13 +70,11 @@ export function OrbitHeader({ onOpenMobileMenu }: OrbitHeaderProps) {
             </div>
           </div>
 
-          {/* Right: Quick info, Theme toggle & Profile */}
+          {/* Right: Quick info */}
           <div className="flex items-center gap-3">
             <Suspense fallback={null}>
               {isFinance ? <BalanceSummary /> : isTasks ? <TasksSummary /> : null}
             </Suspense>
-            <ThemeToggle />
-            <UserProfileButton />
           </div>
         </div>
       </div>
