@@ -9,6 +9,7 @@ import { useTodayTasksSummary } from "@/features/tasks/hooks/use-today-tasks";
 import { useFinanceViewState } from "@/features/finance/hooks/use-finance-view-state";
 import { useMonthBalance } from "@/features/finance/hooks/use-month-balance";
 import { formatBRL } from "@/features/finance/domain/money";
+import { UserAvatarLink } from "./user-avatar-link";
 
 interface OrbitHeaderProps {
   onOpenMobileMenu: () => void;
@@ -70,11 +71,12 @@ export function OrbitHeader({ onOpenMobileMenu }: OrbitHeaderProps) {
             </div>
           </div>
 
-          {/* Right: Quick info */}
+          {/* Right: Quick info + profile */}
           <div className="flex items-center gap-3">
             <Suspense fallback={null}>
               {isFinance ? <BalanceSummary /> : isTasks ? <TasksSummary /> : null}
             </Suspense>
+            <UserAvatarLink />
           </div>
         </div>
       </div>
