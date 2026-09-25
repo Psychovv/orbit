@@ -1,11 +1,18 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { Image as ImageIcon, Upload, Trash2 } from "lucide-react";
 import { useProfile, useUpdateProfile } from "@/features/profile/hooks/use-profile";
 
-const MAX_AVATAR_SIDE = 256;
-const JPEG_QUALITY = 0.82;
+/** Menor em prod: data URL no Turso fica leve o bastante pra save/load. */
+const MAX_AVATAR_SIDE = 160;
+const JPEG_QUALITY = 0.72;
+
+type Draft = {
+  name: string;
+  photo: string;
+  bio: string;
+};
 
 async function fileToAvatarDataUrl(file: File): Promise<string> {
   const bitmap = await createImageBitmap(file);
@@ -25,34 +32,40 @@ async function fileToAvatarDataUrl(file: File): Promise<string> {
 }
 
 export function ProfileForm() {
-  const { data: profile, isLoading } = useProfile();
+  const { data: profile, isLoading, isError, error, refetch } = useProfile();
   const updateProfile = useUpdateProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [draftName, setDraftName] = useState("");
-  const [draftPhoto, setDraftPhoto] = useState("");
-  const [draftBio, setDraftBio] = useState("");
+  const [draft, setDraft] = useState<Draft | null>(null);
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState("");
   const [savedFlash, setSavedFlash] = useState(false);
 
-  useEffect(() => {
-    if (!profile) return;
-    setDraftName(profile.name ?? "");
-    setDraftPhoto(profile.photo ?? "");
-    setDraftBio(profile.bio ?? "");
-  }, [profile]);
+  const draftName = draft?.name ?? profile?.name ?? "";
+  const draftPhoto = draft?.photo ?? profile?.photo ?? "";
+  const draftBio = draft?.bio ?? profile?.bio ?? "";
+  const dirty = draft !== null;
+
+  const patchDraft = (patch: Partial<Draft>) => {
+    setDraft({
+      name: draftName,
+      photo: draftPhoto,
+      bio: draftBio,
+      ...patch,
+    });
+  };
 
   const handleSave = (event: React.FormEvent) => {
     event.preventDefault();
     updateProfile.mutate(
       {
-        name: draftName.trim(),
+        name: draftName.trim() || null,
         photo: draftPhoto.trim() || null,
-        bio: draftBio.trim(),
+        bio: draftBio.trim() || null,
       },
       {
         onSuccess: () => {
+          setDraft(null);
           setSavedFlash(true);
           window.setTimeout(() => setSavedFlash(false), 1800);
         },
@@ -74,7 +87,7 @@ export function ProfileForm() {
     setPhotoError("");
     try {
       const dataUrl = await fileToAvatarDataUrl(file);
-      setDraftPhoto(dataUrl);
+      patchDraft({ photo: dataUrl });
     } catch {
       setPhotoError("Não foi possível carregar essa imagem.");
     } finally {
@@ -88,6 +101,23 @@ export function ProfileForm() {
         <div className="mx-auto h-20 w-20 rounded-full bg-zinc-200 dark:bg-zinc-800" />
         <div className="h-10 rounded-xl bg-zinc-200 dark:bg-zinc-800" />
         <div className="h-24 rounded-xl bg-zinc-200 dark:bg-zinc-800" />
+      </div>
+    );
+  }
+
+  if (isError && !profile) {
+    return (
+      <div className="space-y-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm dark:border-red-900/50 dark:bg-red-950/30">
+        <p className="font-medium text-red-700 dark:text-red-300">
+          {error instanceof Error ? error.message : "Não foi possível carregar o perfil."}
+        </p>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/50 cursor-pointer"
+        >
+          Tentar de novo
+        </button>
       </div>
     );
   }
@@ -127,7 +157,7 @@ export function ProfileForm() {
               <button
                 type="button"
                 onClick={() => {
-                  setDraftPhoto("");
+                  patchDraft({ photo: "" });
                   setPhotoError("");
                 }}
                 className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
@@ -155,7 +185,7 @@ export function ProfileForm() {
           <input
             type="text"
             value={draftName}
-            onChange={(e) => setDraftName(e.target.value)}
+            onChange={(e) => patchDraft({ name: e.target.value })}
             placeholder="Seu nome"
             className="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
           />
@@ -167,7 +197,7 @@ export function ProfileForm() {
           </label>
           <textarea
             value={draftBio}
-            onChange={(e) => setDraftBio(e.target.value)}
+            onChange={(e) => patchDraft({ bio: e.target.value })}
             placeholder="Uma breve descrição sobre você"
             rows={3}
             className="w-full resize-none rounded-xl border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
@@ -176,6 +206,13 @@ export function ProfileForm() {
       </div>
 
       <div className="flex items-center justify-end gap-3">
+        {updateProfile.isError ? (
+          <span className="text-xs font-medium text-red-600 dark:text-red-400">
+            {updateProfile.error instanceof Error
+              ? updateProfile.error.message
+              : "Erro ao salvar"}
+          </span>
+        ) : null}
         {savedFlash ? (
           <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
             Perfil salvo
@@ -183,7 +220,7 @@ export function ProfileForm() {
         ) : null}
         <button
           type="submit"
-          disabled={updateProfile.isPending}
+          disabled={updateProfile.isPending || !dirty}
           className="rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-strong transition-colors shadow-sm shadow-brand/25 cursor-pointer disabled:opacity-60"
         >
           {updateProfile.isPending ? "Salvando…" : "Salvar perfil"}
