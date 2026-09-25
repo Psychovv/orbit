@@ -1,10 +1,25 @@
 "use client";
 
-import { Palette, User } from "lucide-react";
+import { Database, Palette, RotateCcw, User } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { dataSource, resetLocalData } from "@/config/data-source";
 import { ProfileForm } from "@/features/profile/components/profile-form";
 import { ThemeToggle } from "@/shared/ui/theme-toggle";
 
 export function SettingsView() {
+  const queryClient = useQueryClient();
+
+  const handleResetData = () => {
+    if (
+      window.confirm(
+        "Deseja restaurar tarefas, finanças e perfil para os dados de demonstração? Isso apaga os dados locais atuais."
+      )
+    ) {
+      resetLocalData();
+      queryClient.resetQueries();
+    }
+  };
+
   return (
     <div className="mx-auto max-w-2xl space-y-6 py-2 sm:py-4">
       <div>
@@ -39,6 +54,34 @@ export function SettingsView() {
           <ThemeToggle />
         </div>
       </section>
+
+      {dataSource === "local" ? (
+        <section className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-[#100e1e]/70 backdrop-blur-md p-4 sm:p-5 shadow-2xs">
+          <div className="mb-4 flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
+            <Database className="h-4 w-4 text-brand" />
+            <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Dados</h2>
+          </div>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                Restaurar dados de demonstração
+              </p>
+              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                Apaga tarefas, finanças e perfil locais e volta o conteúdo inicial de demo.
+                Disponível só no modo local.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleResetData}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Restaurar
+            </button>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

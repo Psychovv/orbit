@@ -3,7 +3,6 @@
 import React, { Suspense, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Calendar,
@@ -11,7 +10,6 @@ import {
   Wallet,
   Plus,
   SlidersHorizontal,
-  RotateCcw,
   X,
   Layers,
   ChevronDown,
@@ -21,7 +19,6 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
-import { dataSource, resetLocalData } from "@/config/data-source";
 import { useTaskDialogs } from "@/features/tasks/components/task-dialogs";
 import { ALL_CATEGORIES, countByCategory } from "@/features/tasks/domain/task.selectors";
 import { useTaskCategories, useTasks } from "@/features/tasks/hooks/use-tasks";
@@ -53,16 +50,8 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
   const [isTaskCategoriesExpanded, setIsTaskCategoriesExpanded] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const dialogs = useTaskDialogs();
-  const queryClient = useQueryClient();
   const today = useTodayTasksSummary();
   const todayLabel = today ? `${today.completed}/${today.total}` : "–";
-
-  const handleResetData = () => {
-    if (window.confirm("Deseja restaurar as tarefas e finanças para os dados de demonstração?")) {
-      resetLocalData();
-      queryClient.resetQueries();
-    }
-  };
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -293,20 +282,6 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
             <span>{isLoggingOut ? "Saindo…" : "Sair"}</span>
           </button>
         </div>
-
-        {/* Reset Data */}
-        {dataSource === "local" ? (
-          <div className="flex items-center justify-between pt-0.5">
-            <button
-              onClick={handleResetData}
-              title="Restaurar dados iniciais"
-              className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors cursor-pointer"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Restaurar</span>
-            </button>
-          </div>
-        ) : null}
       </div>
     </div>
   );
