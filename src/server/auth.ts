@@ -1,9 +1,22 @@
 import 'server-only'
+import { timingSafeEqual } from 'crypto'
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 
 const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET ?? 'dev-secret-change-me')
 const COOKIE_NAME = 'orbit-session'
+const MIN_PRODUCTION_PASSWORD_LENGTH = 16
+
+function safeEqual(a: string, b: string): boolean {
+  const left = Buffer.from(a)
+  const right = Buffer.from(b)
+  if (left.length !== right.length) {
+    // Evita short-circuit óbvio mantendo trabalho constante na comparação.
+    timingSafeEqual(left, left)
+    return false
+  }
+  return timingSafeEqual(left, right)
+}
 
 export async function createSession() {
   const token = await new SignJWT({ sub: 'owner' })
@@ -11,7 +24,7 @@ export async function createSession() {
     .setIssuedAt()
     .setExpirationTime('30d')
     .sign(SECRET)
-  
+
   const cookieStore = await cookies()
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
@@ -39,7 +52,22 @@ export async function deleteSession() {
   cookieStore.delete(COOKIE_NAME)
 }
 
-// Validate credentials against env vars
+/** Valida email/senha do env. Em produção exige senha com pelo menos 16 caracteres. */
 export function validateCredentials(email: string, password: string): boolean {
-  return email === process.env.AUTH_EMAIL && password === process.env.AUTH_PASSWORD
+  const expectedEmail = process.env.AUTH_EMAIL ?? ''
+  const expectedPassword = process.env.AUTH_PASSWORD ?? ''
+
+  if (!expectedEmail || !expectedPassword) return false
+
+  if (
+    process.env.NODE_ENV === 'production' &&
+    expectedPassword.length < MIN_PRODUCTION_PASSWORD_LENGTH
+  ) {
+    console.error(
+      `[auth] AUTH_PASSWORD deve ter pelo menos ${MIN_PRODUCTION_PASSWORD_LENGTH} caracteres em produção.`
+    )
+    return false
+  }
+
+  return safeEqual(email, expectedEmail) && safeEqual(password, expectedPassword)
 }
