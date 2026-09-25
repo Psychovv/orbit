@@ -28,6 +28,7 @@ import { DayColumn } from "./day-column";
 import { MonthCalendarView } from "./month-calendar-view";
 import { DayDetailModal } from "./day-detail-modal";
 import { TaskItem } from "./task-item";
+import { TaskStreakChart } from "./task-streak-chart";
 import { AssistantButton } from "@/features/assistant/components/assistant-button";
 import { useAssistantReview } from "@/features/assistant/components/assistant-review-dialog";
 import { Button } from "@/shared/ui/button";
@@ -229,6 +230,8 @@ export function TasksView() {
           className={pickerInputClass}
         />
       </PeriodNavigator>
+
+      <TaskStreakChart categoryId={selectedCategoryId} />
 
       {/* Main View: Week (7 Columns) or Month (Grid) */}
       {viewMode === "week" ? (
