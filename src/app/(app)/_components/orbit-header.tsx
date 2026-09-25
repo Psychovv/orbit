@@ -66,13 +66,13 @@ export function OrbitHeader({ onOpenMobileMenu }: OrbitHeaderProps) {
             </div>
           </div>
 
-          {/* Right: Quick info, Profile & Theme toggle */}
+          {/* Right: Quick info, Theme toggle & Profile */}
           <div className="flex items-center gap-3">
             <Suspense fallback={null}>
               {isFinance ? <BalanceSummary /> : isTasks ? <TasksSummary /> : null}
             </Suspense>
-            <UserProfileButton />
             <ThemeToggle />
+            <UserProfileButton />
           </div>
         </div>
       </div>
