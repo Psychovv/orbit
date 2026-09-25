@@ -5,7 +5,6 @@ import { cookies } from 'next/headers'
 
 const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET ?? 'dev-secret-change-me')
 const COOKIE_NAME = 'orbit-session'
-const MIN_PRODUCTION_PASSWORD_LENGTH = 16
 
 function safeEqual(a: string, b: string): boolean {
   const left = Buffer.from(a)
@@ -52,22 +51,12 @@ export async function deleteSession() {
   cookieStore.delete(COOKIE_NAME)
 }
 
-/** Valida email/senha do env. Em produção exige senha com pelo menos 16 caracteres. */
+/** Valida email/senha do env com comparação timing-safe. */
 export function validateCredentials(email: string, password: string): boolean {
   const expectedEmail = process.env.AUTH_EMAIL ?? ''
   const expectedPassword = process.env.AUTH_PASSWORD ?? ''
 
   if (!expectedEmail || !expectedPassword) return false
-
-  if (
-    process.env.NODE_ENV === 'production' &&
-    expectedPassword.length < MIN_PRODUCTION_PASSWORD_LENGTH
-  ) {
-    console.error(
-      `[auth] AUTH_PASSWORD deve ter pelo menos ${MIN_PRODUCTION_PASSWORD_LENGTH} caracteres em produção.`
-    )
-    return false
-  }
 
   return safeEqual(email, expectedEmail) && safeEqual(password, expectedPassword)
 }
