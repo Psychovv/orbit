@@ -22,6 +22,8 @@ import { TransactionsTable } from "./transactions-table";
 import { AddTransactionModal, type TransactionFormDefaults } from "./add-transaction-modal";
 import { ManageFinanceCategoriesModal } from "./manage-finance-categories-modal";
 import { AssistantButton } from "@/features/assistant/components/assistant-button";
+import { useAssistantAnswer } from "@/features/assistant/components/assistant-answer-dialog";
+import { useAssistantReview } from "@/features/assistant/components/assistant-review-dialog";
 import { Button } from "@/shared/ui/button";
 import { PeriodNavigator, pickerInputClass } from "@/shared/ui/period-navigator";
 import { ViewSkeleton } from "@/shared/ui/view-skeleton";
@@ -43,6 +45,8 @@ export function FinanceView() {
   const { monthKey, isCurrentMonth, setMonthKey } = useFinanceViewState();
   const [draft, setDraft] = useState<TransactionDraft | null>(null);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+  const review = useAssistantReview();
+  const answer = useAssistantAnswer();
 
   const range = useMemo(() => monthRange(monthKey), [monthKey]);
   const transactionsQuery = useTransactions(range);
@@ -59,6 +63,8 @@ export function FinanceView() {
         mode: "create",
         defaults: { ...next, amountCents: amount !== undefined ? toCents(amount) : undefined },
       }),
+    review: review.request,
+    showAnswer: answer.show,
   });
 
   const monthlyTransactions = useMemo(() => transactionsQuery.data ?? [], [transactionsQuery.data]);
@@ -203,6 +209,9 @@ export function FinanceView() {
         onUpdate={(id, patch) => updateCategory.mutate({ id, patch })}
         onDelete={(id) => deleteCategory.mutate(id)}
       />
+
+      {review.dialog}
+      {answer.dialog}
     </div>
   );
 }

@@ -30,6 +30,7 @@ import { DayDetailModal } from "./day-detail-modal";
 import { TaskItem } from "./task-item";
 import { TaskStreakChart } from "./task-streak-chart";
 import { AssistantButton } from "@/features/assistant/components/assistant-button";
+import { useAssistantAnswer } from "@/features/assistant/components/assistant-answer-dialog";
 import { useAssistantReview } from "@/features/assistant/components/assistant-review-dialog";
 import { Button } from "@/shared/ui/button";
 import { PeriodNavigator, pickerInputClass } from "@/shared/ui/period-navigator";
@@ -62,6 +63,7 @@ export function TasksView() {
   const [draggingTask, setDraggingTask] = useState<Task | null>(null);
   const dialogs = useTaskDialogs();
   const review = useAssistantReview();
+  const answer = useAssistantAnswer();
 
   const range = useMemo(
     () => (viewMode === "week" ? weekRange(baseDate) : monthGridRange(baseDate)),
@@ -76,6 +78,7 @@ export function TasksView() {
   const runAssistant = useTaskAssistant({
     onSingleDraft: (draft) => dialogs.openAddTask(draft),
     review: review.request,
+    showAnswer: answer.show,
   });
 
   const sensors = useSensors(
@@ -296,6 +299,7 @@ export function TasksView() {
       />
 
       {review.dialog}
+      {answer.dialog}
     </div>
   );
 }
