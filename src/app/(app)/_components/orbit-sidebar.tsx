@@ -2,7 +2,7 @@
 
 import React, { Suspense, useState } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Calendar,
@@ -40,6 +40,7 @@ interface OrbitSidebarProps {
 
 export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false, onToggleCollapse }: OrbitSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const activeModule = pathname.startsWith(FINANCE_PATH)
     ? "finance"
     : pathname.startsWith(TASKS_PATH)
@@ -59,7 +60,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } finally {
-      window.location.href = "/login";
+      router.push("/login");
     }
   };
 

@@ -102,7 +102,10 @@ export function useTaskAssistant({ onSingleDraft, review, showAnswer }: Options)
         categoryId: draft.categoryId && categoryIds.has(draft.categoryId) ? draft.categoryId : undefined,
         date: draft.date ?? today,
       };
-      return generateRecurrentTasks(baseDraft, recurrence);
+      const validRecurrence = recurrence?.pattern && recurrence?.count
+        ? { pattern: recurrence.pattern, count: recurrence.count }
+        : undefined;
+      return generateRecurrentTasks(baseDraft, validRecurrence);
     });
     let categoryDrafts = result.createCategories.filter(
       (c) => !categories.some((existing) => existing.name.toLowerCase() === c.name.toLowerCase())

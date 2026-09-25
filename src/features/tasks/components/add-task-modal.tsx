@@ -257,7 +257,7 @@ export function TaskForm({
           <div className="flex items-center gap-3">
             <select
               value={recurrencePattern}
-              onChange={(e) => setRecurrencePattern(e.target.value as any)}
+              onChange={(e) => setRecurrencePattern(e.target.value as "daily" | "weekly" | "monthly")}
               className="flex h-9 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm"
             >
               <option value="daily">Diariamente</option>
