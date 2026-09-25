@@ -24,7 +24,7 @@ interface AddTaskModalProps {
   onClose: () => void;
   categories: TaskCategory[];
   defaults: TaskFormDefaults;
-  onSubmit: (input: CreateTaskInput) => void;
+  onSubmit: (input: CreateTaskInput & { recurrence?: import("../domain/recurrence").Recurrence }) => void;
 }
 
 const PRIORITY_OPTIONS: { value: Priority; label: string; color: string }[] = [
@@ -77,6 +77,7 @@ export function TaskForm({
     time: string | null;
     categoryId: string | null;
     priority: Priority;
+    recurrence?: import("../domain/recurrence").Recurrence;
   }) => void;
   submitLabel: string;
   allowEmptyCategory?: boolean;
@@ -93,6 +94,9 @@ export function TaskForm({
   );
   const [priority, setPriority] = useState<Priority>(defaults.priority ?? "media");
   const [time, setTime] = useState(defaults.time ?? "");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrencePattern, setRecurrencePattern] = useState<"daily" | "weekly" | "monthly">("daily");
+  const [recurrenceCount, setRecurrenceCount] = useState(7);
 
   const day = getDayOfWeek(date);
 
@@ -112,6 +116,7 @@ export function TaskForm({
       time: time || null,
       categoryId,
       priority,
+      ...(isRecurring && { recurrence: { pattern: recurrencePattern, count: recurrenceCount } }),
     });
     onClose();
   };
@@ -235,6 +240,44 @@ export function TaskForm({
             className="flex h-10 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/40 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/20"
           />
         </div>
+      </div>
+
+      {/* Recurrence */}
+      <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/50">
+        <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <input
+            type="checkbox"
+            checked={isRecurring}
+            onChange={(e) => setIsRecurring(e.target.checked)}
+            className="rounded border-zinc-300 text-brand focus:ring-brand"
+          />
+          Repetir tarefa
+        </label>
+        {isRecurring && (
+          <div className="flex items-center gap-3">
+            <select
+              value={recurrencePattern}
+              onChange={(e) => setRecurrencePattern(e.target.value as any)}
+              className="flex h-9 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm"
+            >
+              <option value="daily">Diariamente</option>
+              <option value="weekly">Semanalmente</option>
+              <option value="monthly">Mensalmente</option>
+            </select>
+            <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+              por
+              <input
+                type="number"
+                min="2"
+                max="100"
+                value={recurrenceCount}
+                onChange={(e) => setRecurrenceCount(Number(e.target.value))}
+                className="w-16 h-9 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2 py-1.5 text-sm text-center"
+              />
+              vezes
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Notes / Description */}

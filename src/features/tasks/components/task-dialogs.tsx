@@ -75,7 +75,12 @@ function TaskDialogsInner({ children }: { children: React.ReactNode }) {
         onClose={() => setAddTaskDefaults(null)}
         categories={categories}
         defaults={addTaskDefaults ?? {}}
-        onSubmit={(input) => createTask.mutate(input)}
+        onSubmit={async (input) => {
+          const { recurrence, ...baseInput } = input;
+          const { generateRecurrentTasks } = await import("../domain/recurrence");
+          const tasksToCreate = generateRecurrentTasks(baseInput, recurrence);
+          await Promise.all(tasksToCreate.map((t) => createTask.mutateAsync(t)));
+        }}
       />
 
       <ManageCategoriesModal
