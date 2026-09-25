@@ -6,6 +6,7 @@ import {
 import { NextResponse } from "next/server";
 import type { z } from "zod";
 import { clientKey, rateLimit } from "./rate-limit";
+import { requireAuth } from "@/server/auth-guard";
 
 const RATE_LIMIT = { limit: 20, windowMs: 60_000 };
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -126,6 +127,9 @@ export function createAssistantRoute<Req extends z.ZodType, Res extends z.ZodTyp
   resolveLocally,
 }: AssistantRouteOptions<Req, Res>) {
   return async function POST(req: Request) {
+    const authResponse = await requireAuth();
+    if (authResponse) return authResponse;
+
     try {
       if (!rateLimit(`${name}:${clientKey(req)}`, RATE_LIMIT.limit, RATE_LIMIT.windowMs)) {
         throw new HttpError(429, "Muitas requisições. Aguarde um minuto e tente de novo.");
