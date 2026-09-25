@@ -5,8 +5,8 @@ import {
 } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import type { z } from "zod";
-import { clientKey, rateLimit } from "./rate-limit";
 import { requireAuth } from "@/server/auth-guard";
+import { clientKey, rateLimit } from "@/server/rate-limit";
 
 const RATE_LIMIT = { limit: 20, windowMs: 60_000 };
 const REQUEST_TIMEOUT_MS = 15_000;
