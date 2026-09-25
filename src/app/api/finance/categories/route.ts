@@ -3,7 +3,7 @@ import { requireAuth } from "@/server/auth-guard";
 import { CreateFinanceCategorySchema } from "@/features/finance/domain/finance.schema";
 import { financeCategoriesRepository } from "@/server/db/repositories/finance.server";
 
-export async function GET(request: Request) {
+export async function GET() {
   const authResponse = await requireAuth();
   if (authResponse) return authResponse;
 

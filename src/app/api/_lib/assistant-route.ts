@@ -83,13 +83,13 @@ async function callModel(
 
 async function generateJson(
   prompt: string,
-  useStrongerModel: boolean,
+  preferStrongerModel: boolean,
   recoverLocally: () => unknown | null
 ): Promise<unknown> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new HttpError(500, "GEMINI_API_KEY não configurada no servidor.");
 
-  const [first, second] = useStrongerModel ? [STRONGER_MODEL, PRIMARY_MODEL] : [PRIMARY_MODEL, STRONGER_MODEL];
+  const [first, second] = preferStrongerModel ? [STRONGER_MODEL, PRIMARY_MODEL] : [PRIMARY_MODEL, STRONGER_MODEL];
   try {
     return await callModel(apiKey, first, prompt);
   } catch (error) {
@@ -111,7 +111,7 @@ interface AssistantRouteOptions<Req extends z.ZodType, Res extends z.ZodType> {
   /** Ajustes determinísticos sobre a resposta já validada. */
   postProcess?: (output: z.infer<Res>, input: z.infer<Req>) => z.infer<Res>;
   /** Data relativa com lista longa: começa pelo 3.5 Flash-Lite. */
-  useStrongerModel?: (input: z.infer<Req>) => boolean;
+  preferStrongerModel?: (input: z.infer<Req>) => boolean;
   /** Pedido óbvio resolvido no servidor quando o Gemini não responde. */
   resolveLocally?: (input: z.infer<Req>) => unknown | null;
 }
@@ -123,7 +123,7 @@ export function createAssistantRoute<Req extends z.ZodType, Res extends z.ZodTyp
   response,
   buildPrompt,
   postProcess,
-  useStrongerModel,
+  preferStrongerModel,
   resolveLocally,
 }: AssistantRouteOptions<Req, Res>) {
   return async function POST(req: Request) {
@@ -147,7 +147,7 @@ export function createAssistantRoute<Req extends z.ZodType, Res extends z.ZodTyp
       try {
         const raw = await generateJson(
           buildPrompt(body.data),
-          useStrongerModel?.(body.data) ?? false,
+          preferStrongerModel?.(body.data) ?? false,
           () => resolveLocally?.(body.data) ?? null
         );
         return respond(raw);

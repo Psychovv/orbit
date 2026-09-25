@@ -31,7 +31,7 @@ Tarefas Existentes: ${pendingTasks.map((t) => `${t.id}|${t.date || "?"}|${t.comp
 Texto: "${text}"`;
   },
 
-  useStrongerModel: ({ text, pendingTasks }) => prefersStrongerTaskModel(text, pendingTasks.length),
+  preferStrongerModel: ({ text, pendingTasks }) => prefersStrongerTaskModel(text, pendingTasks.length),
 
   resolveLocally: ({ text, currentDate, pendingTasks }) =>
     localTaskCommand(text, currentDate ?? formatDateKey(new Date()), pendingTasks),
