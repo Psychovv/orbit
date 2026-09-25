@@ -4,6 +4,7 @@ import React, { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, Calendar, House, Wallet } from "lucide-react";
 import { ThemeToggle } from "@/shared/ui/theme-toggle";
+import { UserProfileButton } from "./user-profile-button";
 import { OrbitMark } from "@/shared/ui/orbit-mark";
 import { formatShortMonth } from "@/shared/lib/date-utils";
 import { useTodayTasksSummary } from "@/features/tasks/hooks/use-today-tasks";
@@ -67,11 +68,12 @@ export function OrbitHeader({ onOpenMobileMenu, isSidebarCollapsed = false, onTo
             </div>
           </div>
 
-          {/* Right: Quick info & Theme toggle */}
+          {/* Right: Quick info, Profile & Theme toggle */}
           <div className="flex items-center gap-3">
             <Suspense fallback={null}>
               {isFinance ? <BalanceSummary /> : isTasks ? <TasksSummary /> : null}
             </Suspense>
+            <UserProfileButton />
             <ThemeToggle />
           </div>
         </div>
