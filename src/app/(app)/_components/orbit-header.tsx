@@ -2,7 +2,7 @@
 
 import React, { Suspense } from "react";
 import { usePathname } from "next/navigation";
-import { Menu, Calendar, House, Wallet, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Menu, Calendar, House, Wallet } from "lucide-react";
 import { ThemeToggle } from "@/shared/ui/theme-toggle";
 import { OrbitMark } from "@/shared/ui/orbit-mark";
 import { formatShortMonth } from "@/shared/lib/date-utils";
@@ -28,22 +28,6 @@ export function OrbitHeader({ onOpenMobileMenu, isSidebarCollapsed = false, onTo
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Left: Mobile hamburger & Brand / Desktop Sidebar Toggle */}
           <div className="flex items-center gap-3">
-            {/* Desktop Sidebar Toggle Button */}
-            {onToggleSidebarCollapse && (
-              <button
-                onClick={onToggleSidebarCollapse}
-                className="hidden md:flex p-2 rounded-xl text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
-                title={isSidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
-                aria-label={isSidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
-              >
-                {isSidebarCollapsed ? (
-                  <PanelLeftOpen className="w-5 h-5 text-brand" />
-                ) : (
-                  <PanelLeftClose className="w-5 h-5 text-zinc-500 hover:text-brand" />
-                )}
-              </button>
-            )}
-
             <button
               onClick={onOpenMobileMenu}
               className="md:hidden p-2 rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
