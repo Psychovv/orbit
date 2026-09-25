@@ -5,6 +5,7 @@ import {
 } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import type { z } from "zod";
+import { ASSISTANT_SOURCE_HEADER, type AssistantSource } from "@/features/assistant/domain/source";
 import { requireAuth } from "@/server/auth-guard";
 import { clientKey, rateLimit } from "@/server/rate-limit";
 
@@ -85,21 +86,21 @@ async function generateJson(
   prompt: string,
   preferStrongerModel: boolean,
   recoverLocally: () => unknown | null
-): Promise<unknown> {
+): Promise<{ raw: unknown; source: AssistantSource }> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new HttpError(500, "GEMINI_API_KEY não configurada no servidor.");
 
   const [first, second] = preferStrongerModel ? [STRONGER_MODEL, PRIMARY_MODEL] : [PRIMARY_MODEL, STRONGER_MODEL];
   try {
-    return await callModel(apiKey, first, prompt);
+    return { raw: await callModel(apiKey, first, prompt), source: "model" };
   } catch (error) {
     if (!isRetryable(error)) throw error;
     if (isModelOverloaded(error)) {
       const local = recoverLocally();
-      if (local) return local;
+      if (local) return { raw: local, source: "local" };
     }
     console.error(`[assistant] ${first.id} falhou, tentando ${second.id}`, error);
-    return callModel(apiKey, second, prompt);
+    return { raw: await callModel(apiKey, second, prompt), source: "model" };
   }
 }
 
@@ -138,22 +139,25 @@ export function createAssistantRoute<Req extends z.ZodType, Res extends z.ZodTyp
       const body = request.safeParse(await req.json().catch(() => null));
       if (!body.success) throw new HttpError(400, "Pedido inválido.");
 
-      const respond = (raw: unknown) => {
+      const respond = (raw: unknown, source: AssistantSource) => {
         const output = response.safeParse(raw);
         if (!output.success) throw new HttpError(502, "A IA respondeu em um formato inesperado.");
-        return NextResponse.json(postProcess ? postProcess(output.data, body.data) : output.data);
+        const data = postProcess ? postProcess(output.data, body.data) : output.data;
+        return NextResponse.json(data, {
+          headers: { [ASSISTANT_SOURCE_HEADER]: source },
+        });
       };
 
       try {
-        const raw = await generateJson(
+        const { raw, source } = await generateJson(
           buildPrompt(body.data),
           preferStrongerModel?.(body.data) ?? false,
           () => resolveLocally?.(body.data) ?? null
         );
-        return respond(raw);
+        return respond(raw, source);
       } catch (error) {
         const local = resolveLocally?.(body.data);
-        if (local) return respond(local);
+        if (local) return respond(local, "local");
         throw error;
       }
     } catch (error) {
