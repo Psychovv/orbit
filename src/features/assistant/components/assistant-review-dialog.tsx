@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
-import { Check, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { Check, CheckCircle2, Pencil, Plus, Tag, Trash2 } from "lucide-react";
 import { Dialog } from "@/shared/ui/dialog";
 import { Button } from "@/shared/ui/button";
 import { cn } from "@/shared/lib/utils";
 
-export type ReviewGroup = "create" | "complete" | "delete";
+export type ReviewGroup = "create" | "update" | "complete" | "delete" | "createCategory";
 
 export interface ReviewItem {
   id: string;
@@ -52,6 +52,7 @@ export function useAssistantReview() {
 
 const GROUPS: { id: ReviewGroup; title: string; icon: React.ReactNode; tone: string }[] = [
   { id: "create", title: "Criar", icon: <Plus className="w-3.5 h-3.5" />, tone: "text-brand dark:text-brand-soft" },
+  { id: "update", title: "Editar", icon: <Pencil className="w-3.5 h-3.5" />, tone: "text-amber-600 dark:text-amber-400" },
   {
     id: "complete",
     title: "Concluir",
@@ -59,6 +60,12 @@ const GROUPS: { id: ReviewGroup; title: string; icon: React.ReactNode; tone: str
     tone: "text-emerald-600 dark:text-emerald-400",
   },
   { id: "delete", title: "Excluir", icon: <Trash2 className="w-3.5 h-3.5" />, tone: "text-rose-600 dark:text-rose-400" },
+  {
+    id: "createCategory",
+    title: "Categoria",
+    icon: <Tag className="w-3.5 h-3.5" />,
+    tone: "text-sky-600 dark:text-sky-400",
+  },
 ];
 
 function ReviewBody({
