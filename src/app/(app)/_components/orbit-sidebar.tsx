@@ -25,7 +25,7 @@ import { ALL_CATEGORIES, countByCategory } from "@/features/tasks/domain/task.se
 import { useTaskCategories, useTasks } from "@/features/tasks/hooks/use-tasks";
 import { useTodayTasksSummary } from "@/features/tasks/hooks/use-today-tasks";
 import { TASKS_PATH, tasksHref } from "@/features/tasks/hooks/use-tasks-view-state";
-import { ThemeToggle } from "@/shared/ui/theme-toggle";
+
 import { OrbitMark } from "@/shared/ui/orbit-mark";
 import { cn } from "@/shared/lib/utils";
 
@@ -251,7 +251,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
           <span>Nova Tarefa</span>
         </button>
 
-        {/* Theme Toggle & Reset Data */}
+        {/* Reset Data */}
         <div className="flex items-center justify-between pt-1">
           {dataSource === "local" ? (
             <button
@@ -265,8 +265,6 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
           ) : (
             <span />
           )}
-
-          <ThemeToggle />
         </div>
       </div>
     </div>
@@ -375,10 +373,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
         </div>
       </div>
 
-      {/* Bottom: Theme Toggle */}
-      <div className="flex flex-col items-center gap-2 pt-2">
-        <ThemeToggle />
-      </div>
+
     </div>
   );
 
