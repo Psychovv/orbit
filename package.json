@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "drizzle-kit push --force && next build",
+    "db:push": "drizzle-kit push",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
