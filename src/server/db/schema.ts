@@ -43,3 +43,11 @@ export const transactions = sqliteTable('transactions', {
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
+
+export const profiles = sqliteTable('profiles', {
+  id: text('id').primaryKey(),
+  name: text('name'),
+  photo: text('photo'),
+  bio: text('bio'),
+  updatedAt: text('updated_at').notNull(),
+});

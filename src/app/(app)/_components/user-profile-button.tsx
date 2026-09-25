@@ -1,35 +1,32 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { User, Image as ImageIcon } from "lucide-react";
 import { Dialog } from "@/shared/ui/dialog";
-import { useLocalString } from "@/shared/lib/use-local-preference";
-
-const USER_NAME_KEY = "orbit_user_name";
-const USER_PHOTO_KEY = "orbit_user_photo";
-const USER_BIO_KEY = "orbit_user_bio";
+import { useProfile, useUpdateProfile } from "@/features/profile/hooks/use-profile";
 
 export function UserProfileButton() {
   const [isOpen, setIsOpen] = useState(false);
-  const [name, setName] = useLocalString(USER_NAME_KEY);
-  const [photo, setPhoto] = useLocalString(USER_PHOTO_KEY);
-  const [bio, setBio] = useLocalString(USER_BIO_KEY);
+  const { data: profile } = useProfile();
+  const updateProfile = useUpdateProfile();
 
   const [draftName, setDraftName] = useState("");
   const [draftPhoto, setDraftPhoto] = useState("");
   const [draftBio, setDraftBio] = useState("");
 
   const handleOpen = () => {
-    setDraftName(name ?? "");
-    setDraftPhoto(photo ?? "");
-    setDraftBio(bio ?? "");
+    setDraftName(profile?.name ?? "");
+    setDraftPhoto(profile?.photo ?? "");
+    setDraftBio(profile?.bio ?? "");
     setIsOpen(true);
   };
 
   const handleSave = () => {
-    setName(draftName.trim());
-    setPhoto(draftPhoto.trim());
-    setBio(draftBio.trim());
+    updateProfile.mutate({
+      name: draftName.trim(),
+      photo: draftPhoto.trim(),
+      bio: draftBio.trim(),
+    });
     setIsOpen(false);
   };
 
@@ -40,8 +37,8 @@ export function UserProfileButton() {
         className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:ring-2 hover:ring-brand/50 transition-all cursor-pointer"
         title="Meu Perfil"
       >
-        {photo ? (
-          <img src={photo} alt="Avatar" className="h-full w-full object-cover" />
+        {profile?.photo ? (
+          <img src={profile.photo} alt="Avatar" className="h-full w-full object-cover" />
         ) : (
           <User className="h-4 w-4" />
         )}
