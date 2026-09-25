@@ -7,6 +7,19 @@ const COOKIE_NAME = 'orbit-session'
 
 const PUBLIC_PATHS = ['/login', '/api/auth']
 
+function unauthorized(request: NextRequest, clearCookie = false) {
+  const isApi = request.nextUrl.pathname.startsWith('/api/')
+  if (isApi) {
+    const response = NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
+    if (clearCookie) response.cookies.delete(COOKIE_NAME)
+    return response
+  }
+
+  const response = NextResponse.redirect(new URL('/login', request.url))
+  if (clearCookie) response.cookies.delete(COOKIE_NAME)
+  return response
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   
@@ -18,17 +31,14 @@ export async function proxy(request: NextRequest) {
   // Check session cookie
   const token = request.cookies.get(COOKIE_NAME)?.value
   if (!token) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return unauthorized(request)
   }
   
   try {
     await jwtVerify(token, SECRET)
     return NextResponse.next()
   } catch {
-    // Invalid/expired token
-    const response = NextResponse.redirect(new URL('/login', request.url))
-    response.cookies.delete(COOKIE_NAME)
-    return response
+    return unauthorized(request, true)
   }
 }
 
