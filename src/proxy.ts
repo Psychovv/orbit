@@ -5,7 +5,7 @@ import { jwtVerify } from 'jose'
 const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET ?? 'dev-secret-change-me')
 const COOKIE_NAME = 'orbit-session'
 
-const PUBLIC_PATHS = ['/login', '/api/auth']
+const PUBLIC_PATHS = ['/login', '/api/auth', '/manifest.webmanifest', '/sw.js']
 
 function unauthorized(request: NextRequest, clearCookie = false) {
   const isApi = request.nextUrl.pathname.startsWith('/api/')
@@ -45,6 +45,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Match all paths except static files and images
-    '/((?!_next/static|_next/image|favicon.ico|icon.svg|.*\\.png$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|icon.svg|manifest.webmanifest|sw.js|.*\\.png$).*)',
   ],
 }
