@@ -133,6 +133,18 @@ export function TasksView() {
     if (task && event.over) moveTask(task, String(event.over.id));
   };
 
+  React.useEffect(() => {
+    if (viewMode === "week" && isCurrentPeriod && !tasksQuery.isPending && !categoriesQuery.isPending) {
+      const timeoutId = setTimeout(() => {
+        const el = document.getElementById("today-column");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        }
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [viewMode, isCurrentPeriod, baseDate, tasksQuery.isPending, categoriesQuery.isPending]);
+
   if (tasksQuery.isPending || categoriesQuery.isPending) return <ViewSkeleton />;
 
   return (
@@ -247,7 +259,7 @@ export function TasksView() {
           <div className="relative">
             <div className="flex gap-4 sm:gap-5 overflow-x-auto pb-6 pt-1 scrollbar-thin scroll-smooth snap-x">
               {weekDays.map((wd) => (
-                <div key={wd.date} className="snap-start">
+                <div key={wd.date} className="snap-start" id={wd.isToday ? "today-column" : undefined}>
                   <DayColumn
                     dayInfo={wd}
                     tasks={tasksByDate.get(wd.date) ?? []}
