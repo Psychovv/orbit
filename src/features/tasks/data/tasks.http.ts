@@ -65,6 +65,13 @@ export function createHttpTaskCategoriesRepository(): TaskCategoriesRepository {
         body: JSON.stringify(input),
       });
     },
+    async update(id, patch) {
+      return fetchJson(`/api/tasks/categories/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+    },
     async remove(id) {
       const res = await fetch(`/api/tasks/categories/${id}`, {
         method: "DELETE",

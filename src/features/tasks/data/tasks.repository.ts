@@ -4,6 +4,7 @@ import type {
   CreateTaskInput,
   Task,
   TaskCategory,
+  UpdateTaskCategoryInput,
   UpdateTaskInput,
 } from "../domain/task.schema";
 
@@ -20,6 +21,7 @@ export interface TasksRepository {
 export interface TaskCategoriesRepository {
   list(): Promise<TaskCategory[]>;
   create(input: CreateTaskCategoryInput): Promise<TaskCategory>;
+  update(id: string, patch: UpdateTaskCategoryInput): Promise<TaskCategory>;
   /** Tarefas da categoria removida ficam sem categoria (`categoryId: null`). */
   remove(id: string): Promise<void>;
 }

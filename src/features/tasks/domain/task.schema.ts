@@ -15,6 +15,9 @@ export type TaskCategory = z.infer<typeof TaskCategorySchema>;
 export const CreateTaskCategorySchema = TaskCategorySchema.omit({ id: true });
 export type CreateTaskCategoryInput = z.infer<typeof CreateTaskCategorySchema>;
 
+export const UpdateTaskCategorySchema = CreateTaskCategorySchema.partial();
+export type UpdateTaskCategoryInput = z.infer<typeof UpdateTaskCategorySchema>;
+
 export const TaskSchema = z.object({
   id: z.string().min(1),
   title: z.string().trim().min(1).max(200),

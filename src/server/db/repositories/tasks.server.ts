@@ -2,7 +2,14 @@ import { db } from '../index';
 import { tasks, taskCategories } from '../schema';
 import { eq, and, gte, lte } from 'drizzle-orm';
 import type { TasksRepository, TaskCategoriesRepository } from '@/features/tasks/data/tasks.repository';
-import type { Task, CreateTaskInput, UpdateTaskInput, TaskCategory, CreateTaskCategoryInput } from '@/features/tasks/domain/task.schema';
+import type {
+  Task,
+  CreateTaskInput,
+  UpdateTaskInput,
+  TaskCategory,
+  CreateTaskCategoryInput,
+  UpdateTaskCategoryInput,
+} from '@/features/tasks/domain/task.schema';
 import { createId, nowIso } from '@/shared/lib/id';
 
 export function createServerTasksRepository(): TasksRepository {
@@ -109,6 +116,15 @@ export function createServerTaskCategoriesRepository(): TaskCategoriesRepository
       };
       await db.insert(taskCategories).values(category);
       return category;
+    },
+
+    async update(id: string, patch: UpdateTaskCategoryInput) {
+      const currentArr = await db.select().from(taskCategories).where(eq(taskCategories.id, id));
+      if (currentArr.length === 0) throw new Error(`Task category ${id} not found`);
+      const current = currentArr[0];
+      const updated = { ...current, ...patch };
+      await db.update(taskCategories).set(updated).where(eq(taskCategories.id, id));
+      return updated as TaskCategory;
     },
     
     async remove(id: string) {

@@ -6,6 +6,7 @@ import {
   CreateTaskSchema,
   TaskCategorySchema,
   TaskSchema,
+  UpdateTaskCategorySchema,
   UpdateTaskSchema,
   type Task,
   type TaskCategory,
@@ -148,6 +149,20 @@ export function createLocalTaskCategoriesRepository(): TaskCategoriesRepository 
         const category: TaskCategory = { ...CreateTaskCategorySchema.parse(input), id: createId() };
         writeJson(TASKS_STORAGE_KEYS.categories, [...(await loadCategories()), category]);
         return category;
+      }),
+
+    update: (id, patch) =>
+      withStoreLock(async () => {
+        const data = UpdateTaskCategorySchema.parse(patch);
+        const categories = await loadCategories();
+        const current = categories.find((c) => c.id === id);
+        if (!current) throw new Error(`Task category ${id} not found`);
+        const updated = TaskCategorySchema.parse({ ...current, ...data });
+        writeJson(
+          TASKS_STORAGE_KEYS.categories,
+          categories.map((c) => (c.id === id ? updated : c))
+        );
+        return updated;
       }),
 
     remove: (id) =>
