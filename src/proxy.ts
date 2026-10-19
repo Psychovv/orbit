@@ -5,7 +5,7 @@ import { jwtVerify } from 'jose'
 const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET ?? 'dev-secret-change-me')
 const COOKIE_NAME = 'orbit-session'
 
-const PUBLIC_PATHS = ['/login', '/api/auth']
+const PUBLIC_PATHS = ['/login', '/api/auth', '/manifest.webmanifest', '/sw.js']
 
 /** Auth só é obrigatória no modo http (nuvem). Modo local fica offline sem login. */
 const AUTH_REQUIRED = process.env.NEXT_PUBLIC_DATA_SOURCE === 'http'
@@ -52,6 +52,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Match all paths except static files and images
-    '/((?!_next/static|_next/image|favicon.ico|icon.svg|.*\\.png$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|icon.svg|manifest.webmanifest|sw.js|.*\\.png$).*)',
   ],
 }

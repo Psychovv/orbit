@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -13,12 +13,22 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#844DFE",
+  colorScheme: "dark light",
+};
+
 export const metadata: Metadata = {
   title: {
     default: "Orbit — Hub Pessoal Cósmico",
     template: "%s · Orbit",
   },
   description: "Organização semanal de tarefas, objetivos e controle financeiro em uma atmosfera espacial fluida.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Orbit",
+  },
 };
 
 export default function RootLayout({
