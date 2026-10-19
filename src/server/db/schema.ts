@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
 
 export const taskCategories = sqliteTable('task_categories', {
   id: text('id').primaryKey(),
@@ -50,4 +50,36 @@ export const profiles = sqliteTable('profiles', {
   photo: text('photo'),
   bio: text('bio'),
   updatedAt: text('updated_at').notNull(),
+});
+
+export const habits = sqliteTable('habits', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  icon: text('icon').notNull(),
+  color: text('color').notNull(),
+  period: text('period', { enum: ['morning', 'afternoon', 'evening', 'anytime'] }).notNull(),
+  type: text('type', { enum: ['boolean', 'numeric'] }).notNull(),
+  targetValue: real('target_value'),
+  unit: text('unit'),
+  step: real('step'),
+  frequencyType: text('frequency_type', {
+    enum: ['daily', 'specific_days', 'weekly_target'],
+  }).notNull(),
+  /** JSON array of weekdays 0–6. */
+  frequencyDays: text('frequency_days'),
+  weeklyTargetCount: integer('weekly_target_count'),
+  archivedAt: text('archived_at'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+export const habitCheckins = sqliteTable('habit_checkins', {
+  id: text('id').primaryKey(),
+  habitId: text('habit_id').notNull(),
+  date: text('date').notNull(),
+  completed: integer('completed', { mode: 'boolean' }).notNull(),
+  currentValue: real('current_value'),
+  notes: text('notes'),
+  createdAt: text('created_at').notNull(),
 });
