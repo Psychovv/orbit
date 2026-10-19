@@ -6,6 +6,7 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Calendar,
+  Flame,
   House,
   Wallet,
   Plus,
@@ -24,11 +25,13 @@ import { ALL_CATEGORIES, countByCategory } from "@/features/tasks/domain/task.se
 import { useTaskCategories, useTasks } from "@/features/tasks/hooks/use-tasks";
 import { useTodayTasksSummary } from "@/features/tasks/hooks/use-today-tasks";
 import { TASKS_PATH, tasksHref } from "@/features/tasks/hooks/use-tasks-view-state";
+import { useHabitsSummary } from "@/features/habits/hooks/use-habits-summary";
 
 import { OrbitMark } from "@/shared/ui/orbit-mark";
 import { cn } from "@/shared/lib/utils";
 
 const FINANCE_PATH = "/finance";
+const HABITS_PATH = "/habits";
 const SETTINGS_PATH = "/settings";
 
 interface OrbitSidebarProps {
@@ -43,16 +46,22 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
   const router = useRouter();
   const activeModule = pathname.startsWith(FINANCE_PATH)
     ? "finance"
-    : pathname.startsWith(TASKS_PATH)
-      ? "tasks"
-      : pathname.startsWith(SETTINGS_PATH)
-        ? "settings"
-        : "home";
+    : pathname.startsWith(HABITS_PATH)
+      ? "habits"
+      : pathname.startsWith(TASKS_PATH)
+        ? "tasks"
+        : pathname.startsWith(SETTINGS_PATH)
+          ? "settings"
+          : "home";
   const [isTaskCategoriesExpanded, setIsTaskCategoriesExpanded] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const dialogs = useTaskDialogs();
   const today = useTodayTasksSummary();
   const todayLabel = today ? `${today.completed}/${today.total}` : "–";
+  const habitsSummary = useHabitsSummary();
+  const habitsLabel = habitsSummary
+    ? `${habitsSummary.completed}/${habitsSummary.total}`
+    : "–";
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -216,7 +225,35 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
               </AnimatePresence>
             </div>
 
-            {/* Item 2: Finanças (Totalmente separado, sem categorias de tarefas) */}
+            {/* Item 2: Hábitos */}
+            <Link
+              href={HABITS_PATH}
+              onClick={onCloseMobile}
+              className={cn(
+                "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer",
+                activeModule === "habits"
+                  ? "bg-brand/10 text-brand dark:text-brand-soft font-semibold"
+                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
+              )}
+            >
+              <div className="flex items-center gap-2.5">
+                <Flame
+                  className={cn(
+                    "w-4 h-4",
+                    activeModule === "habits" ? "text-brand" : "text-zinc-400"
+                  )}
+                />
+                <span>Hábitos</span>
+              </div>
+              <span
+                title="Concluídos hoje"
+                className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
+              >
+                {habitsLabel}
+              </span>
+            </Link>
+
+            {/* Item 3: Finanças */}
             <div>
               <Link
                 href={FINANCE_PATH}
@@ -350,6 +387,25 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
           {/* Hover Tooltip */}
           <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-zinc-900 text-white text-xs font-semibold whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-lg z-50">
             Tarefas · hoje {todayLabel}
+          </div>
+        </div>
+
+        {/* Hábitos Icon */}
+        <div className="relative group">
+          <Link
+            href={HABITS_PATH}
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-xl transition-all cursor-pointer",
+              activeModule === "habits"
+                ? "bg-brand text-white shadow-sm shadow-brand/30"
+                : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            )}
+            aria-label="Módulo de Hábitos"
+          >
+            <Flame className="w-5 h-5" />
+          </Link>
+          <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-zinc-900 text-white text-xs font-semibold whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-lg z-50">
+            Hábitos · hoje {habitsLabel}
           </div>
         </div>
 
