@@ -15,9 +15,16 @@ export interface HabitStreakStats {
   status: HabitStreakStatus;
 }
 
+/** Dia local em que o hábito passou a existir (não agenda antes disso). */
+export function habitStartDate(habit: Habit): string {
+  return formatDateKey(new Date(habit.createdAt));
+}
+
 /** O hábito está agendado neste dia do calendário? */
 export function isHabitScheduledOn(habit: Habit, dateKey: string): boolean {
   if (habit.archivedAt) return false;
+  // Não aparece em dias anteriores à criação.
+  if (dateKey < habitStartDate(habit)) return false;
 
   switch (habit.frequencyType) {
     case "daily":

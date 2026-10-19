@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { addDays, formatDateKey, parseDateKey } from "@/shared/lib/date-utils";
 import type { Habit, HabitCheckin } from "./habit.schema";
 import {
   computeHabitStreak,
   countCompletedHabitsOn,
+  habitStartDate,
   isCheckinComplete,
   isHabitScheduledOn,
 } from "./habit.streak";
@@ -31,8 +33,22 @@ function checkin(date: string, completed = true): HabitCheckin {
 }
 
 describe("isHabitScheduledOn", () => {
-  it("schedules daily habits every day", () => {
+  it("schedules daily habits every day from creation onward", () => {
     expect(isHabitScheduledOn(baseHabit, "2026-10-19")).toBe(true);
+  });
+
+  it("does not schedule habits before their creation day", () => {
+    const habit: Habit = {
+      ...baseHabit,
+      createdAt: "2026-10-19T15:00:00.000Z",
+      updatedAt: "2026-10-19T15:00:00.000Z",
+    };
+    const start = habitStartDate(habit);
+    const before = formatDateKey(addDays(parseDateKey(start), -1));
+    const after = formatDateKey(addDays(parseDateKey(start), 1));
+    expect(isHabitScheduledOn(habit, before)).toBe(false);
+    expect(isHabitScheduledOn(habit, start)).toBe(true);
+    expect(isHabitScheduledOn(habit, after)).toBe(true);
   });
 
   it("respects specific weekdays", () => {
