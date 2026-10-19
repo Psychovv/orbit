@@ -12,6 +12,19 @@ import {
   createHttpTransactionsRepository,
 } from "@/features/finance/data/finance.http";
 import type {
+  HabitCheckinsRepository,
+  HabitsRepository,
+} from "@/features/habits/data/habits.repository";
+import {
+  createLocalHabitCheckinsRepository,
+  createLocalHabitsRepository,
+  HABITS_STORAGE_KEYS,
+} from "@/features/habits/data/habits.local";
+import {
+  createHttpHabitCheckinsRepository,
+  createHttpHabitsRepository,
+} from "@/features/habits/data/habits.http";
+import type {
   TaskCategoriesRepository,
   TasksRepository,
 } from "@/features/tasks/data/tasks.repository";
@@ -36,6 +49,8 @@ export interface Repositories {
   taskCategories: TaskCategoriesRepository;
   transactions: TransactionsRepository;
   financeCategories: FinanceCategoriesRepository;
+  habits: HabitsRepository;
+  habitCheckins: HabitCheckinsRepository;
   profile: ProfileRepository;
 }
 
@@ -49,6 +64,8 @@ function createRepositories(source: DataSource): Repositories {
       taskCategories: createHttpTaskCategoriesRepository(),
       transactions: createHttpTransactionsRepository(),
       financeCategories: createHttpFinanceCategoriesRepository(),
+      habits: createHttpHabitsRepository(),
+      habitCheckins: createHttpHabitCheckinsRepository(),
       profile: createHttpProfileRepository(),
     };
   }
@@ -57,6 +74,8 @@ function createRepositories(source: DataSource): Repositories {
     taskCategories: createLocalTaskCategoriesRepository(),
     transactions: createLocalTransactionsRepository(),
     financeCategories: createLocalFinanceCategoriesRepository(),
+    habits: createLocalHabitsRepository(),
+    habitCheckins: createLocalHabitCheckinsRepository(),
     profile: createLocalProfileRepository(),
   };
 }
@@ -65,5 +84,10 @@ export const repositories = createRepositories(dataSource);
 
 /** Apaga os dados locais; a próxima leitura grava os dados de demonstração. Só existe no modo local. */
 export function resetLocalData(): void {
-  removeKeys(...Object.values(TASKS_STORAGE_KEYS), ...Object.values(FINANCE_STORAGE_KEYS), ...Object.values(PROFILE_STORAGE_KEYS));
+  removeKeys(
+    ...Object.values(TASKS_STORAGE_KEYS),
+    ...Object.values(FINANCE_STORAGE_KEYS),
+    ...Object.values(HABITS_STORAGE_KEYS),
+    ...Object.values(PROFILE_STORAGE_KEYS)
+  );
 }
