@@ -45,8 +45,7 @@ src/
   config/       escolha da fonte de dados (NEXT_PUBLIC_DATA_SOURCE)
 ```
 
-Plano de backend: [`documents/plano_implementacao_backend.md`](documents/plano_implementacao_backend.md).  
-Roadmap: [`documents/roadmap.md`](documents/roadmap.md).
+Configuração da API Gemini: [`documents/env-setup.md`](documents/env-setup.md).
 
 ## Tecnologias
 
@@ -79,9 +78,9 @@ pnpm install
 cp .env.example .env.local
 ```
 
-No `.env.local`, preencha `GEMINI_API_KEY` com uma chave do [Google AI Studio](https://aistudio.google.com/app/apikey). Sem essa chave o app abre, mas a Orbit AI (tarefas e finanças) não responde. Se o servidor já estiver rodando, reinicie-o depois de alterar o arquivo.
+No `.env.local`, preencha `GEMINI_API_KEY` — passo a passo em [`documents/env-setup.md`](documents/env-setup.md). Sem essa chave o app abre, mas a Orbit AI (tarefas e finanças) não responde. Se o servidor já estiver rodando, reinicie-o depois de alterar o arquivo.
 
-Para o modo nuvem (`http`), configure também `AUTH_*` e `DATABASE_*` — detalhes em [`documents/plano_implementacao_backend.md`](documents/plano_implementacao_backend.md).
+Para o modo nuvem (`http`), configure também `AUTH_*` e `DATABASE_*` (veja `.env.example`).
 
 ```bash
 pnpm dev
