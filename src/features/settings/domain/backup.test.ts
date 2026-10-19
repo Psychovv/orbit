@@ -10,12 +10,23 @@ const validBackup = {
   financeCategories: [
     { id: "f1", name: "Moradia", type: "expense", color: "#ef4444", icon: "🏠" },
   ],
+  habits: [],
+  habitCheckins: [],
   profile: { id: "owner", name: "Psy", photo: null, bio: null },
 };
 
 describe("parseOrbitBackup", () => {
   it("accepts a valid v1 backup", () => {
     expect(parseOrbitBackup(validBackup).profile.name).toBe("Psy");
+  });
+
+  it("defaults missing habits arrays for older backups", () => {
+    const { habits, habitCheckins, ...legacy } = validBackup;
+    void habits;
+    void habitCheckins;
+    const parsed = parseOrbitBackup(legacy);
+    expect(parsed.habits).toEqual([]);
+    expect(parsed.habitCheckins).toEqual([]);
   });
 
   it("rejects missing categories", () => {

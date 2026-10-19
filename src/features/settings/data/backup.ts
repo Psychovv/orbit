@@ -1,5 +1,6 @@
 import { dataSource, repositories } from "@/config/data-source";
 import { FINANCE_STORAGE_KEYS } from "@/features/finance/data/finance.local";
+import { HABITS_STORAGE_KEYS } from "@/features/habits/data/habits.local";
 import { PROFILE_STORAGE_KEYS } from "@/features/profile/data/profile.local";
 import { TASKS_STORAGE_KEYS } from "@/features/tasks/data/tasks.local";
 import { nowIso } from "@/shared/lib/id";
@@ -12,13 +13,17 @@ import {
 
 /** Monta um backup completo a partir dos repositórios ativos. */
 export async function buildOrbitBackup(): Promise<OrbitBackup> {
-  const [tasks, taskCategories, transactions, financeCategories, profile] = await Promise.all([
-    repositories.tasks.list(),
-    repositories.taskCategories.list(),
-    repositories.transactions.list(),
-    repositories.financeCategories.list(),
-    repositories.profile.get(),
-  ]);
+  const [tasks, taskCategories, transactions, financeCategories, habits, habitCheckins, profile] =
+    await Promise.all([
+      repositories.tasks.list(),
+      repositories.taskCategories.list(),
+      repositories.transactions.list(),
+      repositories.financeCategories.list(),
+      repositories.habits.list(true),
+      // Intervalo amplo para exportar o histórico de check-ins.
+      repositories.habitCheckins.list({ from: "1970-01-01", to: "2100-12-31" }),
+      repositories.profile.get(),
+    ]);
 
   return {
     version: BACKUP_VERSION,
@@ -27,6 +32,8 @@ export async function buildOrbitBackup(): Promise<OrbitBackup> {
     taskCategories,
     transactions,
     financeCategories,
+    habits,
+    habitCheckins,
     profile: {
       id: profile.id,
       name: profile.name,
@@ -41,6 +48,8 @@ function applyLocalBackup(backup: OrbitBackup): void {
   writeJson(TASKS_STORAGE_KEYS.categories, backup.taskCategories);
   writeJson(FINANCE_STORAGE_KEYS.transactions, backup.transactions);
   writeJson(FINANCE_STORAGE_KEYS.categories, backup.financeCategories);
+  writeJson(HABITS_STORAGE_KEYS.habits, backup.habits);
+  writeJson(HABITS_STORAGE_KEYS.checkins, backup.habitCheckins);
 
   if (typeof window !== "undefined") {
     try {
