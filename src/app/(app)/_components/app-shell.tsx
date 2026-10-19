@@ -3,15 +3,18 @@
 import React, { useState } from "react";
 import { TaskDialogsProvider } from "@/features/tasks/components/task-dialogs";
 import { CosmicBackground } from "@/shared/effects/cosmic-background";
+import { QuasarEvent } from "@/shared/effects/quasar-event";
 import { useLocalBoolean } from "@/shared/lib/use-local-preference";
 import { cn } from "@/shared/lib/utils";
 import { OrbitHeader } from "./orbit-header";
 import { OrbitSidebar } from "./orbit-sidebar";
+import { useDayCompleteQuasar } from "./use-day-complete-quasar";
 
 export function AppShell({ children, footer }: { children: React.ReactNode; footer: React.ReactNode }) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useLocalBoolean("orbit_sidebar_collapsed");
   const toggleCollapse = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+  useDayCompleteQuasar();
 
   return (
     <TaskDialogsProvider>
@@ -30,7 +33,7 @@ export function AppShell({ children, footer }: { children: React.ReactNode; foot
         {/* Main Content Area - Shifted Right on Desktop according to sidebar state */}
         <div
           className={cn(
-            "flex-1 flex flex-col transition-all duration-300 ease-in-out",
+            "quasar-shake flex-1 flex flex-col transition-all duration-300 ease-in-out",
             isSidebarCollapsed ? "md:pl-[72px]" : "md:pl-64"
           )}
         >
@@ -44,6 +47,8 @@ export function AppShell({ children, footer }: { children: React.ReactNode; foot
 
           {footer}
         </div>
+
+        <QuasarEvent />
       </div>
     </TaskDialogsProvider>
   );

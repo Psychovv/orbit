@@ -489,7 +489,7 @@ export function OrbitSidebar({ isOpenMobile, onCloseMobile, isCollapsed = false,
       {/* Desktop Fixed Sidebar (Collapsible width) */}
       <aside
         className={cn(
-          "hidden md:flex flex-col fixed left-0 top-0 bottom-0 border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-[#090812]/90 backdrop-blur-xl z-30 transition-all duration-300 ease-in-out",
+          "quasar-shake hidden md:flex flex-col fixed left-0 top-0 bottom-0 border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-[#090812]/90 backdrop-blur-xl z-30 transition-all duration-300 ease-in-out",
           isCollapsed ? "w-[72px]" : "w-64"
         )}
       >

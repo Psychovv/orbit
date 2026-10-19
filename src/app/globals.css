@@ -75,3 +75,9 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(132, 77, 254, 0.5);
 }
+
+/* Screen shake driven by the quasar event; only active while shaking so fixed descendants keep their containing block */
+.quasar-shaking .quasar-shake {
+  translate: var(--quasar-shake-x, 0px) var(--quasar-shake-y, 0px);
+  transition: none;
+}
