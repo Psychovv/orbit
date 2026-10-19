@@ -120,5 +120,7 @@ pnpm dev
 
 | Variável `NEXT_PUBLIC_DATA_SOURCE` | Comportamento |
 |---|---|
-| `"local"` | localStorage (modo atual, offline, sem auth) |
-| `"http"` | Backend + DB + auth obrigatória |
+| `"local"` | localStorage (offline). Proxy e `requireAuth` **não** exigem login |
+| `"http"` | Backend + DB + auth obrigatória (JWT) |
+
+O valor é lido em `proxy.ts` e `server/auth-guard.ts`. Em desenvolvimento, `.env.development` pode forçar `http` + `file:local.db`.
