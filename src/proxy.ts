@@ -7,6 +7,9 @@ const COOKIE_NAME = 'orbit-session'
 
 const PUBLIC_PATHS = ['/login', '/api/auth']
 
+/** Auth só é obrigatória no modo http (nuvem). Modo local fica offline sem login. */
+const AUTH_REQUIRED = process.env.NEXT_PUBLIC_DATA_SOURCE === 'http'
+
 function unauthorized(request: NextRequest, clearCookie = false) {
   const isApi = request.nextUrl.pathname.startsWith('/api/')
   if (isApi) {
@@ -22,6 +25,10 @@ function unauthorized(request: NextRequest, clearCookie = false) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  if (!AUTH_REQUIRED) {
+    return NextResponse.next()
+  }
   
   // Allow public paths
   if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
