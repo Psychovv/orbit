@@ -16,6 +16,8 @@ import type {
   CreateTaskCategoryInput,
   CreateTaskInput,
   Task,
+  TaskCategory,
+  UpdateTaskCategoryInput,
   UpdateTaskInput,
 } from "../domain/task.schema";
 import { pausedFocusPatch } from "../domain/focus";
@@ -170,6 +172,24 @@ export function useCreateTaskCategory() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateTaskCategoryInput) => repositories.taskCategories.create(input),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: [TASK_CATEGORIES] }),
+  });
+}
+
+export function useUpdateTaskCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: UpdateTaskCategoryInput }) =>
+      repositories.taskCategories.update(id, patch),
+    onMutate: async ({ id, patch }) => {
+      await queryClient.cancelQueries({ queryKey: [TASK_CATEGORIES] });
+      const previous = queryClient.getQueryData<TaskCategory[]>([TASK_CATEGORIES]);
+      queryClient.setQueryData<TaskCategory[]>([TASK_CATEGORIES], (categories) =>
+        categories?.map((c) => (c.id === id ? { ...c, ...patch } : c))
+      );
+      return () => queryClient.setQueryData([TASK_CATEGORIES], previous);
+    },
+    onError: (_error, _vars, rollback) => rollback?.(),
     onSettled: () => queryClient.invalidateQueries({ queryKey: [TASK_CATEGORIES] }),
   });
 }

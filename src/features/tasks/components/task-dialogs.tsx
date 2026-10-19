@@ -13,6 +13,7 @@ import {
   useTaskCategories,
   useTasks,
   useUpdateTask,
+  useUpdateTaskCategory,
 } from "../hooks/use-tasks";
 
 interface TaskDialogsContextValue {
@@ -49,6 +50,7 @@ function TaskDialogsInner({ children }: { children: React.ReactNode }) {
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const createCategory = useCreateTaskCategory();
+  const updateCategory = useUpdateTaskCategory();
   const deleteCategory = useDeleteTaskCategory();
 
   const detailTask = tasks.find((task) => task.id === openTaskId) ?? null;
@@ -88,6 +90,7 @@ function TaskDialogsInner({ children }: { children: React.ReactNode }) {
         onClose={() => setIsCategoriesOpen(false)}
         categories={categories}
         onAddCategory={(input) => createCategory.mutate(input)}
+        onUpdateCategory={(id, patch) => updateCategory.mutate({ id, patch })}
         onDeleteCategory={(id) => deleteCategory.mutate(id)}
       />
 
