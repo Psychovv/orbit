@@ -6,11 +6,9 @@ import { ArrowRight, Calendar, Pencil, Timer, Wallet } from "lucide-react";
 import { useTodayTasksSummary } from "@/features/tasks/hooks/use-today-tasks";
 import { useMonthBalance } from "@/features/finance/hooks/use-month-balance";
 import { formatBRL } from "@/features/finance/domain/money";
+import { useProfile, useUpdateProfile } from "@/features/profile/hooks/use-profile";
 import { GlowCard } from "@/shared/effects/glow-card";
-import { useLocalString } from "@/shared/lib/use-local-preference";
 import { OrbitMark } from "@/shared/ui/orbit-mark";
-
-const USER_NAME_KEY = "orbit_user_name";
 
 const MODULES = [
   {
@@ -98,13 +96,17 @@ export function HomeView() {
   );
 }
 
-/** Saudação com o nome salvo no navegador; clique para editar. */
+/** Saudação com o nome do perfil; clique para editar (sincroniza com Configurações). */
 function Greeting() {
-  const [name, setName] = useLocalString(USER_NAME_KEY);
+  const { data: profile } = useProfile();
+  const updateProfile = useUpdateProfile();
   const [draft, setDraft] = useState<string | null>(null);
+  const name = profile?.name?.trim() || null;
 
   const commit = () => {
-    if (draft !== null) setName(draft.trim().slice(0, 40));
+    if (draft === null) return;
+    const next = draft.trim().slice(0, 40) || null;
+    if (next !== name) updateProfile.mutate({ name: next });
     setDraft(null);
   };
 
