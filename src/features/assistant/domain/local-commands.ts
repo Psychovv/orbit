@@ -57,11 +57,11 @@ function createTitle(text: string): string | null {
   const title = text
     .replace(/^(?:por favor|pfv|favor)[, ]+/i, "")
     .replace(/^(?:crie|cria|criar|adicione|adiciona|adicionar|coloque|coloca|agende|agenda)\s+/i, "")
-    .replace(/^(?:uma\s+)?(?:nova\s+)?(?:tarefa|task|compromisso)\s+/i, "")
+    .replace(/^(?:a\s+|uma\s+)?(?:nova\s+)?(?:tarefa|task|compromisso)\s+/i, "")
     .replace(/\bpara\s+(?:o|a)\s+/gi, "")
     .replace(/\b(?:no|na|em)\s+dia\s+\d{1,2}\b/gi, "")
     .replace(/\bdia\s+\d{1,2}\b/gi, "")
-    .replace(/\b(?:hoje|amanh[ãa]|ontem|anteontem)\b/gi, "")
+    .replace(/(?<!\p{L})(?:hoje|amanh[ãa]|ontem|anteontem)(?!\p{L})/giu, "")
     .replace(/\b\d{4}-\d{2}-\d{2}\b/g, "")
     .replace(/\s+/g, " ")
     .replace(/^[\s,.:;-]+|[\s,.:;-]+$/g, "")
