@@ -10,18 +10,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
-    name: Lint, typecheck & test
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        # version comes from package.json packageManager
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -35,8 +33,64 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Typecheck
         run: pnpm typecheck
 
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Test
         run: pnpm test
+
+  # Gate único pra branch protection: um check "CI" em vez de três.
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    if: always()
+    steps:
+      - name: Check jobs
+        run: |
+          if [ "${{ needs.lint.result }}" != "success" ] \
+            || [ "${{ needs.typecheck.result }}" != "success" ] \
+            || [ "${{ needs.test.result }}" != "success" ]; then
+            echo "One or more jobs failed"
+            exit 1
+          fi
