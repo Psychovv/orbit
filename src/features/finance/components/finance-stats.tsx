@@ -25,9 +25,12 @@ export interface CardBalanceView {
 export function FinanceStats({
   metrics,
   cardBalance,
+  monthLabel,
 }: {
   metrics: MonthlyMetrics;
   cardBalance?: CardBalanceView | null;
+  /** Ex.: "outubro de 2026" — entradas/saídas/resultado são só deste mês. */
+  monthLabel: string;
 }) {
   const {
     totalIncome,
@@ -52,7 +55,7 @@ export function FinanceStats({
         <GlowCard glowColor="purple" className="relative overflow-hidden p-5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-              Resultado do Mês
+              Resultado
             </span>
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand/10 text-brand dark:text-brand-soft border border-brand/20">
               <Wallet className="w-4 h-4" />
@@ -70,7 +73,7 @@ export function FinanceStats({
               {formatBRL(netBalance)}
             </h2>
             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              Entradas − saídas (mesmo critério do Meu Pluggy)
+              Entradas − saídas em {monthLabel}
             </p>
           </div>
         </GlowCard>
@@ -89,7 +92,7 @@ export function FinanceStats({
               +{formatBRL(totalIncome)}
             </h2>
             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              {incomeCount} {incomeCount === 1 ? "movimentação" : "movimentações"} · conta e cartão
+              Em {monthLabel} · {incomeCount} {incomeCount === 1 ? "lançamento" : "lançamentos"}
             </p>
           </div>
         </GlowCard>
@@ -108,8 +111,7 @@ export function FinanceStats({
               -{formatBRL(totalExpenses)}
             </h2>
             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              {expenseCount} {expenseCount === 1 ? "movimentação" : "movimentações"} · conta{" "}
-              {formatBRL(accountExpenses)} · cartão {formatBRL(cardPurchases)}
+              Em {monthLabel} · conta {formatBRL(accountExpenses)} · cartão {formatBRL(cardPurchases)}
             </p>
           </div>
         </GlowCard>
@@ -118,13 +120,11 @@ export function FinanceStats({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                Fatura do Cartão
+                Fatura agora
               </span>
-              {cardBalance?.dueDate ? (
-                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-brand/15 text-brand dark:text-brand-soft">
-                  Venc. {formatShortDate(cardBalance.dueDate)}
-                </span>
-              ) : null}
+              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                Ao vivo
+              </span>
             </div>
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand/10 dark:bg-brand/20 text-brand dark:text-brand-soft border border-brand/30">
               <CreditCard className="w-4 h-4" />
@@ -135,12 +135,11 @@ export function FinanceStats({
               {formatBRL(cardBalance?.balanceCents ?? 0)}
             </h2>
             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              {cardBalance?.dueDate ? `Vence ${formatShortDate(cardBalance.dueDate)} · ` : ""}
               {cardBalance?.creditLimitCents
-                ? `${(((cardBalance.balanceCents / cardBalance.creditLimitCents) * 100) || 0).toFixed(0)}% do limite · ${formatBRL(cardBalance.creditLimitCents)}`
-                : "Saldo atual do cartão"}
-              {pendingCardCents > 0
-                ? ` · ${formatBRL(pendingCardCents)} pendente (${pendingCardCount})`
-                : ""}
+                ? `${(((cardBalance.balanceCents / cardBalance.creditLimitCents) * 100) || 0).toFixed(0)}% de ${formatBRL(cardBalance.creditLimitCents)}`
+                : "Saldo atual do cartão (não muda com o mês)"}
+              {pendingCardCents > 0 ? ` · ${formatBRL(pendingCardCents)} ainda aberto neste mês` : ""}
             </p>
           </div>
         </GlowCard>
@@ -151,7 +150,7 @@ export function FinanceStats({
           <div className="flex items-center gap-2">
             <Percent className="w-4 h-4 text-brand" />
             <h3 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100">
-              Divisão das saídas
+              Divisão das saídas em {monthLabel}
             </h3>
           </div>
           <div className="flex items-center gap-3 text-xs font-mono">

@@ -30,7 +30,7 @@ export function AccountsOverview({ accounts }: { accounts: BankAccount[] }) {
           <div className="flex items-center gap-2">
             <Landmark className="h-4 w-4 text-brand" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Contas bancárias
+              Contas · saldo agora
             </h3>
           </div>
           <span className="font-mono text-sm font-bold text-zinc-900 dark:text-zinc-100">{formatBRL(bankTotal)}</span>
@@ -61,7 +61,7 @@ export function AccountsOverview({ accounts }: { accounts: BankAccount[] }) {
           <div className="flex items-center gap-2">
             <CreditCard className="h-4 w-4 text-brand" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Cartões de crédito
+              Cartões · saldo agora
             </h3>
           </div>
           <span className="font-mono text-sm font-bold text-zinc-900 dark:text-zinc-100">{formatBRL(cardTotal)}</span>

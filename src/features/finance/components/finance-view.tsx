@@ -135,7 +135,8 @@ export function FinanceView() {
             )}
           </div>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Entradas e saídas do mês no mesmo critério do Meu Pluggy (conta + cartão).
+            Troque o mês acima para ver entradas e saídas daquele período. Saldos de conta e cartão
+            são sempre o valor atual do banco.
           </p>
         </div>
 
@@ -187,7 +188,11 @@ export function FinanceView() {
       {/* 4 Metric Cards & Nubank Monthly Planning Breakdown */}
       {dataSource === "http" && bankAccounts.length > 0 ? <AccountsOverview accounts={bankAccounts} /> : null}
 
-      <FinanceStats metrics={metrics} cardBalance={cardBalance} />
+      <FinanceStats
+        metrics={metrics}
+        cardBalance={cardBalance}
+        monthLabel={formatMonthYear(currentMonthDate).toLowerCase()}
+      />
 
       {/* Budget Breakdown & Planning for the selected month */}
       <BudgetBreakdown
