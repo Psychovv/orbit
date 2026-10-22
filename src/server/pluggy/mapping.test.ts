@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isImportableAccount, mapPluggyTransaction, toDateKey } from "./mapping";
+import { institutionName, isImportableAccount, mapPluggyTransaction, toDateKey } from "./mapping";
 import type { PluggyAccount, PluggyTransaction } from "./types";
 
 const checking: PluggyAccount = {
@@ -13,7 +13,7 @@ const card: PluggyAccount = {
   id: "22222222-2222-4222-8222-222222222222",
   type: "CREDIT",
   subtype: "CREDIT_CARD",
-  name: "Cartão Black",
+  name: "platinum",
 };
 
 function tx(overrides: Partial<PluggyTransaction> = {}): PluggyTransaction {
@@ -48,6 +48,25 @@ describe("isImportableAccount", () => {
     expect(isImportableAccount(checking)).toBe(true);
     expect(isImportableAccount(card)).toBe(true);
     expect(isImportableAccount({ ...card, subtype: "LOAN" })).toBe(false);
+  });
+});
+
+describe("institutionName", () => {
+  const nubankChecking = { ...checking, name: "Nu Pagamentos S.A. - Instituição de Pagamento" };
+
+  it("uses the connector name for direct connectors", () => {
+    expect(institutionName("Pluggy Bank", [nubankChecking])).toBe("Pluggy Bank");
+  });
+
+  it("derives the bank from the account name for MeuPluggy items", () => {
+    expect(institutionName("MeuPluggy", [card, nubankChecking])).toBe("Nubank");
+    expect(institutionName("MeuPluggy", [{ ...checking, name: "Banco Inter S.A." }])).toBe("Inter");
+  });
+
+  it("falls back to a cleaned account name or a generic label", () => {
+    expect(institutionName("MeuPluggy", [{ ...checking, name: "Banco Exemplo S.A. - Algo" }])).toBe("Banco Exemplo");
+    expect(institutionName("MeuPluggy", [card])).toBe("MeuPluggy");
+    expect(institutionName(null, [])).toBe("Banco");
   });
 });
 
@@ -104,7 +123,7 @@ describe("mapPluggyTransaction", () => {
       type: "expense",
       amountCents: 12000,
       paymentMethod: "cartao",
-      notes: "Importado de Nubank · Cartão Black · Parcela 2/6",
+      notes: "Importado de Nubank · Cartão · Parcela 2/6",
     });
   });
 

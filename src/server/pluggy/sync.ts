@@ -6,7 +6,7 @@ import {
 } from "@/server/db/repositories/bank.server";
 import { nowIso } from "@/shared/lib/id";
 import { getAccount, getAccounts, getItem, listTransactions, PluggyError } from "./client";
-import { isImportableAccount, mapPluggyTransaction, type ImportedTransaction } from "./mapping";
+import { institutionName, isImportableAccount, mapPluggyTransaction, type ImportedTransaction } from "./mapping";
 import type { PluggyItem } from "./types";
 
 /** Histórico trazido na primeira sincronização de um banco. */
@@ -23,14 +23,10 @@ function daysAgo(fromIso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function institutionOf(item: PluggyItem): string {
-  return item.connector?.name?.trim() || "Banco";
-}
-
-function connectionFromItem(item: PluggyItem) {
+function connectionFromItem(item: PluggyItem, institution: string) {
   return {
     itemId: item.id,
-    institution: institutionOf(item),
+    institution,
     status: item.status,
     errorCode: item.error?.code ?? null,
     consentExpiresAt: item.consentExpiresAt ?? null,
@@ -48,26 +44,29 @@ function describeError(error: unknown): string {
 
 /** Confere o item na Pluggy (garante que pertence à nossa aplicação) e salva a conexão. */
 export async function registerConnection(itemId: string): Promise<BankConnection> {
-  const item = await getItem(itemId);
-  return bankConnectionsRepository.upsert(connectionFromItem(item));
+  const [item, accounts] = await Promise.all([getItem(itemId), getAccounts(itemId)]);
+  return bankConnectionsRepository.upsert(connectionFromItem(item, institutionName(item.connector?.name, accounts)));
 }
 
 /** Atualiza o status salvo a partir da Pluggy. Retorna `null` se o item não estiver conectado aqui. */
 export async function refreshConnectionStatus(itemId: string): Promise<BankConnection | null> {
-  if (!(await bankConnectionsRepository.get(itemId))) return null;
-  return bankConnectionsRepository.upsert(connectionFromItem(await getItem(itemId)));
+  const existing = await bankConnectionsRepository.get(itemId);
+  if (!existing) return null;
+  return bankConnectionsRepository.upsert(connectionFromItem(await getItem(itemId), existing.institution));
 }
 
 async function runSync(connection: BankConnection): Promise<BankSyncResult> {
   const startedAt = nowIso();
-  const item = await getItem(connection.itemId);
-  const saved = await bankConnectionsRepository.upsert(connectionFromItem(item));
+  const [item, allAccounts] = await Promise.all([getItem(connection.itemId), getAccounts(connection.itemId)]);
+  const saved = await bankConnectionsRepository.upsert(
+    connectionFromItem(item, institutionName(item.connector?.name, allAccounts))
+  );
 
   const dateFrom = saved.lastSyncedAt
     ? daysAgo(saved.lastSyncedAt, OVERLAP_DAYS)
     : daysAgo(startedAt, INITIAL_HISTORY_DAYS);
 
-  const accounts = (await getAccounts(connection.itemId)).filter(isImportableAccount);
+  const accounts = allAccounts.filter(isImportableAccount);
   let imported = 0;
   for (const account of accounts) {
     const txs = await listTransactions(account.id, { dateFrom });

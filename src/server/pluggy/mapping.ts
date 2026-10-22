@@ -11,6 +11,46 @@ export interface ImportedTransaction {
   notes: string;
 }
 
+const MEU_PLUGGY_CONNECTOR = "MeuPluggy";
+
+const INSTITUTION_ALIASES: [RegExp, string][] = [
+  [/^nu\b/i, "Nubank"],
+  [/ita[uú]/i, "Itaú"],
+  [/bradesco/i, "Bradesco"],
+  [/banco do brasil/i, "Banco do Brasil"],
+  [/\binter\b/i, "Inter"],
+  [/santander/i, "Santander"],
+  [/caixa/i, "Caixa"],
+  [/\bc6\b/i, "C6 Bank"],
+  [/\bbtg\b/i, "BTG Pactual"],
+  [/\bxp\b/i, "XP"],
+  [/mercado pago/i, "Mercado Pago"],
+  [/picpay/i, "PicPay"],
+  [/sicoob/i, "Sicoob"],
+  [/sicredi/i, "Sicredi"],
+];
+
+/**
+ * No MeuPluggy o conector de todo item se chama "MeuPluggy"; o banco real só aparece
+ * no nome das contas (ex.: "Nu Pagamentos S.A. - Instituição de Pagamento").
+ */
+export function institutionName(connectorName: string | null | undefined, accounts: PluggyAccount[]): string {
+  const connector = connectorName?.trim();
+  if (connector && connector !== MEU_PLUGGY_CONNECTOR) return connector;
+
+  const accountName = accounts.find((a) => a.type === "BANK" && a.name)?.name?.trim();
+  if (!accountName) return connector || "Banco";
+
+  const alias = INSTITUTION_ALIASES.find(([pattern]) => pattern.test(accountName));
+  if (alias) return alias[1];
+  return accountName.split(" - ")[0].replace(/\s+S\.?A\.?$/i, "").trim().slice(0, 60) || "Banco";
+}
+
+function accountLabel(account: PluggyAccount): string {
+  if (account.type === "CREDIT") return "Cartão";
+  return account.subtype === "SAVINGS_ACCOUNT" ? "Poupança" : "Conta corrente";
+}
+
 /** Contas importadas: corrente/poupança e cartão de crédito. Empréstimos e afins ficam de fora. */
 export function isImportableAccount(account: PluggyAccount): boolean {
   if (account.type === "BANK") return true;
@@ -97,7 +137,7 @@ export function mapPluggyTransaction(
     type = tx.type === "CREDIT" ? "income" : "expense";
   }
 
-  const notes = [`Importado de ${institution}${account.name ? ` · ${account.name}` : ""}`];
+  const notes = [`Importado de ${institution} · ${accountLabel(account)}`];
   const installment = tx.creditCardMetadata;
   if (installment?.installmentNumber && installment.totalInstallments && installment.totalInstallments > 1) {
     notes.push(`Parcela ${installment.installmentNumber}/${installment.totalInstallments}`);
