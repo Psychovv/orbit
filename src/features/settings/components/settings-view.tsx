@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { Database, Download, Palette, RotateCcw, Upload, User } from "lucide-react";
+import { Database, Download, Landmark, Palette, RotateCcw, Upload, User } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { dataSource, resetLocalData } from "@/config/data-source";
+import { BankConnectionsPanel } from "@/features/finance/components/bank-connections-panel";
 import { ProfileForm } from "@/features/profile/components/profile-form";
 import {
   buildOrbitBackup,
@@ -107,6 +108,16 @@ export function SettingsView() {
           <ThemeToggle />
         </div>
       </section>
+
+      {dataSource === "http" ? (
+        <section className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-[#100e1e]/70 backdrop-blur-md p-4 sm:p-5 shadow-2xs">
+          <div className="mb-4 flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
+            <Landmark className="h-4 w-4 text-brand" />
+            <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Contas bancárias</h2>
+          </div>
+          <BankConnectionsPanel />
+        </section>
+      ) : null}
 
       <section className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-[#100e1e]/70 backdrop-blur-md p-4 sm:p-5 shadow-2xs">
         <div className="mb-4 flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800/80 pb-3">

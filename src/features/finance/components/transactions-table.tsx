@@ -14,6 +14,7 @@ import {
   Trash2,
   Calendar,
   CreditCard,
+  Landmark,
   Layers,
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
@@ -176,8 +177,13 @@ export function TransactionsTable({
                             )}
                           </div>
                           <div>
-                            <div className="font-semibold text-zinc-800 dark:text-zinc-200 text-sm">
+                            <div className="flex items-center gap-1.5 font-semibold text-zinc-800 dark:text-zinc-200 text-sm">
                               {tx.description}
+                              {tx.externalId && (
+                                <span title="Importado do banco">
+                                  <Landmark className="h-3 w-3 shrink-0 text-zinc-400" aria-label="Importado do banco" />
+                                </span>
+                              )}
                             </div>
                             {tx.notes && (
                               <div className="text-[11px] text-zinc-400 dark:text-zinc-500">
