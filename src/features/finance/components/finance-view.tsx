@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { dataSource } from "@/config/data-source";
 import { computeMonthlyMetrics } from "../domain/metrics";
 import { toCents } from "../domain/money";
 import {
@@ -16,7 +17,8 @@ import {
 import type { Transaction } from "../domain/finance.schema";
 import { useFinanceViewState } from "../hooks/use-finance-view-state";
 import { useFinanceAssistant } from "../hooks/use-finance-assistant";
-import { FinanceStats } from "./finance-stats";
+import { FinanceStats, type CardStatementView } from "./finance-stats";
+import { useCardBills } from "../hooks/use-bank-connections";
 import { BudgetBreakdown } from "./budget-breakdown";
 import { TransactionsTable } from "./transactions-table";
 import { AddTransactionModal, type TransactionFormDefaults } from "./add-transaction-modal";
@@ -51,6 +53,7 @@ export function FinanceView() {
   const range = useMemo(() => monthRange(monthKey), [monthKey]);
   const transactionsQuery = useTransactions(range);
   const categoriesQuery = useFinanceCategories();
+  const billsQuery = useCardBills(dataSource === "http");
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
   const deleteTransaction = useDeleteTransactionWithUndo();
@@ -69,7 +72,27 @@ export function FinanceView() {
 
   const monthlyTransactions = useMemo(() => transactionsQuery.data ?? [], [transactionsQuery.data]);
   const categories = categoriesQuery.data ?? [];
-  const metrics = useMemo(() => computeMonthlyMetrics(monthlyTransactions), [monthlyTransactions]);
+  const monthBills = useMemo(
+    () => (billsQuery.data ?? []).filter((bill) => bill.dueDate.startsWith(monthKey)),
+    [billsQuery.data, monthKey]
+  );
+  const statementCents = monthBills.length
+    ? monthBills.reduce((sum, bill) => sum + bill.totalAmountCents, 0)
+    : undefined;
+  const metrics = useMemo(
+    () => computeMonthlyMetrics(monthlyTransactions, statementCents),
+    [monthlyTransactions, statementCents]
+  );
+  const statement = useMemo<CardStatementView | null>(() => {
+    if (monthBills.length !== 1) return monthBills.length > 1 ? { dueDate: null, closingDate: null, openCents: 0 } : null;
+    const bill = monthBills[0];
+    const openCents = bill.closingDate
+      ? monthlyTransactions
+          .filter((tx) => tx.paymentMethod === "cartao" && tx.type === "expense" && tx.date > bill.closingDate!)
+          .reduce((sum, tx) => sum + tx.amountCents, 0)
+      : 0;
+    return { dueDate: bill.dueDate, closingDate: bill.closingDate, openCents };
+  }, [monthBills, monthlyTransactions]);
   const currentMonthDate = parseYearMonthKey(monthKey);
 
   const shiftMonth = (delta: number) => setMonthKey(getYearMonthKey(addMonths(currentMonthDate, delta)));
@@ -90,7 +113,9 @@ export function FinanceView() {
       },
     });
 
-  if (transactionsQuery.isPending || categoriesQuery.isPending) return <ViewSkeleton />;
+  if (transactionsQuery.isPending || categoriesQuery.isPending || (dataSource === "http" && billsQuery.isPending)) {
+    return <ViewSkeleton />;
+  }
 
   return (
     <div className="space-y-5">
@@ -165,7 +190,7 @@ export function FinanceView() {
       </PeriodNavigator>
 
       {/* 4 Metric Cards & Nubank Monthly Planning Breakdown */}
-      <FinanceStats metrics={metrics} />
+      <FinanceStats metrics={metrics} statement={statement} />
 
       {/* Budget Breakdown & Planning for the selected month */}
       <BudgetBreakdown

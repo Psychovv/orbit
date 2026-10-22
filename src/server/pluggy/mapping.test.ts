@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { institutionName, isImportableAccount, mapPluggyTransaction, toDateKey } from "./mapping";
+import { billPaymentIds, institutionName, isImportableAccount, mapPluggyTransaction, toDateKey } from "./mapping";
 import type { PluggyAccount, PluggyTransaction } from "./types";
 
 const checking: PluggyAccount = {
@@ -70,6 +70,40 @@ describe("institutionName", () => {
   });
 });
 
+describe("billPaymentIds", () => {
+  const row = (id: string, date: string, amountCents: number, paymentMethod = "transferencia") => ({
+    id,
+    date,
+    amountCents,
+    type: "expense",
+    paymentMethod,
+  });
+
+  it("matches one account debit per bill payment and ignores pix", () => {
+    const ids = billPaymentIds(
+      [
+        row("a", "2026-10-06", 249743),
+        row("b", "2026-10-06", 4000, "pix"),
+        row("c", "2026-10-08", 4000),
+      ],
+      [
+        { date: "2026-10-06", amountCents: 249743 },
+        { date: "2026-10-06", amountCents: 4000 },
+        { date: "2026-10-08", amountCents: 4000 },
+      ]
+    );
+    expect(ids).toEqual(["a", "c"]);
+  });
+
+  it("does not reuse the same transaction for two payments", () => {
+    const ids = billPaymentIds([row("a", "2026-10-06", 1000)], [
+      { date: "2026-10-06", amountCents: 1000 },
+      { date: "2026-10-06", amountCents: 1000 },
+    ]);
+    expect(ids).toEqual(["a"]);
+  });
+});
+
 describe("mapPluggyTransaction", () => {
   it("maps a checking account debit to an expense in cents", () => {
     expect(mapPluggyTransaction(tx(), checking, "Nubank")).toEqual({
@@ -79,7 +113,8 @@ describe("mapPluggyTransaction", () => {
       type: "expense",
       date: "2026-10-15",
       paymentMethod: "transferencia",
-      notes: "Importado de Nubank · Conta corrente",
+      institution: "Nubank",
+      notes: "",
     });
   });
 
@@ -123,7 +158,8 @@ describe("mapPluggyTransaction", () => {
       type: "expense",
       amountCents: 12000,
       paymentMethod: "cartao",
-      notes: "Importado de Nubank · Cartão · Parcela 2/6",
+      institution: "Nubank",
+      notes: "Parcela 2/6",
     });
   });
 

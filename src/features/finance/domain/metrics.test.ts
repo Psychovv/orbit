@@ -33,6 +33,19 @@ describe("finance metrics", () => {
     });
   });
 
+  it("uses the closed statement and ignores bill payments", () => {
+    const withPayment = [
+      ...transactions,
+      tx({ id: "5", amountCents: 90000, type: "expense", paymentMethod: "transferencia", countsInBalance: false }),
+      tx({ id: "6", amountCents: 20000, type: "expense", paymentMethod: "cartao", externalId: "ext-1" }),
+    ];
+    expect(computeMonthlyMetrics(withPayment, 249743)).toMatchObject({
+      dailyExpenses: 140000,
+      creditCardExpenses: 249743 + 90000,
+      netBalance: 620000 - 140000 - (249743 + 90000),
+    });
+  });
+
   it("computes the overall net balance", () => {
     expect(netBalance(transactions)).toBe(390000);
   });

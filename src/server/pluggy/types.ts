@@ -48,3 +48,23 @@ export const PluggyTransactionsPageSchema = z.object({
 export const PluggyAccountsPageSchema = z.object({
   results: z.array(z.unknown()),
 });
+
+export const PluggyBillSchema = z.object({
+  id: z.uuid(),
+  dueDate: z.string(),
+  billClosingDate: z.string().nullish(),
+  totalAmount: z.number(),
+  payments: z
+    .array(
+      z.object({
+        paymentDate: z.string().nullish(),
+        amount: z.number(),
+      })
+    )
+    .nullish(),
+});
+export type PluggyBill = z.infer<typeof PluggyBillSchema>;
+
+export const PluggyBillsPageSchema = z.object({
+  results: z.array(z.unknown()),
+});

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DateKeySchema } from "@/shared/lib/schemas";
 
 /** Ids de item, conta e transação da Pluggy são UUIDs. */
 export const PluggyIdSchema = z.uuid();
@@ -16,6 +17,14 @@ export const BankConnectionSchema = z.object({
 export type BankConnection = z.infer<typeof BankConnectionSchema>;
 
 export const AddBankConnectionSchema = z.object({ itemId: PluggyIdSchema });
+
+export const CardBillSchema = z.object({
+  id: z.uuid(),
+  dueDate: DateKeySchema,
+  closingDate: DateKeySchema.nullable(),
+  totalAmountCents: z.number().int(),
+});
+export type CardBill = z.infer<typeof CardBillSchema>;
 
 export interface BankSyncResult {
   itemId: string;

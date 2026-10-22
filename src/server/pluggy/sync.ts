@@ -1,13 +1,23 @@
 import "server-only";
 import type { BankConnection, BankSyncResult } from "@/features/finance/domain/bank.schema";
+import type { CardBill } from "@/features/finance/domain/bank.schema";
 import {
   bankConnectionsRepository,
+  cardBillsRepository,
   importedTransactionsRepository,
+  markBillPayments,
 } from "@/server/db/repositories/bank.server";
 import { nowIso } from "@/shared/lib/id";
-import { getAccount, getAccounts, getItem, listTransactions, PluggyError } from "./client";
-import { institutionName, isImportableAccount, mapPluggyTransaction, type ImportedTransaction } from "./mapping";
-import type { PluggyItem } from "./types";
+import { getAccount, getAccounts, getBills, getItem, listTransactions, PluggyError } from "./client";
+import {
+  institutionName,
+  isImportableAccount,
+  mapPluggyTransaction,
+  pluggyDay,
+  type BillPaymentRef,
+  type ImportedTransaction,
+} from "./mapping";
+import type { PluggyAccount, PluggyItem } from "./types";
 
 /** Histórico trazido na primeira sincronização de um banco. */
 const INITIAL_HISTORY_DAYS = 90;
@@ -55,6 +65,37 @@ export async function refreshConnectionStatus(itemId: string): Promise<BankConne
   return bankConnectionsRepository.upsert(connectionFromItem(await getItem(itemId), existing.institution));
 }
 
+async function collectBills(accounts: PluggyAccount[]): Promise<{ bills: CardBill[]; payments: BillPaymentRef[] }> {
+  const bills: CardBill[] = [];
+  const payments: BillPaymentRef[] = [];
+
+  for (const account of accounts.filter((a) => a.type === "CREDIT")) {
+    let fetched;
+    try {
+      fetched = await getBills(account.id);
+    } catch (error) {
+      console.error("[pluggy] bills failed", { error: describeError(error) });
+      continue;
+    }
+    for (const bill of fetched) {
+      const dueDate = pluggyDay(bill.dueDate);
+      if (!dueDate || !Number.isFinite(bill.totalAmount)) continue;
+      bills.push({
+        id: bill.id,
+        dueDate,
+        closingDate: pluggyDay(bill.billClosingDate),
+        totalAmountCents: Math.round(bill.totalAmount * 100),
+      });
+      for (const payment of bill.payments ?? []) {
+        const date = pluggyDay(payment.paymentDate);
+        const amountCents = Math.round(payment.amount * 100);
+        if (date && amountCents > 0) payments.push({ date, amountCents });
+      }
+    }
+  }
+  return { bills, payments };
+}
+
 async function runSync(connection: BankConnection): Promise<BankSyncResult> {
   const startedAt = nowIso();
   const [item, allAccounts] = await Promise.all([getItem(connection.itemId), getAccounts(connection.itemId)]);
@@ -62,17 +103,22 @@ async function runSync(connection: BankConnection): Promise<BankSyncResult> {
     connectionFromItem(item, institutionName(item.connector?.name, allAccounts))
   );
 
-  const dateFrom = saved.lastSyncedAt
-    ? daysAgo(saved.lastSyncedAt, OVERLAP_DAYS)
-    : daysAgo(startedAt, INITIAL_HISTORY_DAYS);
+  const backfill = await importedTransactionsRepository.needsMetadataBackfill();
+  const dateFrom =
+    !saved.lastSyncedAt || backfill ? daysAgo(startedAt, INITIAL_HISTORY_DAYS) : daysAgo(saved.lastSyncedAt, OVERLAP_DAYS);
 
   const accounts = allAccounts.filter(isImportableAccount);
-  let imported = 0;
+  const rows: ImportedTransaction[] = [];
   for (const account of accounts) {
     const txs = await listTransactions(account.id, { dateFrom });
-    const rows = txs.flatMap((tx) => mapPluggyTransaction(tx, account, saved.institution) ?? []);
-    imported += await importedTransactionsRepository.insertNew(rows);
+    rows.push(...txs.flatMap((tx) => mapPluggyTransaction(tx, account, saved.institution) ?? []));
   }
+
+  await importedTransactionsRepository.refreshImported(rows);
+  const imported = await importedTransactionsRepository.insertNew(rows);
+  const { bills, payments } = await collectBills(accounts);
+  await cardBillsRepository.upsert(bills);
+  await markBillPayments(payments);
 
   await bankConnectionsRepository.markSynced(connection.itemId, startedAt);
   return { itemId: connection.itemId, imported };

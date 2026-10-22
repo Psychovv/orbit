@@ -44,6 +44,9 @@ export const TransactionSchema = z.object({
   notes: z.string().max(2000).optional(),
   /** Presente só em lançamentos importados do banco (id da transação na Pluggy). */
   externalId: z.string().min(1).max(100).optional(),
+  institution: z.string().min(1).max(60).optional(),
+  /** Ausente ou true conta no saldo. False marca pagamento de fatura. */
+  countsInBalance: z.boolean().optional(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });
@@ -52,6 +55,8 @@ export type Transaction = z.infer<typeof TransactionSchema>;
 export const CreateTransactionSchema = TransactionSchema.omit({
   id: true,
   externalId: true,
+  institution: true,
+  countsInBalance: true,
   createdAt: true,
   updatedAt: true,
 });

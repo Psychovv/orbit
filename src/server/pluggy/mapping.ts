@@ -8,7 +8,14 @@ export interface ImportedTransaction {
   type: TransactionType;
   date: string;
   paymentMethod: PaymentMethod;
+  institution: string;
+  /** Vazio quando não há parcela; o nome do banco vai no campo `institution`, não no texto. */
   notes: string;
+}
+
+export interface BillPaymentRef {
+  date: string;
+  amountCents: number;
 }
 
 const MEU_PLUGGY_CONNECTOR = "MeuPluggy";
@@ -46,11 +53,6 @@ export function institutionName(connectorName: string | null | undefined, accoun
   return accountName.split(" - ")[0].replace(/\s+S\.?A\.?$/i, "").trim().slice(0, 60) || "Banco";
 }
 
-function accountLabel(account: PluggyAccount): string {
-  if (account.type === "CREDIT") return "Cartão";
-  return account.subtype === "SAVINGS_ACCOUNT" ? "Poupança" : "Conta corrente";
-}
-
 /** Contas importadas: corrente/poupança e cartão de crédito. Empréstimos e afins ficam de fora. */
 export function isImportableAccount(account: PluggyAccount): boolean {
   if (account.type === "BANK") return true;
@@ -58,9 +60,15 @@ export function isImportableAccount(account: PluggyAccount): boolean {
 }
 
 /**
- * Datas sem horário chegam como meia-noite UTC e representam o próprio dia;
- * com horário, são convertidas para o fuso de São Paulo.
+ * Dia de calendário vindo da Pluggy. `YYYY-MM-DD` puro fica como está.
+ * ISO à meia-noite UTC representa o próprio dia; com horário, converte para São Paulo.
  */
+export function pluggyDay(value: string | null | undefined): string | null {
+  if (!value) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  return toDateKey(value);
+}
+
 export function toDateKey(iso: string): string | null {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return null;
@@ -137,11 +145,11 @@ export function mapPluggyTransaction(
     type = tx.type === "CREDIT" ? "income" : "expense";
   }
 
-  const notes = [`Importado de ${institution} · ${accountLabel(account)}`];
   const installment = tx.creditCardMetadata;
-  if (installment?.installmentNumber && installment.totalInstallments && installment.totalInstallments > 1) {
-    notes.push(`Parcela ${installment.installmentNumber}/${installment.totalInstallments}`);
-  }
+  const notes =
+    installment?.installmentNumber && installment.totalInstallments && installment.totalInstallments > 1
+      ? `Parcela ${installment.installmentNumber}/${installment.totalInstallments}`
+      : "";
 
   return {
     externalId: tx.id,
@@ -150,6 +158,34 @@ export function mapPluggyTransaction(
     type,
     date,
     paymentMethod: paymentMethodFor(tx, isCard),
-    notes: notes.join(" · ").slice(0, 2000),
+    institution,
+    notes,
   };
+}
+
+const SETTLEMENT_METHODS = new Set(["transferencia", "boleto", "dinheiro"]);
+
+/**
+ * Casa cada pagamento registrado na fatura com um lançamento da conta (mesma data e valor).
+ * PIX fica de fora: o pagamento da fatura do Nubank sai como transferência interna.
+ * Cada pagamento consome no máximo um lançamento.
+ */
+export function billPaymentIds(
+  candidates: { id: string; date: string; amountCents: number; type: string; paymentMethod: string }[],
+  payments: BillPaymentRef[]
+): string[] {
+  const pool = candidates.filter((c) => c.type === "expense" && SETTLEMENT_METHODS.has(c.paymentMethod));
+  const used = new Set<string>();
+  const ids: string[] = [];
+
+  for (const payment of payments) {
+    if (payment.amountCents <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(payment.date)) continue;
+    const match = pool.find(
+      (c) => !used.has(c.id) && c.date === payment.date && c.amountCents === payment.amountCents
+    );
+    if (!match) continue;
+    used.add(match.id);
+    ids.push(match.id);
+  }
+  return ids;
 }

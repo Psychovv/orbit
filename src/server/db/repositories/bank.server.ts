@@ -1,9 +1,9 @@
 import "server-only";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, ne } from "drizzle-orm";
 import { db } from "../index";
-import { bankConnections, dismissedBankTransactions, transactions } from "../schema";
-import type { BankConnection } from "@/features/finance/domain/bank.schema";
-import type { ImportedTransaction } from "@/server/pluggy/mapping";
+import { bankConnections, cardBills, dismissedBankTransactions, transactions } from "../schema";
+import type { BankConnection, CardBill } from "@/features/finance/domain/bank.schema";
+import { billPaymentIds, type BillPaymentRef, type ImportedTransaction } from "@/server/pluggy/mapping";
 import { createId, nowIso } from "@/shared/lib/id";
 
 const CHUNK = 200;
@@ -78,7 +78,17 @@ export const importedTransactionsRepository = {
       const now = nowIso();
       const result = await db
         .insert(transactions)
-        .values(part.map((r) => ({ ...r, id: createId(), categoryId: null, createdAt: now, updatedAt: now })))
+        .values(
+          part.map((r) => ({
+            ...r,
+            notes: r.notes || null,
+            id: createId(),
+            categoryId: null,
+            countsInBalance: true,
+            createdAt: now,
+            updatedAt: now,
+          }))
+        )
         .onConflictDoNothing({ target: transactions.externalId })
         .returning({ id: transactions.id });
       inserted += result.length;
@@ -86,13 +96,20 @@ export const importedTransactionsRepository = {
     return inserted;
   },
 
-  /** Atualiza valor, tipo e data vindos do banco, preservando descrição, categoria e notas editadas. */
+  /** Atualiza os campos que vêm do banco nos lançamentos já importados. Descrição, categoria e notas editadas à mão ficam. */
   async applyBankChanges(rows: ImportedTransaction[]): Promise<number> {
     let updated = 0;
     for (const r of rows) {
       const result = await db
         .update(transactions)
-        .set({ amountCents: r.amountCents, type: r.type, date: r.date, updatedAt: nowIso() })
+        .set({
+          amountCents: r.amountCents,
+          type: r.type,
+          date: r.date,
+          paymentMethod: r.paymentMethod,
+          institution: r.institution,
+          updatedAt: nowIso(),
+        })
         .where(eq(transactions.externalId, r.externalId))
         .returning({ id: transactions.id });
       updated += result.length;
@@ -100,9 +117,106 @@ export const importedTransactionsRepository = {
     return updated;
   },
 
+  /** Regrava instituição e observações de importação (parcela). Notas editadas pelo usuário, que não começam com "Parcela", são preservadas. */
+  async refreshImported(rows: ImportedTransaction[]): Promise<void> {
+    for (const r of rows) {
+      const [current] = await db
+        .select({ notes: transactions.notes })
+        .from(transactions)
+        .where(eq(transactions.externalId, r.externalId));
+      if (!current) continue;
+      const keepNotes = current.notes && !current.notes.startsWith("Importado de") && !current.notes.startsWith("Parcela ");
+      await db
+        .update(transactions)
+        .set({
+          institution: r.institution,
+          paymentMethod: r.paymentMethod,
+          amountCents: r.amountCents,
+          type: r.type,
+          date: r.date,
+          notes: keepNotes ? current.notes : r.notes || null,
+          updatedAt: nowIso(),
+        })
+        .where(eq(transactions.externalId, r.externalId));
+    }
+  },
+
+  /** Verdadeiro enquanto houver lançamento importado sem o banco de origem gravado. */
+  async needsMetadataBackfill(): Promise<boolean> {
+    const [row] = await db
+      .select({ id: transactions.id })
+      .from(transactions)
+      .where(and(isNotNull(transactions.externalId), isNull(transactions.institution)))
+      .limit(1);
+    return Boolean(row);
+  },
+
   async removeByExternalIds(externalIds: string[]): Promise<void> {
     for (const part of chunks(externalIds)) {
       await db.delete(transactions).where(inArray(transactions.externalId, part));
+    }
+  },
+};
+
+/**
+ * Tira do saldo os débitos da conta que pagam a fatura. A fatura em si já entra pelo total fechado.
+ * Religa tudo antes, para um pagamento que deixou de existir voltar a contar.
+ */
+export async function markBillPayments(payments: BillPaymentRef[]): Promise<number> {
+  await db
+    .update(transactions)
+    .set({ countsInBalance: true })
+    .where(and(isNotNull(transactions.externalId), ne(transactions.paymentMethod, "cartao")));
+
+  const candidates = await db
+    .select({
+      id: transactions.id,
+      date: transactions.date,
+      amountCents: transactions.amountCents,
+      type: transactions.type,
+      paymentMethod: transactions.paymentMethod,
+    })
+    .from(transactions)
+    .where(isNotNull(transactions.externalId));
+
+  const ids = billPaymentIds(candidates, payments);
+  for (const part of chunks(ids)) {
+    await db
+      .update(transactions)
+      .set({ countsInBalance: false, updatedAt: nowIso() })
+      .where(inArray(transactions.id, part));
+  }
+  return ids.length;
+}
+
+export const cardBillsRepository = {
+  async list(): Promise<CardBill[]> {
+    return db
+      .select({
+        id: cardBills.id,
+        dueDate: cardBills.dueDate,
+        closingDate: cardBills.closingDate,
+        totalAmountCents: cardBills.totalAmountCents,
+      })
+      .from(cardBills)
+      .orderBy(cardBills.dueDate);
+  },
+
+  async upsert(bills: CardBill[]): Promise<void> {
+    const now = nowIso();
+    for (const bill of bills) {
+      await db
+        .insert(cardBills)
+        .values({ ...bill, updatedAt: now })
+        .onConflictDoUpdate({
+          target: cardBills.id,
+          set: {
+            dueDate: bill.dueDate,
+            closingDate: bill.closingDate,
+            totalAmountCents: bill.totalAmountCents,
+            updatedAt: now,
+          },
+        });
     }
   },
 };

@@ -2,10 +2,13 @@ import "server-only";
 import {
   PluggyAccountSchema,
   PluggyAccountsPageSchema,
+  PluggyBillSchema,
+  PluggyBillsPageSchema,
   PluggyItemSchema,
   PluggyTransactionSchema,
   PluggyTransactionsPageSchema,
   type PluggyAccount,
+  type PluggyBill,
   type PluggyItem,
   type PluggyTransaction,
 } from "./types";
@@ -97,6 +100,16 @@ export async function getAccounts(itemId: string): Promise<PluggyAccount[]> {
   );
   return page.results.flatMap((raw) => {
     const parsed = PluggyAccountSchema.safeParse(raw);
+    return parsed.success ? [parsed.data] : [];
+  });
+}
+
+export async function getBills(accountId: string): Promise<PluggyBill[]> {
+  const page = PluggyBillsPageSchema.parse(
+    await pluggyRequest(`/bills?${new URLSearchParams({ accountId })}`)
+  );
+  return page.results.flatMap((raw) => {
+    const parsed = PluggyBillSchema.safeParse(raw);
     return parsed.success ? [parsed.data] : [];
   });
 }

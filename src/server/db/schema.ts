@@ -42,9 +42,22 @@ export const transactions = sqliteTable('transactions', {
   notes: text('notes'),
   /** Id da transação na Pluggy; nulo para lançamentos manuais. */
   externalId: text('external_id'),
+  /** Banco de origem, quando o lançamento foi importado. */
+  institution: text('institution'),
+  /** Falso em pagamento de fatura: aparece no extrato, mas não entra no saldo. */
+  countsInBalance: integer('counts_in_balance', { mode: 'boolean' }).notNull().default(true),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 }, (t) => [uniqueIndex('transactions_external_id_unique').on(t.externalId)]);
+
+/** Faturas de cartão importadas. O total é o da fatura, não a soma das compras do mês. */
+export const cardBills = sqliteTable('card_bills', {
+  id: text('id').primaryKey(),
+  dueDate: text('due_date').notNull(),
+  closingDate: text('closing_date'),
+  totalAmountCents: integer('total_amount_cents').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
 
 /** Conexões Pluggy (um item por banco). `GET /items` não existe no MeuPluggy, então o id fica guardado aqui. */
 export const bankConnections = sqliteTable('bank_connections', {

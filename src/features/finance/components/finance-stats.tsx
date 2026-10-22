@@ -4,6 +4,7 @@ import React from "react";
 import { GlowCard } from "@/shared/effects/glow-card";
 import type { MonthlyMetrics } from "../domain/metrics";
 import { formatBRL } from "../domain/money";
+import { formatShortDate } from "@/shared/lib/date-utils";
 import {
   Wallet,
   ArrowUpRight,
@@ -14,7 +15,20 @@ import {
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
-export function FinanceStats({ metrics }: { metrics: MonthlyMetrics }) {
+export interface CardStatementView {
+  dueDate: string | null;
+  closingDate: string | null;
+  /** Compras do mês feitas depois do fechamento: entram na próxima fatura. */
+  openCents: number;
+}
+
+export function FinanceStats({
+  metrics,
+  statement,
+}: {
+  metrics: MonthlyMetrics;
+  statement?: CardStatementView | null;
+}) {
   const { totalIncome, dailyExpenses, creditCardExpenses, netBalance, incomeCount, dailyCount, cardCount } =
     metrics;
 
@@ -109,7 +123,7 @@ export function FinanceStats({ metrics }: { metrics: MonthlyMetrics }) {
                 Fatura do Cartão
               </span>
               <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-brand/15 text-brand dark:text-brand-soft">
-                Prevista
+                {statement?.dueDate ? `Venc. ${formatShortDate(statement.dueDate)}` : "Do mês"}
               </span>
             </div>
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand/10 dark:bg-brand/20 text-brand dark:text-brand-soft border border-brand/30">
@@ -122,7 +136,12 @@ export function FinanceStats({ metrics }: { metrics: MonthlyMetrics }) {
               {formatBRL(creditCardExpenses)}
             </h2>
             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              {cardCount} {cardCount === 1 ? "compra no cartão" : "compras no cartão"}
+              {statement?.closingDate
+                ? `Fechou em ${formatShortDate(statement.closingDate)}`
+                : `${cardCount} ${cardCount === 1 ? "compra no cartão" : "compras no cartão"}`}
+              {statement && statement.openCents > 0
+                ? ` · ${formatBRL(statement.openCents)} depois do fechamento, na próxima`
+                : ""}
             </p>
           </div>
         </GlowCard>

@@ -10,8 +10,13 @@ export interface MonthlyMetrics {
   cardCount: number;
 }
 
-/** Valores em centavos. Despesas no cartão contam como fatura; as demais, como despesas da conta. */
-export function computeMonthlyMetrics(transactions: Transaction[]): MonthlyMetrics {
+/**
+ * Valores em centavos.
+ * Pagamentos de fatura (`countsInBalance === false`) ficam de fora.
+ * Com `statementCents`, a fatura é o total fechado pelo banco; as compras importadas do cartão
+ * não são somadas de novo. Sem esse total, a fatura volta a ser a soma das compras do mês.
+ */
+export function computeMonthlyMetrics(transactions: Transaction[], statementCents?: number): MonthlyMetrics {
   const m: MonthlyMetrics = {
     totalIncome: 0,
     dailyExpenses: 0,
@@ -22,19 +27,30 @@ export function computeMonthlyMetrics(transactions: Transaction[]): MonthlyMetri
     cardCount: 0,
   };
 
+  let importedCard = 0;
+  let manualCard = 0;
+
   for (const tx of transactions) {
+    if (tx.countsInBalance === false) continue;
+
+    if (tx.paymentMethod === "cartao") {
+      const delta = tx.type === "expense" ? tx.amountCents : -tx.amountCents;
+      if (tx.type === "expense") m.cardCount++;
+      if (tx.externalId) importedCard += delta;
+      else manualCard += delta;
+      continue;
+    }
+
     if (tx.type === "income") {
       m.totalIncome += tx.amountCents;
       m.incomeCount++;
-    } else if (tx.paymentMethod === "cartao") {
-      m.creditCardExpenses += tx.amountCents;
-      m.cardCount++;
     } else {
       m.dailyExpenses += tx.amountCents;
       m.dailyCount++;
     }
   }
 
+  m.creditCardExpenses = (statementCents ?? importedCard) + manualCard;
   m.netBalance = m.totalIncome - m.dailyExpenses - m.creditCardExpenses;
   return m;
 }
