@@ -1,57 +1,68 @@
 import type { FinanceCategory, Transaction } from "./finance.schema";
 
 export interface MonthlyMetrics {
+  /** Todas as entradas do mês (conta + cartão), como no Meu Pluggy. */
   totalIncome: number;
-  dailyExpenses: number;
-  creditCardExpenses: number;
+  /** Todas as saídas do mês (conta + cartão), como no Meu Pluggy. */
+  totalExpenses: number;
+  /** Entradas − saídas. */
   netBalance: number;
   incomeCount: number;
-  dailyCount: number;
+  expenseCount: number;
+  /** Compras no cartão no mês. */
+  cardPurchases: number;
   cardCount: number;
+  /** Compras de cartão ainda pendentes (fatura aberta). */
+  pendingCardCents: number;
+  pendingCardCount: number;
+  /** Saídas da conta corrente. */
+  accountExpenses: number;
+  accountExpenseCount: number;
 }
 
 /**
- * Valores em centavos.
- * Pagamentos de fatura (`countsInBalance === false`) ficam de fora.
- * Com `statementCents`, a fatura é o total fechado pelo banco; as compras importadas do cartão
- * não são somadas de novo. Sem esse total, a fatura volta a ser a soma das compras do mês.
+ * Totais do mês no mesmo critério do Meu Pluggy: soma tudo que entrou e saiu,
+ * inclusive liquidação de fatura nos dois lados (sai da conta e entra no cartão).
  */
-export function computeMonthlyMetrics(transactions: Transaction[], statementCents?: number): MonthlyMetrics {
+export function computeMonthlyMetrics(transactions: Transaction[]): MonthlyMetrics {
   const m: MonthlyMetrics = {
     totalIncome: 0,
-    dailyExpenses: 0,
-    creditCardExpenses: 0,
+    totalExpenses: 0,
     netBalance: 0,
     incomeCount: 0,
-    dailyCount: 0,
+    expenseCount: 0,
+    cardPurchases: 0,
     cardCount: 0,
+    pendingCardCents: 0,
+    pendingCardCount: 0,
+    accountExpenses: 0,
+    accountExpenseCount: 0,
   };
 
-  let importedCard = 0;
-  let manualCard = 0;
-
   for (const tx of transactions) {
-    if (tx.countsInBalance === false) continue;
-
-    if (tx.paymentMethod === "cartao") {
-      const delta = tx.type === "expense" ? tx.amountCents : -tx.amountCents;
-      if (tx.type === "expense") m.cardCount++;
-      if (tx.externalId) importedCard += delta;
-      else manualCard += delta;
-      continue;
-    }
-
     if (tx.type === "income") {
       m.totalIncome += tx.amountCents;
       m.incomeCount++;
+      continue;
+    }
+
+    m.totalExpenses += tx.amountCents;
+    m.expenseCount++;
+
+    if (tx.paymentMethod === "cartao") {
+      m.cardPurchases += tx.amountCents;
+      m.cardCount++;
+      if (tx.pending) {
+        m.pendingCardCents += tx.amountCents;
+        m.pendingCardCount++;
+      }
     } else {
-      m.dailyExpenses += tx.amountCents;
-      m.dailyCount++;
+      m.accountExpenses += tx.amountCents;
+      m.accountExpenseCount++;
     }
   }
 
-  m.creditCardExpenses = (statementCents ?? importedCard) + manualCard;
-  m.netBalance = m.totalIncome - m.dailyExpenses - m.creditCardExpenses;
+  m.netBalance = m.totalIncome - m.totalExpenses;
   return m;
 }
 

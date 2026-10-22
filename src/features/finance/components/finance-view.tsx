@@ -76,23 +76,16 @@ export function FinanceView() {
     () => (billsQuery.data ?? []).filter((bill) => bill.dueDate.startsWith(monthKey)),
     [billsQuery.data, monthKey]
   );
-  const statementCents = monthBills.length
-    ? monthBills.reduce((sum, bill) => sum + bill.totalAmountCents, 0)
-    : undefined;
-  const metrics = useMemo(
-    () => computeMonthlyMetrics(monthlyTransactions, statementCents),
-    [monthlyTransactions, statementCents]
-  );
+  const metrics = useMemo(() => computeMonthlyMetrics(monthlyTransactions), [monthlyTransactions]);
   const statement = useMemo<CardStatementView | null>(() => {
-    if (monthBills.length !== 1) return monthBills.length > 1 ? { dueDate: null, closingDate: null, openCents: 0 } : null;
-    const bill = monthBills[0];
-    const openCents = bill.closingDate
-      ? monthlyTransactions
-          .filter((tx) => tx.paymentMethod === "cartao" && tx.type === "expense" && tx.date > bill.closingDate!)
-          .reduce((sum, tx) => sum + tx.amountCents, 0)
-      : 0;
-    return { dueDate: bill.dueDate, closingDate: bill.closingDate, openCents };
-  }, [monthBills, monthlyTransactions]);
+    if (monthBills.length === 0) return null;
+    const totalAmountCents = monthBills.reduce((sum, bill) => sum + bill.totalAmountCents, 0);
+    if (monthBills.length === 1) {
+      const bill = monthBills[0];
+      return { dueDate: bill.dueDate, closingDate: bill.closingDate, totalAmountCents };
+    }
+    return { dueDate: null, closingDate: null, totalAmountCents };
+  }, [monthBills]);
   const currentMonthDate = parseYearMonthKey(monthKey);
 
   const shiftMonth = (delta: number) => setMonthKey(getYearMonthKey(addMonths(currentMonthDate, delta)));
@@ -130,17 +123,17 @@ export function FinanceView() {
             {metrics.netBalance >= 0 ? (
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-400/30">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                Saldo Positivo
+                Mês positivo
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-400/30">
                 <AlertTriangle className="w-3.5 h-3.5" />
-                Déficit no Mês
+                Mês negativo
               </span>
             )}
           </div>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Gestão mensal de receitas, despesas do dia a dia e fatura de cartão de crédito.
+            Entradas e saídas do mês no mesmo critério do Meu Pluggy (conta + cartão).
           </p>
         </div>
 

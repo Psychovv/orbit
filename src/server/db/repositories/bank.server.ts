@@ -84,7 +84,8 @@ export const importedTransactionsRepository = {
             notes: r.notes || null,
             id: createId(),
             categoryId: null,
-            countsInBalance: true,
+            countsInBalance: r.countsInBalance,
+            pending: r.pending,
             createdAt: now,
             updatedAt: now,
           }))
@@ -108,6 +109,8 @@ export const importedTransactionsRepository = {
           date: r.date,
           paymentMethod: r.paymentMethod,
           institution: r.institution,
+          countsInBalance: r.countsInBalance,
+          pending: r.pending,
           updatedAt: nowIso(),
         })
         .where(eq(transactions.externalId, r.externalId))
@@ -117,7 +120,7 @@ export const importedTransactionsRepository = {
     return updated;
   },
 
-  /** Regrava instituição e observações de importação (parcela). Notas editadas pelo usuário, que não começam com "Parcela", são preservadas. */
+  /** Regrava metadados de importação. Notas editadas à mão (fora de parcela) são preservadas. */
   async refreshImported(rows: ImportedTransaction[]): Promise<void> {
     for (const r of rows) {
       const [current] = await db
@@ -125,7 +128,8 @@ export const importedTransactionsRepository = {
         .from(transactions)
         .where(eq(transactions.externalId, r.externalId));
       if (!current) continue;
-      const keepNotes = current.notes && !current.notes.startsWith("Importado de") && !current.notes.startsWith("Parcela ");
+      const keepNotes =
+        current.notes && !current.notes.startsWith("Importado de") && !current.notes.startsWith("Parcela ");
       await db
         .update(transactions)
         .set({
@@ -134,6 +138,8 @@ export const importedTransactionsRepository = {
           amountCents: r.amountCents,
           type: r.type,
           date: r.date,
+          countsInBalance: r.countsInBalance,
+          pending: r.pending,
           notes: keepNotes ? current.notes : r.notes || null,
           updatedAt: nowIso(),
         })

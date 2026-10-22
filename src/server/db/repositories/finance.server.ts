@@ -9,7 +9,7 @@ import { dismissExternalTransaction, undismissExternalTransaction } from './bank
 type TransactionRow = typeof transactions.$inferSelect;
 
 function toTransaction(t: TransactionRow): Transaction {
-  const { externalId, notes, institution, countsInBalance, ...rest } = t;
+  const { externalId, notes, institution, countsInBalance, pending, ...rest } = t;
   return {
     ...rest,
     categoryId: rest.categoryId ?? null,
@@ -17,6 +17,7 @@ function toTransaction(t: TransactionRow): Transaction {
     ...(externalId != null ? { externalId } : {}),
     ...(institution != null ? { institution } : {}),
     ...(countsInBalance === false ? { countsInBalance: false } : {}),
+    ...(pending ? { pending: true } : {}),
   };
 }
 
@@ -80,6 +81,7 @@ export function createServerTransactionsRepository(): TransactionsRepository {
         externalId: transaction.externalId ?? null,
         institution: transaction.institution ?? null,
         countsInBalance: transaction.countsInBalance !== false,
+        pending: transaction.pending === true,
       };
       await db.insert(transactions).values(values).onConflictDoUpdate({
         target: transactions.id,

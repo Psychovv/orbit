@@ -11,6 +11,12 @@ export interface ImportedTransaction {
   institution: string;
   /** Vazio quando não há parcela; o nome do banco vai no campo `institution`, não no texto. */
   notes: string;
+  /**
+   * False em liquidação de fatura (sai da conta / entra no cartão). Continua no extrato e nos
+   * totais de movimentação do Meu Pluggy, mas não entra no saldo livre de planejamento.
+   */
+  countsInBalance: boolean;
+  pending: boolean;
 }
 
 export interface BillPaymentRef {
@@ -81,7 +87,8 @@ export function toDateKey(iso: string): string | null {
   }).format(date);
 }
 
-const BILL_PAYMENT_OPERATIONS = new Set(["PAGAMENTO_FATURA", "PAGAMENTO"]);
+/** Só liquidação da fatura. `PAGAMENTO` positivo no cartão é compra (ex.: plano de saúde). */
+const CARD_BILL_SETTLEMENT = "PAGAMENTO_FATURA";
 const CARD_INCOME_OPERATIONS = new Set(["ESTORNO", "CASHBACK"]);
 
 function paymentMethodFor(tx: PluggyTransaction, isCard: boolean): PaymentMethod {
@@ -113,8 +120,8 @@ function cleanDescription(raw: string | null | undefined): string {
 
 /**
  * Converte uma transação da Pluggy em lançamento do Orbit, ou `null` quando não deve ser importada
- * (valor zero, data inválida, agendamento futuro da conta corrente ou pagamento de fatura no cartão,
- * que já aparece como saída na conta corrente).
+ * (valor zero, data inválida ou agendamento futuro da conta corrente).
+ * Liquidação de fatura entra nos dois lados (conta e cartão), como no Meu Pluggy.
  */
 export function mapPluggyTransaction(
   tx: PluggyTransaction,
@@ -132,17 +139,31 @@ export function mapPluggyTransaction(
   if (!isCard && tx.status === "PENDING") return null;
 
   let type: TransactionType;
+  let countsInBalance = true;
+  const operation = tx.operationType?.toUpperCase() ?? "";
+  const description = tx.description ?? "";
+
   if (isCard) {
-    const operation = tx.operationType?.toUpperCase() ?? "";
     if (rawAmount < 0) {
-      if (BILL_PAYMENT_OPERATIONS.has(operation)) return null;
-      if (!CARD_INCOME_OPERATIONS.has(operation) && /pagamento/i.test(tx.description ?? "")) return null;
-      type = "income";
+      if (operation === CARD_BILL_SETTLEMENT || /pagamento recebido/i.test(description)) {
+        type = "income";
+        countsInBalance = false;
+      } else if (CARD_INCOME_OPERATIONS.has(operation)) {
+        type = "income";
+      } else if (/pagamento/i.test(description)) {
+        type = "income";
+        countsInBalance = false;
+      } else {
+        type = "income";
+      }
     } else {
       type = "expense";
     }
   } else {
     type = tx.type === "CREDIT" ? "income" : "expense";
+    if (type === "expense" && /pagamento de fatura/i.test(description)) {
+      countsInBalance = false;
+    }
   }
 
   const installment = tx.creditCardMetadata;
@@ -160,6 +181,8 @@ export function mapPluggyTransaction(
     paymentMethod: paymentMethodFor(tx, isCard),
     institution,
     notes,
+    countsInBalance,
+    pending: isCard && type === "expense" && tx.status === "PENDING",
   };
 }
 

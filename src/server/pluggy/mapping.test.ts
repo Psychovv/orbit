@@ -115,6 +115,8 @@ describe("mapPluggyTransaction", () => {
       paymentMethod: "transferencia",
       institution: "Nubank",
       notes: "",
+      countsInBalance: true,
+      pending: false,
     });
   });
 
@@ -160,14 +162,35 @@ describe("mapPluggyTransaction", () => {
       paymentMethod: "cartao",
       institution: "Nubank",
       notes: "Parcela 2/6",
+      countsInBalance: true,
+      pending: true,
     });
   });
 
-  it("skips card bill payments to avoid counting the bill twice", () => {
-    expect(mapPluggyTransaction(tx({ amount: -900, operationType: "PAGAMENTO_FATURA" }), card, "Nubank")).toBeNull();
+  it("imports card bill settlement as income excluded from planning balance", () => {
+    expect(mapPluggyTransaction(tx({ amount: -900, operationType: "PAGAMENTO_FATURA" }), card, "Nubank")).toMatchObject({
+      type: "income",
+      countsInBalance: false,
+    });
     expect(
       mapPluggyTransaction(tx({ amount: -900, description: "Pagamento recebido" }), card, "Nubank")
-    ).toBeNull();
+    ).toMatchObject({ type: "income", countsInBalance: false });
+  });
+
+  it("keeps positive PAGAMENTO charges as expenses (merchant, not bill settlement)", () => {
+    expect(
+      mapPluggyTransaction(tx({ amount: 9.5, operationType: "PAGAMENTO", description: "Rita de Cassia" }), card, "Nubank")
+    ).toMatchObject({ type: "expense", amountCents: 950, countsInBalance: true });
+  });
+
+  it("flags checking-account bill payments", () => {
+    expect(
+      mapPluggyTransaction(
+        tx({ amount: -200, type: "DEBIT", description: "Pagamento de fatura" }),
+        checking,
+        "Nubank"
+      )
+    ).toMatchObject({ type: "expense", countsInBalance: false });
   });
 
   it("imports card refunds as income", () => {

@@ -221,7 +221,7 @@ function localFinanceQuery(
   const month = monthPrefix(today);
   const monthTx = transactions.filter((t) => t.date.startsWith(month));
   const metrics = computeMonthlyMetrics(toMetricTx(monthTx));
-  const expenses = metrics.dailyExpenses + metrics.creditCardExpenses;
+  const expenses = metrics.totalExpenses;
 
   const categoryHint = categories.find((c) => normalized.includes(normalize(c.name)));
   if (categoryHint) {

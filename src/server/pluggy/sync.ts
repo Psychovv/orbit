@@ -19,10 +19,8 @@ import {
 } from "./mapping";
 import type { PluggyAccount, PluggyItem } from "./types";
 
-/** Histórico trazido na primeira sincronização de um banco. */
-const INITIAL_HISTORY_DAYS = 90;
-/** Margem nas sincronizações seguintes para pegar lançamentos que o banco publica com atraso. */
-const OVERLAP_DAYS = 7;
+/** Janela relida a cada sincronização (insert é idempotente). */
+const HISTORY_DAYS = 90;
 const MAX_IDS_PER_REQUEST = 500;
 
 const running = new Map<string, Promise<BankSyncResult>>();
@@ -103,9 +101,7 @@ async function runSync(connection: BankConnection): Promise<BankSyncResult> {
     connectionFromItem(item, institutionName(item.connector?.name, allAccounts))
   );
 
-  const backfill = await importedTransactionsRepository.needsMetadataBackfill();
-  const dateFrom =
-    !saved.lastSyncedAt || backfill ? daysAgo(startedAt, INITIAL_HISTORY_DAYS) : daysAgo(saved.lastSyncedAt, OVERLAP_DAYS);
+  const dateFrom = daysAgo(startedAt, HISTORY_DAYS);
 
   const accounts = allAccounts.filter(isImportableAccount);
   const rows: ImportedTransaction[] = [];

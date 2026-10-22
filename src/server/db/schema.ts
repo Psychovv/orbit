@@ -44,8 +44,10 @@ export const transactions = sqliteTable('transactions', {
   externalId: text('external_id'),
   /** Banco de origem, quando o lançamento foi importado. */
   institution: text('institution'),
-  /** Falso em pagamento de fatura: aparece no extrato, mas não entra no saldo. */
+  /** Falso em pagamento de fatura: aparece no extrato, mas não entra no saldo de planejamento. */
   countsInBalance: integer('counts_in_balance', { mode: 'boolean' }).notNull().default(true),
+  /** Compra de cartão ainda na fatura aberta (status PENDING na Pluggy). */
+  pending: integer('pending', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 }, (t) => [uniqueIndex('transactions_external_id_unique').on(t.externalId)]);

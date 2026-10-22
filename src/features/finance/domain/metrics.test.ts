@@ -17,32 +17,25 @@ const transactions = [
   tx({ id: "1", amountCents: 620000, type: "income", categoryId: "salario" }),
   tx({ id: "2", amountCents: 140000, type: "expense", categoryId: "moradia", paymentMethod: "boleto" }),
   tx({ id: "3", amountCents: 50000, type: "expense", categoryId: "alimentacao", paymentMethod: "cartao" }),
-  tx({ id: "4", amountCents: 40000, type: "expense", categoryId: "alimentacao", paymentMethod: "cartao" }),
+  tx({ id: "4", amountCents: 40000, type: "expense", categoryId: "alimentacao", paymentMethod: "cartao", pending: true }),
+  tx({ id: "5", amountCents: 90000, type: "expense", paymentMethod: "transferencia", countsInBalance: false }),
+  tx({ id: "6", amountCents: 90000, type: "income", paymentMethod: "cartao", countsInBalance: false }),
 ];
 
 describe("finance metrics", () => {
-  it("splits card expenses from account expenses", () => {
+  it("sums all movements like Meu Pluggy, including bill settlement on both sides", () => {
     expect(computeMonthlyMetrics(transactions)).toEqual({
-      totalIncome: 620000,
-      dailyExpenses: 140000,
-      creditCardExpenses: 90000,
+      totalIncome: 710000,
+      totalExpenses: 320000,
       netBalance: 390000,
-      incomeCount: 1,
-      dailyCount: 1,
+      incomeCount: 2,
+      expenseCount: 4,
+      cardPurchases: 90000,
       cardCount: 2,
-    });
-  });
-
-  it("uses the closed statement and ignores bill payments", () => {
-    const withPayment = [
-      ...transactions,
-      tx({ id: "5", amountCents: 90000, type: "expense", paymentMethod: "transferencia", countsInBalance: false }),
-      tx({ id: "6", amountCents: 20000, type: "expense", paymentMethod: "cartao", externalId: "ext-1" }),
-    ];
-    expect(computeMonthlyMetrics(withPayment, 249743)).toMatchObject({
-      dailyExpenses: 140000,
-      creditCardExpenses: 249743 + 90000,
-      netBalance: 620000 - 140000 - (249743 + 90000),
+      pendingCardCents: 40000,
+      pendingCardCount: 1,
+      accountExpenses: 230000,
+      accountExpenseCount: 2,
     });
   });
 
