@@ -4,6 +4,19 @@ import { eq, and, gte, lte } from 'drizzle-orm';
 import type { TransactionsRepository, FinanceCategoriesRepository } from '@/features/finance/data/finance.repository';
 import type { Transaction, CreateTransactionInput, UpdateTransactionInput, FinanceCategory, CreateFinanceCategoryInput, UpdateFinanceCategoryInput } from '@/features/finance/domain/finance.schema';
 import { createId, nowIso } from '@/shared/lib/id';
+import { dismissExternalTransaction, undismissExternalTransaction } from './bank.server';
+
+type TransactionRow = typeof transactions.$inferSelect;
+
+function toTransaction(t: TransactionRow): Transaction {
+  const { externalId, notes, ...rest } = t;
+  return {
+    ...rest,
+    categoryId: rest.categoryId ?? null,
+    ...(notes != null ? { notes } : {}),
+    ...(externalId != null ? { externalId } : {}),
+  };
+}
 
 export function createServerTransactionsRepository(): TransactionsRepository {
   return {
@@ -13,11 +26,7 @@ export function createServerTransactionsRepository(): TransactionsRepository {
         query = query.where(and(gte(transactions.date, range.from), lte(transactions.date, range.to)));
       }
       const result = await query;
-      return result.map(t => ({
-        ...t,
-        notes: t.notes ?? undefined,
-        categoryId: t.categoryId ?? null,
-      })) as Transaction[];
+      return result.map(toTransaction);
     },
     
     async create(input: CreateTransactionInput) {
@@ -54,28 +63,25 @@ export function createServerTransactionsRepository(): TransactionsRepository {
 
       await db.update(transactions).set(updated).where(eq(transactions.id, id));
       
-      return {
-        ...updated,
-        notes: updated.notes ?? undefined,
-        categoryId: updated.categoryId ?? null,
-      } as Transaction;
+      return toTransaction(updated);
     },
     
     async remove(id: string) {
-      await db.delete(transactions).where(eq(transactions.id, id));
+      const [row] = await db.delete(transactions).where(eq(transactions.id, id)).returning({ externalId: transactions.externalId });
+      if (row?.externalId) await dismissExternalTransaction(row.externalId);
     },
     
     async restore(transaction: Transaction) {
-      await db.insert(transactions).values({
+      const values = {
         ...transaction,
         notes: transaction.notes ?? null,
-      }).onConflictDoUpdate({
+        externalId: transaction.externalId ?? null,
+      };
+      await db.insert(transactions).values(values).onConflictDoUpdate({
         target: transactions.id,
-        set: {
-          ...transaction,
-          notes: transaction.notes ?? null,
-        }
+        set: values,
       });
+      if (transaction.externalId) await undismissExternalTransaction(transaction.externalId);
       return transaction;
     }
   };

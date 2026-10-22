@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const taskCategories = sqliteTable('task_categories', {
   id: text('id').primaryKey(),
@@ -40,8 +40,28 @@ export const transactions = sqliteTable('transactions', {
   date: text('date').notNull(),
   paymentMethod: text('payment_method', { enum: ['pix', 'cartao', 'dinheiro', 'boleto', 'transferencia'] }).notNull(),
   notes: text('notes'),
+  /** Id da transação na Pluggy; nulo para lançamentos manuais. */
+  externalId: text('external_id'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
+}, (t) => [uniqueIndex('transactions_external_id_unique').on(t.externalId)]);
+
+/** Conexões Pluggy (um item por banco). `GET /items` não existe no MeuPluggy, então o id fica guardado aqui. */
+export const bankConnections = sqliteTable('bank_connections', {
+  itemId: text('item_id').primaryKey(),
+  institution: text('institution').notNull(),
+  status: text('status').notNull(),
+  errorCode: text('error_code'),
+  consentExpiresAt: text('consent_expires_at'),
+  lastSyncedAt: text('last_synced_at'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+/** Transações importadas que o usuário excluiu; a sincronização não as recria. */
+export const dismissedBankTransactions = sqliteTable('dismissed_bank_transactions', {
+  externalId: text('external_id').primaryKey(),
+  dismissedAt: text('dismissed_at').notNull(),
 });
 
 export const profiles = sqliteTable('profiles', {

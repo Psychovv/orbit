@@ -42,6 +42,8 @@ export const TransactionSchema = z.object({
   date: DateKeySchema,
   paymentMethod: PaymentMethodSchema,
   notes: z.string().max(2000).optional(),
+  /** Presente só em lançamentos importados do banco (id da transação na Pluggy). */
+  externalId: z.string().min(1).max(100).optional(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });
@@ -49,6 +51,7 @@ export type Transaction = z.infer<typeof TransactionSchema>;
 
 export const CreateTransactionSchema = TransactionSchema.omit({
   id: true,
+  externalId: true,
   createdAt: true,
   updatedAt: true,
 });
