@@ -17,6 +17,7 @@ Orbit é um aplicativo web de organização pessoal e planejamento financeiro, c
 - Teto de gastos por categoria, com barra de progresso.
 - Extrato com filtro por tipo, busca por descrição e método de pagamento (PIX, cartão, boleto e outros).
 - Lançamentos por texto ou voz com a Orbit AI.
+- Importação de extratos via Open Finance (MeuPluggy), só no modo `http`: conexões em Configurações, sincronização manual ou por webhook. Webhooks são administrados com `pnpm pluggy webhook:list | webhook:create <url> | webhook:update <id> | webhook:delete <id>`.
 
 ### Conta e dados
 
