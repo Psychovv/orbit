@@ -17,6 +17,7 @@ import {
   Landmark,
   Layers,
 } from "lucide-react";
+import { NubankIcon } from "./nubank-icon";
 import { cn } from "@/shared/lib/utils";
 
 interface TransactionsTableProps {
@@ -44,6 +45,22 @@ const TYPE_FILTER_OPTIONS = [
   },
 ] as const;
 
+type MethodFilter = "all" | "pix" | "cartao" | "conta";
+
+const METHOD_FILTER_OPTIONS = [
+  { value: "all", label: "Tudo" },
+  { value: "pix", label: "PIX" },
+  { value: "cartao", label: "Cartão" },
+  { value: "conta", label: "Conta" },
+] as const;
+
+function matchesMethod(tx: Transaction, filter: MethodFilter): boolean {
+  if (filter === "all") return true;
+  if (filter === "pix") return tx.paymentMethod === "pix";
+  if (filter === "cartao") return tx.paymentMethod === "cartao";
+  return tx.paymentMethod !== "pix" && tx.paymentMethod !== "cartao" && tx.countsInBalance !== false;
+}
+
 export function TransactionsTable({
   transactions,
   categories,
@@ -52,6 +69,7 @@ export function TransactionsTable({
 }: TransactionsTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "income" | "expense">("all");
+  const [methodFilter, setMethodFilter] = useState<MethodFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   const categoriesMap = useMemo(() => {
@@ -64,6 +82,7 @@ export function TransactionsTable({
     return transactions
       .filter((tx) => {
         if (typeFilter !== "all" && tx.type !== typeFilter) return false;
+        if (!matchesMethod(tx, methodFilter)) return false;
         if (categoryFilter !== "all" && tx.categoryId !== categoryFilter) return false;
         if (searchTerm.trim()) {
           const term = searchTerm.toLowerCase();
@@ -74,7 +93,7 @@ export function TransactionsTable({
         return true;
       })
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [transactions, typeFilter, categoryFilter, searchTerm]);
+  }, [transactions, typeFilter, methodFilter, categoryFilter, searchTerm]);
 
   return (
     <GlowCard className="p-6 space-y-5">
@@ -109,6 +128,13 @@ export function TransactionsTable({
             value={typeFilter}
             options={TYPE_FILTER_OPTIONS}
             onChange={setTypeFilter}
+          />
+
+          <SegmentedControl
+            label="Filtrar por forma"
+            value={methodFilter}
+            options={METHOD_FILTER_OPTIONS}
+            onChange={setMethodFilter}
           />
 
           {/* Category Dropdown Filter */}
@@ -178,14 +204,19 @@ export function TransactionsTable({
                           </div>
                           <div>
                             <div className="flex items-center gap-1.5 font-semibold text-zinc-800 dark:text-zinc-200 text-sm">
+                              {tx.institution === "Nubank" ? (
+                                <NubankIcon className="h-4 w-4 shrink-0" />
+                              ) : tx.externalId ? (
+                                <Landmark className="h-3.5 w-3.5 shrink-0 text-zinc-400" aria-label={tx.institution ?? "Importado do banco"} />
+                              ) : null}
                               {tx.description}
-                              {tx.externalId && (
-                                <span title="Importado do banco">
-                                  <Landmark className="h-3 w-3 shrink-0 text-zinc-400" aria-label="Importado do banco" />
+                              {tx.countsInBalance === false && (
+                                <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                                  Fatura
                                 </span>
                               )}
                             </div>
-                            {tx.notes && (
+                            {tx.notes && !tx.notes.startsWith("Importado de") && (
                               <div className="text-[11px] text-zinc-400 dark:text-zinc-500">
                                 {tx.notes}
                               </div>
@@ -226,12 +257,14 @@ export function TransactionsTable({
                       <td className="py-3.5 px-4 text-right whitespace-nowrap font-mono font-bold text-sm">
                         <span
                           className={cn(
-                            isIncome
-                              ? "text-emerald-600 dark:text-emerald-400"
-                              : "text-rose-600 dark:text-rose-400"
+                            tx.countsInBalance === false
+                              ? "text-zinc-400 dark:text-zinc-500"
+                              : isIncome
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : "text-rose-600 dark:text-rose-400"
                           )}
                         >
-                          {isIncome ? "+" : "-"} {formatBRL(tx.amountCents)}
+                          {tx.countsInBalance === false ? "" : isIncome ? "+" : "-"} {formatBRL(tx.amountCents)}
                         </span>
                       </td>
 
