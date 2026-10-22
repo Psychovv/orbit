@@ -52,12 +52,27 @@ export const transactions = sqliteTable('transactions', {
   updatedAt: text('updated_at').notNull(),
 }, (t) => [uniqueIndex('transactions_external_id_unique').on(t.externalId)]);
 
-/** Faturas de cartão importadas. O total é o da fatura, não a soma das compras do mês. */
+/** Faturas de cartão importadas. O total é o da fatura fechada, não o saldo em aberto. */
 export const cardBills = sqliteTable('card_bills', {
   id: text('id').primaryKey(),
   dueDate: text('due_date').notNull(),
   closingDate: text('closing_date'),
   totalAmountCents: integer('total_amount_cents').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+/** Contas e cartões da Pluggy, com saldo atual (o mesmo do Overview do Meu Pluggy). */
+export const bankAccounts = sqliteTable('bank_accounts', {
+  id: text('id').primaryKey(),
+  itemId: text('item_id').notNull(),
+  type: text('type', { enum: ['BANK', 'CREDIT'] }).notNull(),
+  subtype: text('subtype'),
+  name: text('name').notNull(),
+  number: text('number'),
+  balanceCents: integer('balance_cents').notNull(),
+  creditLimitCents: integer('credit_limit_cents'),
+  availableLimitCents: integer('available_limit_cents'),
+  dueDate: text('due_date'),
   updatedAt: text('updated_at').notNull(),
 });
 

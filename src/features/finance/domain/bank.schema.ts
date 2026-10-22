@@ -26,6 +26,21 @@ export const CardBillSchema = z.object({
 });
 export type CardBill = z.infer<typeof CardBillSchema>;
 
+export const BankAccountSchema = z.object({
+  id: z.uuid(),
+  itemId: z.uuid(),
+  type: z.enum(["BANK", "CREDIT"]),
+  subtype: z.string().nullable(),
+  name: z.string(),
+  number: z.string().nullable(),
+  balanceCents: z.number().int(),
+  creditLimitCents: z.number().int().nullable(),
+  availableLimitCents: z.number().int().nullable(),
+  dueDate: DateKeySchema.nullable(),
+  updatedAt: z.string(),
+});
+export type BankAccount = z.infer<typeof BankAccountSchema>;
+
 export interface BankSyncResult {
   itemId: string;
   imported: number;

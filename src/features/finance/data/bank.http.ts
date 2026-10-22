@@ -1,4 +1,4 @@
-import type { BankConnection, BankSyncResult, CardBill } from "../domain/bank.schema";
+import type { BankAccount, BankConnection, BankSyncResult, CardBill } from "../domain/bank.schema";
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -13,6 +13,8 @@ export const bankApi = {
   listConnections: () => fetchJson<BankConnection[]>("/api/finance/bank/connections"),
 
   listBills: () => fetchJson<CardBill[]>("/api/finance/bank/bills"),
+
+  listAccounts: () => fetchJson<BankAccount[]>("/api/finance/bank/accounts"),
 
   addConnection: (itemId: string) =>
     fetchJson<{ connection: BankConnection; sync: BankSyncResult }>("/api/finance/bank/connections", {

@@ -1,5 +1,7 @@
+import type { BankAccount } from "@/features/finance/domain/bank.schema";
 import type { PaymentMethod, TransactionType } from "@/features/finance/domain/finance.schema";
 import type { PluggyAccount, PluggyTransaction } from "./types";
+import { nowIso } from "@/shared/lib/id";
 
 export interface ImportedTransaction {
   externalId: string;
@@ -63,6 +65,41 @@ export function institutionName(connectorName: string | null | undefined, accoun
 export function isImportableAccount(account: PluggyAccount): boolean {
   if (account.type === "BANK") return true;
   return account.type === "CREDIT" && account.subtype === "CREDIT_CARD";
+}
+
+/** Snapshot de saldo no mesmo critério do Overview do Meu Pluggy. */
+export function mapPluggyAccount(account: PluggyAccount, itemId: string): BankAccount | null {
+  if (account.type !== "BANK" && !(account.type === "CREDIT" && account.subtype === "CREDIT_CARD")) {
+    return null;
+  }
+  if (typeof account.balance !== "number" || !Number.isFinite(account.balance)) return null;
+
+  const credit = account.creditData;
+  const dueDate = pluggyDay(credit?.balanceDueDate);
+  const last4 = account.number?.replace(/\D/g, "").slice(-4) || null;
+  const name =
+    (account.type === "CREDIT"
+      ? account.name?.trim() || account.marketingName?.trim()
+      : account.marketingName?.trim() || account.name?.trim()) ||
+    (account.type === "CREDIT" ? "Cartão" : "Conta");
+
+  return {
+    id: account.id,
+    itemId: account.itemId ?? itemId,
+    type: account.type === "CREDIT" ? "CREDIT" : "BANK",
+    subtype: account.subtype ?? null,
+    name: name.slice(0, 80),
+    number: last4,
+    balanceCents: Math.round(account.balance * 100),
+    creditLimitCents:
+      typeof credit?.creditLimit === "number" ? Math.round(credit.creditLimit * 100) : null,
+    availableLimitCents:
+      typeof credit?.availableCreditLimit === "number"
+        ? Math.round(credit.availableCreditLimit * 100)
+        : null,
+    dueDate,
+    updatedAt: nowIso(),
+  };
 }
 
 /**

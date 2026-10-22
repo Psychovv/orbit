@@ -16,6 +16,16 @@ export const PluggyAccountSchema = z.object({
   type: z.string(),
   subtype: z.string().nullish(),
   name: z.string().nullish(),
+  marketingName: z.string().nullish(),
+  number: z.string().nullish(),
+  balance: z.number().nullish(),
+  creditData: z
+    .object({
+      creditLimit: z.number().nullish(),
+      availableCreditLimit: z.number().nullish(),
+      balanceDueDate: z.string().nullish(),
+    })
+    .nullish(),
 });
 export type PluggyAccount = z.infer<typeof PluggyAccountSchema>;
 

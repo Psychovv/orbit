@@ -10,23 +10,24 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   CreditCard,
-  Clock3,
   Percent,
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
-export interface CardStatementView {
+export interface CardBalanceView {
+  /** Saldo atual do cartão (fatura em aberto), como no Overview do Meu Pluggy. */
+  balanceCents: number;
+  creditLimitCents: number | null;
   dueDate: string | null;
-  closingDate: string | null;
-  totalAmountCents: number;
+  name: string | null;
 }
 
 export function FinanceStats({
   metrics,
-  statement,
+  cardBalance,
 }: {
   metrics: MonthlyMetrics;
-  statement?: CardStatementView | null;
+  cardBalance?: CardBalanceView | null;
 }) {
   const {
     totalIncome,
@@ -117,28 +118,29 @@ export function FinanceStats({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                {pendingCardCents > 0 ? "Despesas Futuras" : "Fatura Fechada"}
+                Fatura do Cartão
               </span>
-              {statement?.dueDate && pendingCardCents === 0 ? (
+              {cardBalance?.dueDate ? (
                 <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-brand/15 text-brand dark:text-brand-soft">
-                  Venc. {formatShortDate(statement.dueDate)}
+                  Venc. {formatShortDate(cardBalance.dueDate)}
                 </span>
               ) : null}
             </div>
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand/10 dark:bg-brand/20 text-brand dark:text-brand-soft border border-brand/30">
-              {pendingCardCents > 0 ? <Clock3 className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
+              <CreditCard className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
             <h2 className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-zinc-900 dark:text-zinc-100">
-              {formatBRL(pendingCardCents > 0 ? pendingCardCents : (statement?.totalAmountCents ?? 0))}
+              {formatBRL(cardBalance?.balanceCents ?? 0)}
             </h2>
             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              {cardBalance?.creditLimitCents
+                ? `${(((cardBalance.balanceCents / cardBalance.creditLimitCents) * 100) || 0).toFixed(0)}% do limite · ${formatBRL(cardBalance.creditLimitCents)}`
+                : "Saldo atual do cartão"}
               {pendingCardCents > 0
-                ? `${pendingCardCount} compra${pendingCardCount === 1 ? "" : "s"} ainda na fatura aberta`
-                : statement?.closingDate
-                  ? `Fechou em ${formatShortDate(statement.closingDate)}`
-                  : "Sem fatura importada neste mês"}
+                ? ` · ${formatBRL(pendingCardCents)} pendente (${pendingCardCount})`
+                : ""}
             </p>
           </div>
         </GlowCard>

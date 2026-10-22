@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { billPaymentIds, institutionName, isImportableAccount, mapPluggyTransaction, toDateKey } from "./mapping";
+import {
+  billPaymentIds,
+  institutionName,
+  isImportableAccount,
+  mapPluggyAccount,
+  mapPluggyTransaction,
+  toDateKey,
+} from "./mapping";
 import type { PluggyAccount, PluggyTransaction } from "./types";
 
 const checking: PluggyAccount = {
@@ -67,6 +74,44 @@ describe("institutionName", () => {
     expect(institutionName("MeuPluggy", [{ ...checking, name: "Banco Exemplo S.A. - Algo" }])).toBe("Banco Exemplo");
     expect(institutionName("MeuPluggy", [card])).toBe("MeuPluggy");
     expect(institutionName(null, [])).toBe("Banco");
+  });
+});
+
+describe("mapPluggyAccount", () => {
+  it("maps checking balance and credit card limit like Meu Pluggy overview", () => {
+    expect(
+      mapPluggyAccount(
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          type: "BANK",
+          subtype: "CHECKING_ACCOUNT",
+          name: "Nu Pagamentos S.A.",
+          balance: 0,
+          number: "796747537-6",
+        },
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+      )
+    ).toMatchObject({ type: "BANK", balanceCents: 0, number: "5376" });
+
+    const card = mapPluggyAccount(
+      {
+        id: "22222222-2222-4222-8222-222222222222",
+        type: "CREDIT",
+        subtype: "CREDIT_CARD",
+        name: "croma-platinum",
+        balance: 1350.97,
+        number: "1879",
+        creditData: { creditLimit: 9250, availableCreditLimit: 5149.03, balanceDueDate: "2026-10-13T00:00:00.000Z" },
+      },
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    );
+    expect(card).toMatchObject({
+      type: "CREDIT",
+      balanceCents: 135097,
+      creditLimitCents: 925000,
+      number: "1879",
+      dueDate: "2026-10-13",
+    });
   });
 });
 

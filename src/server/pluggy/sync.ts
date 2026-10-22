@@ -2,6 +2,7 @@ import "server-only";
 import type { BankConnection, BankSyncResult } from "@/features/finance/domain/bank.schema";
 import type { CardBill } from "@/features/finance/domain/bank.schema";
 import {
+  bankAccountsRepository,
   bankConnectionsRepository,
   cardBillsRepository,
   importedTransactionsRepository,
@@ -12,6 +13,7 @@ import { getAccount, getAccounts, getBills, getItem, listTransactions, PluggyErr
 import {
   institutionName,
   isImportableAccount,
+  mapPluggyAccount,
   mapPluggyTransaction,
   pluggyDay,
   type BillPaymentRef,
@@ -115,6 +117,10 @@ async function runSync(connection: BankConnection): Promise<BankSyncResult> {
   const { bills, payments } = await collectBills(accounts);
   await cardBillsRepository.upsert(bills);
   await markBillPayments(payments);
+  await bankAccountsRepository.replaceForItem(
+    connection.itemId,
+    allAccounts.flatMap((account) => mapPluggyAccount(account, connection.itemId) ?? [])
+  );
 
   await bankConnectionsRepository.markSynced(connection.itemId, startedAt);
   return { itemId: connection.itemId, imported };

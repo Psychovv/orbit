@@ -17,8 +17,9 @@ import {
 import type { Transaction } from "../domain/finance.schema";
 import { useFinanceViewState } from "../hooks/use-finance-view-state";
 import { useFinanceAssistant } from "../hooks/use-finance-assistant";
-import { FinanceStats, type CardStatementView } from "./finance-stats";
-import { useCardBills } from "../hooks/use-bank-connections";
+import { AccountsOverview } from "./accounts-overview";
+import { FinanceStats, type CardBalanceView } from "./finance-stats";
+import { useBankAccounts } from "../hooks/use-bank-connections";
 import { BudgetBreakdown } from "./budget-breakdown";
 import { TransactionsTable } from "./transactions-table";
 import { AddTransactionModal, type TransactionFormDefaults } from "./add-transaction-modal";
@@ -53,7 +54,7 @@ export function FinanceView() {
   const range = useMemo(() => monthRange(monthKey), [monthKey]);
   const transactionsQuery = useTransactions(range);
   const categoriesQuery = useFinanceCategories();
-  const billsQuery = useCardBills(dataSource === "http");
+  const accountsQuery = useBankAccounts(dataSource === "http");
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
   const deleteTransaction = useDeleteTransactionWithUndo();
@@ -72,20 +73,21 @@ export function FinanceView() {
 
   const monthlyTransactions = useMemo(() => transactionsQuery.data ?? [], [transactionsQuery.data]);
   const categories = categoriesQuery.data ?? [];
-  const monthBills = useMemo(
-    () => (billsQuery.data ?? []).filter((bill) => bill.dueDate.startsWith(monthKey)),
-    [billsQuery.data, monthKey]
-  );
   const metrics = useMemo(() => computeMonthlyMetrics(monthlyTransactions), [monthlyTransactions]);
-  const statement = useMemo<CardStatementView | null>(() => {
-    if (monthBills.length === 0) return null;
-    const totalAmountCents = monthBills.reduce((sum, bill) => sum + bill.totalAmountCents, 0);
-    if (monthBills.length === 1) {
-      const bill = monthBills[0];
-      return { dueDate: bill.dueDate, closingDate: bill.closingDate, totalAmountCents };
-    }
-    return { dueDate: null, closingDate: null, totalAmountCents };
-  }, [monthBills]);
+  const bankAccounts = accountsQuery.data ?? [];
+  const cardBalance = useMemo<CardBalanceView | null>(() => {
+    const cards = bankAccounts.filter((a) => a.type === "CREDIT");
+    if (cards.length === 0) return null;
+    const balanceCents = cards.reduce((sum, a) => sum + a.balanceCents, 0);
+    const creditLimitCents = cards.reduce((sum, a) => sum + (a.creditLimitCents ?? 0), 0) || null;
+    const primary = cards[0];
+    return {
+      balanceCents,
+      creditLimitCents,
+      dueDate: primary.dueDate,
+      name: primary.name,
+    };
+  }, [bankAccounts]);
   const currentMonthDate = parseYearMonthKey(monthKey);
 
   const shiftMonth = (delta: number) => setMonthKey(getYearMonthKey(addMonths(currentMonthDate, delta)));
@@ -106,7 +108,7 @@ export function FinanceView() {
       },
     });
 
-  if (transactionsQuery.isPending || categoriesQuery.isPending || (dataSource === "http" && billsQuery.isPending)) {
+  if (transactionsQuery.isPending || categoriesQuery.isPending || (dataSource === "http" && accountsQuery.isPending)) {
     return <ViewSkeleton />;
   }
 
@@ -183,7 +185,9 @@ export function FinanceView() {
       </PeriodNavigator>
 
       {/* 4 Metric Cards & Nubank Monthly Planning Breakdown */}
-      <FinanceStats metrics={metrics} statement={statement} />
+      {dataSource === "http" && bankAccounts.length > 0 ? <AccountsOverview accounts={bankAccounts} /> : null}
+
+      <FinanceStats metrics={metrics} cardBalance={cardBalance} />
 
       {/* Budget Breakdown & Planning for the selected month */}
       <BudgetBreakdown

@@ -1,8 +1,8 @@
 import "server-only";
 import { and, eq, inArray, isNotNull, isNull, ne } from "drizzle-orm";
 import { db } from "../index";
-import { bankConnections, cardBills, dismissedBankTransactions, transactions } from "../schema";
-import type { BankConnection, CardBill } from "@/features/finance/domain/bank.schema";
+import { bankAccounts, bankConnections, cardBills, dismissedBankTransactions, transactions } from "../schema";
+import type { BankAccount, BankConnection, CardBill } from "@/features/finance/domain/bank.schema";
 import { billPaymentIds, type BillPaymentRef, type ImportedTransaction } from "@/server/pluggy/mapping";
 import { createId, nowIso } from "@/shared/lib/id";
 
@@ -194,6 +194,21 @@ export async function markBillPayments(payments: BillPaymentRef[]): Promise<numb
   }
   return ids.length;
 }
+
+export const bankAccountsRepository = {
+  async list(): Promise<BankAccount[]> {
+    return db.select().from(bankAccounts).orderBy(bankAccounts.type, bankAccounts.name);
+  },
+
+  /** Substitui as contas de um item pelos saldos mais recentes da Pluggy. */
+  async replaceForItem(itemId: string, accounts: BankAccount[]): Promise<void> {
+    await db.transaction(async (tx) => {
+      await tx.delete(bankAccounts).where(eq(bankAccounts.itemId, itemId));
+      if (accounts.length === 0) return;
+      await tx.insert(bankAccounts).values(accounts);
+    });
+  },
+};
 
 export const cardBillsRepository = {
   async list(): Promise<CardBill[]> {
