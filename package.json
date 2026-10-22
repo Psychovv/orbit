@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "pluggy": "node --env-file=.env.local scripts/pluggy.mts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
