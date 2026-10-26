@@ -74,7 +74,7 @@ export function FinanceView() {
   const monthlyTransactions = useMemo(() => transactionsQuery.data ?? [], [transactionsQuery.data]);
   const categories = categoriesQuery.data ?? [];
   const metrics = useMemo(() => computeMonthlyMetrics(monthlyTransactions), [monthlyTransactions]);
-  const bankAccounts = accountsQuery.data ?? [];
+  const bankAccounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data]);
   const cardBalance = useMemo<CardBalanceView | null>(() => {
     const cards = bankAccounts.filter((a) => a.type === "CREDIT");
     if (cards.length === 0) return null;
