@@ -37,11 +37,9 @@ export function FinanceStats({
     totalExpenses,
     netBalance,
     incomeCount,
-    expenseCount,
     cardPurchases,
     accountExpenses,
     pendingCardCents,
-    pendingCardCount,
   } = metrics;
 
   const expenseRate = totalIncome > 0 ? Math.min(100, (totalExpenses / totalIncome) * 100) : 0;
