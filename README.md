@@ -19,12 +19,19 @@ Orbit é um aplicativo web de organização pessoal e planejamento financeiro, c
 - Lançamentos por texto ou voz com a Orbit AI.
 - Importação de extratos via Open Finance (MeuPluggy), só no modo `http`: conexões em Configurações, sincronização manual ou por webhook. Webhooks são administrados com `pnpm pluggy webhook:list | webhook:create <url> | webhook:update <id> | webhook:delete <id>`.
 
+### Hábitos
+
+- Check-in diário (sim/não ou meta numérica, ex.: ml de água).
+- Frequência diária, dias específicos da semana ou meta semanal.
+- Streak e visão semanal da matriz de check-ins.
+- Incluídos no backup JSON (exportar / importar).
+
 ### Conta e dados
 
 - Perfil (nome, foto, bio) compartilhado entre Home e Configurações.
 - Exportar / importar backup JSON em Configurações.
 - Tema claro e escuro.
-- Rotas `/` (hub), `/tasks`, `/finance` e `/settings`. Visão, data, categoria e mês ficam na URL.
+- Rotas `/` (hub), `/tasks`, `/finance`, `/habits` e `/settings`. Visão, data, categoria e mês ficam na URL.
 
 ### Fontes de dados
 
@@ -40,7 +47,7 @@ No modo local, dados do formato antigo (`*_v1`) são migrados automaticamente. H
 ```
 src/
   app/          rotas, layout, providers e Route Handlers
-  features/     tasks, finance, assistant, profile, settings
+  features/     tasks, finance, habits, assistant, profile, settings
   shared/       ui, efeitos visuais e utilitários
   server/       auth, db (Drizzle), rate limit
   config/       escolha da fonte de dados (NEXT_PUBLIC_DATA_SOURCE)
