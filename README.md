@@ -49,11 +49,18 @@ src/
   app/          rotas, layout, providers e Route Handlers
   features/     tasks, finance, habits, home, assistant, profile, settings
   shared/       ui, efeitos visuais e utilitários
-  server/       auth, db (Drizzle), rate limit
+  server/       auth, db (Drizzle), Pluggy, rate limit
   config/       escolha da fonte de dados (NEXT_PUBLIC_DATA_SOURCE)
+  proxy.ts      guarda JWT no modo http
 ```
 
-Configuração da API Gemini: [`documents/env-setup.md`](documents/env-setup.md).
+## Documentação
+
+| Doc | Conteúdo |
+|---|---|
+| [`documents/architecture.md`](documents/architecture.md) | Camadas, modos local/http, auth, banco, Pluggy, CI e deploy |
+| [`documents/env-setup.md`](documents/env-setup.md) | Variáveis de ambiente (Gemini, Auth, Turso, Pluggy) |
+| [`.env.example`](.env.example) | Modelo comentado das variáveis |
 
 ## Tecnologias
 
@@ -86,9 +93,7 @@ pnpm install
 cp .env.example .env.local
 ```
 
-No `.env.local`, preencha `GEMINI_API_KEY` — passo a passo em [`documents/env-setup.md`](documents/env-setup.md). Sem essa chave o app abre, mas a Orbit AI (tarefas e finanças) não responde. Se o servidor já estiver rodando, reinicie-o depois de alterar o arquivo.
-
-Para o modo nuvem (`http`), configure também `AUTH_*` e `DATABASE_*` (veja `.env.example`).
+No `.env.local`, preencha pelo menos `GEMINI_API_KEY` se for usar a Orbit AI. No modo `http` (padrão do `.env.development`), configure também `AUTH_*` — guia completo em [`documents/env-setup.md`](documents/env-setup.md). Reinicie o servidor depois de alterar o arquivo.
 
 ```bash
 pnpm dev
@@ -96,22 +101,19 @@ pnpm dev
 
 Abra [http://localhost:3000](http://localhost:3000).
 
-Build de produção:
+Build de produção (`drizzle-kit push` + Next):
 
 ```bash
 pnpm build
 pnpm start
 ```
 
-Lint:
+Qualidade:
 
 ```bash
 pnpm lint
-```
-
-Tipos e testes:
-
-```bash
 pnpm typecheck
 pnpm test
 ```
+
+CI no GitHub Actions: jobs paralelos de lint, typecheck e test (veja `.github/workflows/ci.yml`).
