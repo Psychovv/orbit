@@ -8,6 +8,7 @@ import { useMonthBalance } from "@/features/finance/hooks/use-month-balance";
 import { formatBRL } from "@/features/finance/domain/money";
 import { useHabitsSummary } from "@/features/habits/hooks/use-habits-summary";
 import { useProfile, useUpdateProfile } from "@/features/profile/hooks/use-profile";
+import { HomeAlerts } from "@/features/home/components/home-alerts";
 import { GlowCard } from "@/shared/effects/glow-card";
 import { OrbitMark } from "@/shared/ui/orbit-mark";
 
@@ -56,6 +57,8 @@ export function HomeView() {
           Seu hub pessoal. Entre em um módulo e continue de onde parou.
         </p>
       </div>
+
+      <HomeAlerts />
 
       <div className="relative grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {MODULES.map((module) => {
