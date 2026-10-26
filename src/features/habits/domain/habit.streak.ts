@@ -258,6 +258,21 @@ export function maxActiveStreak(
   return max;
 }
 
+/** Hábitos com streak ativo cujo período atual ainda não foi concluído. */
+export function countAtRiskHabits(
+  habits: Habit[],
+  checkins: HabitCheckin[],
+  asOf = todayKey()
+): number {
+  let count = 0;
+  for (const habit of habits) {
+    if (habit.archivedAt) continue;
+    const { status, current } = computeHabitStreak(habit, checkins, asOf);
+    if (status === "at_risk" && current > 0) count += 1;
+  }
+  return count;
+}
+
 export function habitsScheduledOn(habits: Habit[], dateKey: string): Habit[] {
   return habits.filter((h) => !h.archivedAt && isHabitScheduledOn(h, dateKey));
 }

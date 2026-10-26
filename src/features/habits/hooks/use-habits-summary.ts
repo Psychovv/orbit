@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { addDays, formatDateKey, parseDateKey, todayKey } from "@/shared/lib/date-utils";
 import {
+  countAtRiskHabits,
   countCompletedHabitsOn,
   maxActiveStreak,
 } from "../domain/habit.streak";
@@ -12,6 +13,7 @@ export interface HabitsSummary {
   total: number;
   completed: number;
   bestActiveStreak: number;
+  atRiskCount: number;
 }
 
 /** Resumo leve do dia: agendados, concluídos e maior streak ativo. `null` enquanto carrega. */
@@ -37,5 +39,6 @@ export function useHabitsSummary(): HabitsSummary | null {
     total,
     completed,
     bestActiveStreak: maxActiveStreak(habitsQuery.data, checkinsQuery.data, today),
+    atRiskCount: countAtRiskHabits(habitsQuery.data, checkinsQuery.data, today),
   };
 }

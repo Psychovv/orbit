@@ -3,6 +3,7 @@ import { addDays, formatDateKey, parseDateKey } from "@/shared/lib/date-utils";
 import type { Habit, HabitCheckin } from "./habit.schema";
 import {
   computeHabitStreak,
+  countAtRiskHabits,
   countCompletedHabitsOn,
   habitStartDate,
   isCheckinComplete,
@@ -169,5 +170,24 @@ describe("countCompletedHabitsOn", () => {
       total: 2,
       completed: 1,
     });
+  });
+});
+
+describe("countAtRiskHabits", () => {
+  it("counts active habits whose current period is still open", () => {
+    const habits: Habit[] = [
+      baseHabit,
+      { ...baseHabit, id: "h2", name: "Ler" },
+      { ...baseHabit, id: "h3", name: "Arquivado", archivedAt: "2026-10-01T00:00:00.000Z" },
+    ];
+    const checkins: HabitCheckin[] = [
+      { ...checkin("2026-10-16"), habitId: "h1" },
+      { ...checkin("2026-10-17"), habitId: "h1" },
+      { ...checkin("2026-10-16"), habitId: "h2" },
+      { ...checkin("2026-10-17"), habitId: "h2" },
+      { ...checkin("2026-10-18"), habitId: "h2" },
+    ];
+
+    expect(countAtRiskHabits(habits, checkins, "2026-10-18")).toBe(1);
   });
 });
