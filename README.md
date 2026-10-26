@@ -47,7 +47,7 @@ No modo local, dados do formato antigo (`*_v1`) são migrados automaticamente. H
 ```
 src/
   app/          rotas, layout, providers e Route Handlers
-  features/     tasks, finance, habits, assistant, profile, settings
+  features/     tasks, finance, habits, home, assistant, profile, settings
   shared/       ui, efeitos visuais e utilitários
   server/       auth, db (Drizzle), rate limit
   config/       escolha da fonte de dados (NEXT_PUBLIC_DATA_SOURCE)
