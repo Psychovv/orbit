@@ -1,27 +1,168 @@
-# Configuração de Variáveis de Ambiente (API Key)
+# Configuração de ambiente
 
-Para que a funcionalidade de criação de tarefas por voz funcione, o sistema precisa se comunicar com a API do Gemini. Para manter essa comunicação segura, a chave da API (API Key) não fica no código e deve ser injetada via variável de ambiente.
+Variáveis do Orbit: o que cada uma faz, onde colocar e como montar os modos **local** e **http**.
 
-## Passo a Passo
+Arquivos relevantes:
 
-### 1. Obtenha sua API Key do Gemini
-1. Acesse o [Google AI Studio](https://aistudio.google.com/app/apikey).
-2. Faça login com sua conta do Google.
-3. Clique em **"Create API key"** (Criar chave de API).
-4. Selecione um projeto ou crie um novo para gerar a chave.
-5. Copie a chave gerada (ela começa com `AIza...`).
+| Arquivo | Commitado? | Papel |
+|---|---|---|
+| `.env.example` | Sim | Modelo sem secrets |
+| `.env.development` | Sim | Defaults de `pnpm dev` (modo http + SQLite local) |
+| `.env.local` | **Não** | Secrets da sua máquina (Gemini, Auth, Pluggy, …) |
+| Vercel / host | — | Secrets de **produção** |
 
-### 2. Configure o arquivo local
-1. Na raiz do projeto Orbit, crie um arquivo chamado `.env.local` (ou renomeie o `.env.example` para `.env.local`).
-2. Abra o arquivo `.env.local` no seu editor de código.
-3. Cole a sua chave entre as aspas:
-   ```env
-   GEMINI_API_KEY="AIzaSySuaChaveCopiadaAqui..."
-   ```
-4. Salve o arquivo.
+Nunca commit secrets. `.env*` está no `.gitignore`, com exceção de `.env.example` e `.env.development`.
 
-### 3. Reinicie o servidor
-Se você estiver com o servidor de desenvolvimento rodando (`npm run dev` ou `pnpm dev`), será necessário **pará-lo e iniciá-lo novamente** para que ele leia as novas variáveis do arquivo `.env.local`.
+## Começo rápido
+
+```bash
+cp .env.example .env.local
+# edite .env.local — no mínimo GEMINI_API_KEY se quiser a Orbit AI
+pnpm install
+pnpm dev
+```
+
+Abra [http://localhost:3000](http://localhost:3000). Reinicie o `pnpm dev` depois de mudar qualquer variável.
+
+Com o `.env.development` do repositório, o `pnpm dev` já sobe em modo **`http`** com `DATABASE_URL=file:local.db`. Para forçar só `localStorage`, defina no `.env.local`:
+
+```env
+NEXT_PUBLIC_DATA_SOURCE=local
+```
+
+(`NEXT_PUBLIC_*` é embutida no bundle do cliente; mude e reinicie o servidor.)
 
 ---
-*Nota: O arquivo `.env.local` já está adicionado ao `.gitignore` do Next.js por padrão, garantindo que sua chave nunca seja exposta ou commitada acidentalmente no repositório público/Git.*
+
+## Variáveis
+
+### Fonte de dados
+
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `NEXT_PUBLIC_DATA_SOURCE` | Não | `local` ou `http`. Omitida → `local`. Em `.env.development` já vem `http`. |
+
+### Orbit AI (Gemini)
+
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `GEMINI_API_KEY` | Para a IA | Chave do [Google AI Studio](https://aistudio.google.com/app/apikey). Sem ela o app abre; pedidos de voz/texto da IA falham (há fallback local para frases simples). |
+
+1. Crie uma API key no AI Studio (começa com `AIza…`).
+2. No `.env.local`:
+
+```env
+GEMINI_API_KEY="AIza..."
+```
+
+### Autenticação (modo `http`)
+
+| Variável | Obrigatória no `http` | Descrição |
+|---|---|---|
+| `AUTH_SECRET` | Sim (prod) | Segredo HMAC do JWT. Gere com `openssl rand -base64 32`. |
+| `AUTH_EMAIL` | Sim | E-mail do único usuário. |
+| `AUTH_PASSWORD` | Sim | Senha do único usuário. |
+
+Sem `AUTH_EMAIL` / `AUTH_PASSWORD` válidos, o login falha. Em dev, se `AUTH_SECRET` faltar, o código usa um fallback fraco — **não use isso em produção**.
+
+### Banco (modo `http`)
+
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `DATABASE_URL` | Sim no `http` | Dev: `file:local.db`. Prod: URL Turso `libsql://…`. |
+| `DATABASE_AUTH_TOKEN` | Turso | Token do banco remoto. Não use no arquivo local de SQLite. |
+
+Aplicar schema:
+
+```bash
+pnpm db:push
+```
+
+O `pnpm build` também roda `drizzle-kit push --force` antes do build Next.
+
+**Atenção:** não coloque o Turso de produção no `.env.local`. O `.env.development` já isola o dev em `file:local.db`.
+
+### Pluggy / MeuPluggy (opcional, modo `http`)
+
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `PLUGGY_CLIENT_ID` | Para Open Finance | Client ID da aplicação Pluggy. |
+| `PLUGGY_CLIENT_SECRET` | Para Open Finance | Client secret (só servidor). |
+| `PLUGGY_WEBHOOK_SECRET` | Para webhooks | Header compartilhado; mín. 32 chars (`openssl rand -hex 32`). Use valores **diferentes** em dev e prod. |
+| `PLUGGY_WEBHOOK_ALLOWED_IPS` | Não | Lista opcional de IPs permitidos (separados por vírgula). |
+
+Admin de webhooks (lê `.env.local` via `--env-file`):
+
+```bash
+pnpm pluggy webhook:list
+pnpm pluggy webhook:create https://seu-dominio/api/webhooks/pluggy
+pnpm pluggy webhook:update <webhookId>   # reenvia o segredo atual
+pnpm pluggy webhook:delete <webhookId>
+```
+
+A URL do webhook precisa ser HTTPS e terminar em `/api/webhooks/pluggy`.
+
+---
+
+## Cenários
+
+### Só front local (sem login, sem SQLite)
+
+```env
+NEXT_PUBLIC_DATA_SOURCE=local
+GEMINI_API_KEY="..."   # opcional
+```
+
+### Dev “nuvem” na máquina (padrão do repo)
+
+Já coberto por `.env.development` + secrets no `.env.local`:
+
+```env
+# .env.local
+GEMINI_API_KEY="..."
+AUTH_SECRET="..."
+AUTH_EMAIL="voce@email.com"
+AUTH_PASSWORD="..."
+# Pluggy opcional
+```
+
+### Produção (Vercel)
+
+Defina no painel do projeto (não no git):
+
+```env
+NEXT_PUBLIC_DATA_SOURCE=http
+GEMINI_API_KEY=...
+AUTH_SECRET=...
+AUTH_EMAIL=...
+AUTH_PASSWORD=...
+DATABASE_URL=libsql://orbit-....turso.io
+DATABASE_AUTH_TOKEN=...
+# Pluggy opcional
+PLUGGY_CLIENT_ID=...
+PLUGGY_CLIENT_SECRET=...
+PLUGGY_WEBHOOK_SECRET=...
+```
+
+Turso (resumo):
+
+```bash
+# CLI: https://docs.turso.tech/
+turso auth login
+turso db create orbit
+turso db show orbit --url
+turso db tokens create orbit
+```
+
+---
+
+## Checklist rápido
+
+- [ ] `.env.local` existe e não está no git
+- [ ] `GEMINI_API_KEY` se for usar a IA
+- [ ] Modo `http`: `AUTH_*` + `DATABASE_URL` (e token se Turso)
+- [ ] Pluggy: client id/secret; webhook secret distinto por ambiente
+- [ ] Servidor reiniciado após editar env
+- [ ] Produção: variáveis só no host, Turso de prod fora do laptop
+
+Arquitetura (camadas, auth, schema, Pluggy): [`architecture.md`](./architecture.md).
