@@ -80,8 +80,20 @@ export function BankConnectionsPanel() {
 
   const handleSync = () =>
     syncAll.mutate(undefined, {
-      onSuccess: (results) => toast({ ...summarizeSync(results), tone: results.some((r) => r.error) ? "error" : "success" }),
-      onError: (e) => toast({ message: "Falha ao sincronizar", description: e.message, tone: "error" }),
+      onSuccess: (results) =>
+        toast({
+          ...summarizeSync(results),
+          tone: results.some((r) => r.error) ? "error" : "success",
+        }),
+      onError: (e) =>
+        toast({
+          message: "Falha ao sincronizar",
+          description:
+            e.name === "TimeoutError" || e.name === "AbortError"
+              ? "A sincronização demorou demais. Tente de novo."
+              : e.message,
+          tone: "error",
+        }),
     });
 
   const handleRemove = (c: BankConnection) => {
