@@ -82,6 +82,7 @@ export function useFinanceAssistant({ onSingleDraft, review, showAnswer }: Optio
         type: t.type,
         date: t.date,
         categoryId: t.categoryId,
+        countsInBalance: t.countsInBalance,
       })),
     });
     if (source === "local") notifyLocalFallback();

@@ -122,7 +122,7 @@ export function FinanceView() {
               <Wallet className="w-5 h-5 text-brand" />
               <span>Planejamento Financeiro</span>
             </h2>
-            {metrics.netBalance >= 0 ? (
+            {metrics.savedCents >= 0 ? (
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-400/30">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 Mês positivo

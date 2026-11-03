@@ -33,12 +33,12 @@ export function FinanceStats({
   monthLabel: string;
 }) {
   const {
-    totalIncome,
-    totalExpenses,
-    netBalance,
+    incomeCents: totalIncome,
+    expenseCents: totalExpenses,
+    savedCents: netBalance,
     incomeCount,
-    cardPurchases,
-    accountExpenses,
+    cardSpendCents: cardPurchases,
+    accountSpendCents: accountExpenses,
     pendingCardCents,
   } = metrics;
 

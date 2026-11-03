@@ -18,12 +18,12 @@ Regras:
 1. 'create' registra lançamentos novos. Hoje: ${today}.
 2. 'updates' altera lançamentos existentes (corrigir valor, descrição, data, categoria, método). Use o ID exato. Não invente IDs.
 3. 'deleteIds' exclui lançamentos existentes pelo ID exato.
-4. Lançamentos existentes: id|data|tipo|centavos|categoria|descrição.
+4. Lançamentos existentes: id|data|tipo|centavos|categoria|descrição. Sufixo |fatura é pagamento de fatura: ignore em saldo, receita e despesa.
 5. 'createCategories' cria categorias (nome + type opcional; default expense).
 6. 'answer' é texto curto (pt-BR) para consultas ("quanto gastei?", "qual o saldo?"). Em consulta, deixe create/updates/deleteIds/createCategories vazios.
 7. O mesmo ID não pode estar em updates e deleteIds.
 Cats: ${categories.map((c) => `${c.id}:${c.name}(${c.type})`).join(", ")}
-Lançamentos: ${recentTransactions.map((t) => `${t.id}|${t.date}|${t.type}|${t.amountCents}|${t.categoryId ?? "-"}|${t.description}`).join(" || ")}
+Lançamentos: ${recentTransactions.map((t) => `${t.id}|${t.date}|${t.type}|${t.amountCents}|${t.categoryId ?? "-"}|${t.description}${t.countsInBalance === false ? "|fatura" : ""}`).join(" || ")}
 Texto: "${text}"`;
   },
 

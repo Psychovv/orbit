@@ -99,6 +99,8 @@ export const ExistingTransactionRefSchema = z.object({
   type: TransactionTypeSchema,
   date: z.string(),
   categoryId: z.string().nullable().optional(),
+  /** False em pagamento de fatura. Não entra em saldo nem em gasto. */
+  countsInBalance: z.boolean().optional(),
 });
 export type ExistingTransactionRef = z.infer<typeof ExistingTransactionRefSchema>;
 

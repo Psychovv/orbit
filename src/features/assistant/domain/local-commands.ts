@@ -196,6 +196,7 @@ function toMetricTx(refs: ExistingTransactionRef[]): Transaction[] {
     categoryId: ref.categoryId ?? null,
     date: ref.date,
     paymentMethod: "pix",
+    countsInBalance: ref.countsInBalance,
     createdAt: ts,
     updatedAt: ts,
   }));
@@ -221,22 +222,23 @@ function localFinanceQuery(
   const month = monthPrefix(today);
   const monthTx = transactions.filter((t) => t.date.startsWith(month));
   const metrics = computeMonthlyMetrics(toMetricTx(monthTx));
-  const expenses = metrics.totalExpenses;
+  const expenses = metrics.expenseCents;
 
   const categoryHint = categories.find((c) => normalized.includes(normalize(c.name)));
   if (categoryHint) {
-    const spent = monthTx
-      .filter((t) => t.type === "expense" && t.categoryId === categoryHint.id)
-      .reduce((acc, t) => acc + t.amountCents, 0);
+    const spentTx = monthTx.filter(
+      (t) => t.type === "expense" && t.categoryId === categoryHint.id && t.countsInBalance !== false
+    );
+    const spent = spentTx.reduce((acc, t) => acc + t.amountCents, 0);
     return {
       ...emptyFinanceCommand(),
-      answer: `Em ${month}, ${categoryHint.name}: ${formatBRL(spent)} em despesas (${monthTx.filter((t) => t.categoryId === categoryHint.id && t.type === "expense").length} lançamentos).`,
+      answer: `Em ${month}, ${categoryHint.name}: ${formatBRL(spent)} em despesas (${spentTx.length} lançamentos).`,
     };
   }
 
   return {
     ...emptyFinanceCommand(),
-    answer: `Mês ${month}: receitas ${formatBRL(metrics.totalIncome)}, despesas ${formatBRL(expenses)}, saldo ${formatBRL(metrics.netBalance)}.`,
+      answer: `Mês ${month}: receitas ${formatBRL(metrics.incomeCents)}, despesas ${formatBRL(expenses)}, saldo ${formatBRL(metrics.savedCents)}.`,
   };
 }
 
