@@ -71,6 +71,7 @@ export function TransactionsTable({
   const [typeFilter, setTypeFilter] = useState<"all" | "income" | "expense">("all");
   const [methodFilter, setMethodFilter] = useState<MethodFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [showBillPayments, setShowBillPayments] = useState(false);
 
   const categoriesMap = useMemo(() => {
     const map = new Map<string, FinanceCategory>();
@@ -78,9 +79,15 @@ export function TransactionsTable({
     return map;
   }, [categories]);
 
+  const billPaymentCount = useMemo(
+    () => transactions.filter((tx) => tx.countsInBalance === false).length,
+    [transactions]
+  );
+
   const filteredTransactions = useMemo(() => {
     return transactions
       .filter((tx) => {
+        if (!showBillPayments && tx.countsInBalance === false) return false;
         if (typeFilter !== "all" && tx.type !== typeFilter) return false;
         if (!matchesMethod(tx, methodFilter)) return false;
         if (categoryFilter !== "all" && tx.categoryId !== categoryFilter) return false;
@@ -93,7 +100,7 @@ export function TransactionsTable({
         return true;
       })
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [transactions, typeFilter, methodFilter, categoryFilter, searchTerm]);
+  }, [transactions, typeFilter, methodFilter, categoryFilter, searchTerm, showBillPayments]);
 
   return (
     <GlowCard className="p-6 space-y-5">
@@ -102,10 +109,24 @@ export function TransactionsTable({
         <div>
           <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
             <Layers className="w-5 h-5 text-brand" />
-            <span>Extrato Mensal de Lançamentos</span>
+            <span>Lançamentos do mês</span>
           </h3>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-            {filteredTransactions.length} de {transactions.length} transações no mês
+            {filteredTransactions.length} de {showBillPayments ? transactions.length : transactions.length - billPaymentCount} lançamentos
+            {billPaymentCount > 0 ? (
+              <>
+                {" · "}
+                <button
+                  type="button"
+                  onClick={() => setShowBillPayments((current) => !current)}
+                  className="font-medium text-brand hover:underline dark:text-brand-soft"
+                >
+                  {showBillPayments
+                    ? "ocultar pagamentos de fatura"
+                    : `${billPaymentCount} ${billPaymentCount === 1 ? "pagamento de fatura oculto" : "pagamentos de fatura ocultos"}`}
+                </button>
+              </>
+            ) : null}
           </p>
         </div>
 
@@ -171,8 +192,17 @@ export function TransactionsTable({
               {filteredTransactions.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-zinc-400 dark:text-zinc-500">
-                    <p className="text-sm font-medium">Nenhuma transação encontrada</p>
-                    <p className="text-xs mt-1">Ajuste os filtros ou cadastre um novo lançamento.</p>
+                    {billPaymentCount > 0 && !showBillPayments && filteredTransactions.length === 0 && transactions.length === billPaymentCount ? (
+                      <>
+                        <p className="text-sm font-medium">Só há pagamento de fatura neste mês</p>
+                        <p className="text-xs mt-1">Isso não é um gasto novo. O link acima mostra esses lançamentos.</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm font-medium">Nenhuma transação encontrada</p>
+                        <p className="text-xs mt-1">Ajuste os filtros ou cadastre um novo lançamento.</p>
+                      </>
+                    )}
                   </td>
                 </tr>
               ) : (
