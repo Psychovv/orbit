@@ -122,28 +122,51 @@ export const importedTransactionsRepository = {
 
   /** Regrava metadados de importação. Notas editadas à mão (fora de parcela) são preservadas. */
   async refreshImported(rows: ImportedTransaction[]): Promise<void> {
-    for (const r of rows) {
-      const [current] = await db
-        .select({ notes: transactions.notes })
+    if (rows.length === 0) return;
+
+    const byExternalId = new Map(rows.map((r) => [r.externalId, r]));
+    const existingNotes = new Map<string, string | null>();
+
+    for (const part of chunks([...byExternalId.keys()])) {
+      const found = await db
+        .select({ externalId: transactions.externalId, notes: transactions.notes })
         .from(transactions)
-        .where(eq(transactions.externalId, r.externalId));
-      if (!current) continue;
+        .where(inArray(transactions.externalId, part));
+      for (const row of found) {
+        if (row.externalId) existingNotes.set(row.externalId, row.notes);
+      }
+    }
+
+    const updates = [];
+    for (const [externalId, currentNotes] of existingNotes) {
+      const r = byExternalId.get(externalId);
+      if (!r) continue;
       const keepNotes =
-        current.notes && !current.notes.startsWith("Importado de") && !current.notes.startsWith("Parcela ");
-      await db
-        .update(transactions)
-        .set({
-          institution: r.institution,
-          paymentMethod: r.paymentMethod,
-          amountCents: r.amountCents,
-          type: r.type,
-          date: r.date,
-          countsInBalance: r.countsInBalance,
-          pending: r.pending,
-          notes: keepNotes ? current.notes : r.notes || null,
-          updatedAt: nowIso(),
-        })
-        .where(eq(transactions.externalId, r.externalId));
+        currentNotes &&
+        !currentNotes.startsWith("Importado de") &&
+        !currentNotes.startsWith("Parcela ");
+      updates.push(
+        db
+          .update(transactions)
+          .set({
+            institution: r.institution,
+            paymentMethod: r.paymentMethod,
+            amountCents: r.amountCents,
+            type: r.type,
+            date: r.date,
+            countsInBalance: r.countsInBalance,
+            pending: r.pending,
+            notes: keepNotes ? currentNotes : r.notes || null,
+            updatedAt: nowIso(),
+          })
+          .where(eq(transactions.externalId, externalId))
+      );
+    }
+
+    for (const part of chunks(updates, 50)) {
+      if (part.length === 0) continue;
+      const [first, ...rest] = part;
+      await db.batch([first, ...rest]);
     }
   },
 
