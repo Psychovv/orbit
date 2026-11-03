@@ -123,10 +123,14 @@ async function runSync(connection: BankConnection): Promise<BankSyncResult> {
   const { bills, payments } = await collectBills(accounts);
   await cardBillsRepository.upsert(bills);
   await markBillPayments(payments);
-  await bankAccountsRepository.replaceForItem(
-    connection.itemId,
-    allAccounts.flatMap((account) => mapPluggyAccount(account, connection.itemId) ?? [])
+
+  // Não apaga saldos se a Pluggy vier sem balance (ex.: item ainda UPDATING).
+  const mappedAccounts = allAccounts.flatMap(
+    (account) => mapPluggyAccount(account, connection.itemId) ?? []
   );
+  if (mappedAccounts.length > 0) {
+    await bankAccountsRepository.replaceForItem(connection.itemId, mappedAccounts);
+  }
 
   await bankConnectionsRepository.markSynced(connection.itemId, startedAt);
   return { itemId: connection.itemId, imported };
