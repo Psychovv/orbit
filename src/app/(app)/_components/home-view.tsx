@@ -23,7 +23,7 @@ const MODULES = [
   {
     href: "/finance",
     title: "Finanças",
-    description: "Saldo, gastos e lançamentos do mês em um só lugar.",
+    description: "O que entrou, para onde foi e quanto sobrou no mês.",
     icon: Wallet,
     glow: "emerald",
   },

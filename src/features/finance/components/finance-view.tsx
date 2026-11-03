@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { dataSource } from "@/config/data-source";
-import { computeMonthlyMetrics } from "../domain/metrics";
+import { computeMonthlyMetrics, projectMonthSpend } from "../domain/metrics";
 import { toCents } from "../domain/money";
 import {
   useCreateFinanceCategory,
@@ -18,9 +18,9 @@ import type { Transaction } from "../domain/finance.schema";
 import { useFinanceViewState } from "../hooks/use-finance-view-state";
 import { useFinanceAssistant } from "../hooks/use-finance-assistant";
 import { AccountsOverview } from "./accounts-overview";
-import { FinanceStats, type CardBalanceView } from "./finance-stats";
+import { FinanceStats } from "./finance-stats";
 import { useBankAccounts } from "../hooks/use-bank-connections";
-import { BudgetBreakdown } from "./budget-breakdown";
+import { SpendingBreakdown } from "./spending-breakdown";
 import { TransactionsTable } from "./transactions-table";
 import { AddTransactionModal, type TransactionFormDefaults } from "./add-transaction-modal";
 import { ManageFinanceCategoriesModal } from "./manage-finance-categories-modal";
@@ -75,20 +75,15 @@ export function FinanceView() {
   const categories = categoriesQuery.data ?? [];
   const metrics = useMemo(() => computeMonthlyMetrics(monthlyTransactions), [monthlyTransactions]);
   const bankAccounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data]);
-  const cardBalance = useMemo<CardBalanceView | null>(() => {
-    const cards = bankAccounts.filter((a) => a.type === "CREDIT");
-    if (cards.length === 0) return null;
-    const balanceCents = cards.reduce((sum, a) => sum + a.balanceCents, 0);
-    const creditLimitCents = cards.reduce((sum, a) => sum + (a.creditLimitCents ?? 0), 0) || null;
-    const primary = cards[0];
-    return {
-      balanceCents,
-      creditLimitCents,
-      dueDate: primary.dueDate,
-      name: primary.name,
-    };
-  }, [bankAccounts]);
+  const pace = useMemo(() => {
+    if (!isCurrentMonth) return null;
+    const day = Number(todayKey().slice(8, 10));
+    const days = Number(range.to.slice(8, 10));
+    return projectMonthSpend(metrics.expenseCents, day, days);
+  }, [isCurrentMonth, metrics.expenseCents, range.to]);
   const currentMonthDate = parseYearMonthKey(monthKey);
+  const monthTone =
+    metrics.incomeCents === 0 && metrics.expenseCents === 0 ? null : metrics.savedCents >= 0 ? "saved" : "over";
 
   const shiftMonth = (delta: number) => setMonthKey(getYearMonthKey(addMonths(currentMonthDate, delta)));
   const openAddModal = () =>
@@ -122,21 +117,21 @@ export function FinanceView() {
               <Wallet className="w-5 h-5 text-brand" />
               <span>Planejamento Financeiro</span>
             </h2>
-            {metrics.savedCents >= 0 ? (
+            {monthTone === "saved" ? (
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-400/30">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                Mês positivo
+                Sobrou
               </span>
-            ) : (
+            ) : null}
+            {monthTone === "over" ? (
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-400/30">
                 <AlertTriangle className="w-3.5 h-3.5" />
-                Mês negativo
+                No vermelho
               </span>
-            )}
+            ) : null}
           </div>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Troque o mês acima para ver entradas e saídas daquele período. Saldos de conta e cartão
-            são sempre o valor atual do banco.
+            O que entrou, para onde foi e quanto sobrou. Pagamento de fatura não conta de novo.
           </p>
         </div>
 
@@ -185,17 +180,15 @@ export function FinanceView() {
         />
       </PeriodNavigator>
 
-      {/* 4 Metric Cards & Nubank Monthly Planning Breakdown */}
       {dataSource === "http" && bankAccounts.length > 0 ? <AccountsOverview accounts={bankAccounts} /> : null}
 
       <FinanceStats
         metrics={metrics}
-        cardBalance={cardBalance}
         monthLabel={formatMonthYear(currentMonthDate).toLowerCase()}
+        pace={pace ? { day: Number(todayKey().slice(8, 10)), days: Number(range.to.slice(8, 10)), ...pace } : null}
       />
 
-      {/* Budget Breakdown & Planning for the selected month */}
-      <BudgetBreakdown
+      <SpendingBreakdown
         categories={categories}
         transactions={monthlyTransactions}
         onEditBudgets={() => setIsCategoriesOpen(true)}
