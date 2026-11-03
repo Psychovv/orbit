@@ -26,5 +26,10 @@ export const bankApi = {
   removeConnection: (itemId: string) =>
     fetchJson<void>(`/api/finance/bank/connections/${encodeURIComponent(itemId)}`, { method: "DELETE" }),
 
-  syncAll: () => fetchJson<BankSyncResult[]>("/api/finance/bank/sync", { method: "POST" }),
+  syncAll: () =>
+    fetchJson<BankSyncResult[]>("/api/finance/bank/sync", {
+      method: "POST",
+      // Um pouco abaixo do maxDuration=60 da rota, para o botão não girar sem feedback.
+      signal: AbortSignal.timeout(55_000),
+    }),
 };
