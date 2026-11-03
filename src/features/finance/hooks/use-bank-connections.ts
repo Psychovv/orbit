@@ -33,15 +33,31 @@ function useInvalidateBankData() {
 
 export function useAddBankConnection() {
   const invalidate = useInvalidateBankData();
-  return useMutation({ mutationFn: bankApi.addConnection, onSettled: invalidate });
+  return useMutation({
+    mutationFn: bankApi.addConnection,
+    onSettled: () => {
+      void invalidate();
+    },
+  });
 }
 
 export function useRemoveBankConnection() {
   const invalidate = useInvalidateBankData();
-  return useMutation({ mutationFn: bankApi.removeConnection, onSettled: invalidate });
+  return useMutation({
+    mutationFn: bankApi.removeConnection,
+    onSettled: () => {
+      void invalidate();
+    },
+  });
 }
 
 export function useSyncBankConnections() {
   const invalidate = useInvalidateBankData();
-  return useMutation({ mutationFn: bankApi.syncAll, onSettled: invalidate });
+  // Não await: no React Query v5 o isPending só libera depois do onSettled.
+  return useMutation({
+    mutationFn: bankApi.syncAll,
+    onSettled: () => {
+      void invalidate();
+    },
+  });
 }
