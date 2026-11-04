@@ -11,7 +11,7 @@ import { repositories } from "@/config/data-source";
 import { formatShortDate, isInRange, type DateRange } from "@/shared/lib/date-utils";
 import { createId, nowIso } from "@/shared/lib/id";
 import { patchRangedLists, rangedListKey } from "@/shared/lib/query-cache";
-import { toast } from "@/shared/ui/toast";
+import { toast, toastMutationError } from "@/shared/ui/toast";
 import type {
   CreateTaskCategoryInput,
   CreateTaskInput,
@@ -65,7 +65,10 @@ export function useCreateTask() {
         !range || isInRange(input.date, range) ? [optimistic, ...tasks] : tasks
       );
     },
-    onError: (_error, _input, rollback) => rollback?.(),
+    onError: (error, _input, rollback) => {
+      rollback?.();
+      toastMutationError("Não foi possível criar a tarefa", error);
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: [TASKS] }),
   });
 }
@@ -88,7 +91,10 @@ export function useUpdateTask() {
           return next;
         })
       ),
-    onError: (_error, _vars, rollback) => rollback?.(),
+    onError: (error, _vars, rollback) => {
+      rollback?.();
+      toastMutationError("Não foi possível atualizar a tarefa", error);
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: [TASKS] }),
   });
 }
@@ -113,7 +119,10 @@ export function useDeleteTask() {
     mutationFn: (id: string) => repositories.tasks.remove(id),
     onMutate: (id) =>
       patchRangedLists<Task>(queryClient, TASKS, (tasks) => tasks.filter((t) => t.id !== id)),
-    onError: (_error, _id, rollback) => rollback?.(),
+    onError: (error, _id, rollback) => {
+      rollback?.();
+      toastMutationError("Não foi possível excluir a tarefa", error);
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: [TASKS] }),
   });
 }
@@ -126,7 +135,10 @@ export function useRestoreTask() {
       patchRangedLists<Task>(queryClient, TASKS, (tasks, range) =>
         !range || isInRange(task.date, range) ? [task, ...tasks.filter((t) => t.id !== task.id)] : tasks
       ),
-    onError: (_error, _task, rollback) => rollback?.(),
+    onError: (error, _task, rollback) => {
+      rollback?.();
+      toastMutationError("Não foi possível restaurar a tarefa", error);
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: [TASKS] }),
   });
 }
@@ -189,7 +201,10 @@ export function useUpdateTaskCategory() {
       );
       return () => queryClient.setQueryData([TASK_CATEGORIES], previous);
     },
-    onError: (_error, _vars, rollback) => rollback?.(),
+    onError: (error, _vars, rollback) => {
+      rollback?.();
+      toastMutationError("Não foi possível atualizar a categoria", error);
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: [TASK_CATEGORIES] }),
   });
 }
