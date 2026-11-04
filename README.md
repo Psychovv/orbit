@@ -24,6 +24,7 @@ Orbit é um aplicativo web de organização pessoal e planejamento financeiro, c
 - Check-in diário (sim/não ou meta numérica, ex.: ml de água).
 - Frequência diária, dias específicos da semana ou meta semanal.
 - Streak e visão semanal da matriz de check-ins.
+- Criação e check-in por texto ou voz com a Orbit AI.
 - Incluídos no backup JSON (exportar / importar).
 
 ### Conta e dados
