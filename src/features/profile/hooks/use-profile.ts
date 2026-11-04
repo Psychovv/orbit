@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { repositories } from "@/config/data-source";
+import { toastMutationError } from "@/shared/ui/toast";
 import type { Profile } from "../data/profile.repository";
 import { useLocalString } from "@/shared/lib/use-local-preference";
 import { PROFILE_STORAGE_KEYS } from "../data/profile.local";
@@ -67,11 +68,12 @@ export function useUpdateProfile() {
       }
       return { previous };
     },
-    onError: (_err, _new, context) => {
+    onError: (error, _new, context) => {
       if (context?.previous) {
         queryClient.setQueryData([PROFILE_KEY], context.previous);
         syncLocalProfile(context.previous);
       }
+      toastMutationError("Não foi possível salvar o perfil", error);
     },
     onSuccess: (saved) => {
       queryClient.setQueryData([PROFILE_KEY], saved);
