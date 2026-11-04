@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, Flame, Wallet } from "lucide-react";
+import { AlertTriangle, CheckSquare, Flame, Wallet } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { useHomeAlerts } from "../hooks/use-home-alerts";
 import type { HomeAlertTone } from "../domain/home-alerts";
@@ -14,10 +14,11 @@ const TONE_STYLES: Record<HomeAlertTone, string> = {
   info: "border-brand/25 bg-brand/5 text-zinc-700 dark:border-brand/20 dark:bg-brand/10 dark:text-zinc-200",
 };
 
-function AlertIcon({ tone, href }: { tone: HomeAlertTone; href: string }) {
+function AlertIcon({ href }: { href: string }) {
   const className = "h-4 w-4 shrink-0 opacity-80";
   if (href === "/habits") return <Flame className={className} />;
   if (href === "/finance") return <Wallet className={className} />;
+  if (href === "/tasks") return <CheckSquare className={className} />;
   return <AlertTriangle className={className} />;
 }
 
@@ -36,7 +37,7 @@ export function HomeAlerts() {
               TONE_STYLES[alert.tone]
             )}
           >
-            <AlertIcon tone={alert.tone} href={alert.href} />
+            <AlertIcon href={alert.href} />
             <span className="leading-snug">{alert.message}</span>
           </Link>
         </li>
