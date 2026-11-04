@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { dataSource } from "@/config/data-source";
-import { computeMonthlyMetrics, projectMonthSpend } from "../domain/metrics";
+import { computeMonthlyMetrics, computeMonthlyTrend, projectMonthSpend } from "../domain/metrics";
 import { toCents } from "../domain/money";
 import {
   useCreateFinanceCategory,
@@ -19,6 +19,7 @@ import { useFinanceViewState } from "../hooks/use-finance-view-state";
 import { useFinanceAssistant } from "../hooks/use-finance-assistant";
 import { AccountsOverview } from "./accounts-overview";
 import { FinanceStats } from "./finance-stats";
+import { MonthlyTrend } from "./monthly-trend";
 import { useBankAccounts } from "../hooks/use-bank-connections";
 import { SpendingBreakdown } from "./spending-breakdown";
 import { TransactionsTable } from "./transactions-table";
@@ -32,6 +33,7 @@ import { PeriodNavigator, pickerInputClass } from "@/shared/ui/period-navigator"
 import { ViewSkeleton } from "@/shared/ui/view-skeleton";
 import {
   addMonths,
+  formatDateKey,
   formatMonthYear,
   getYearMonthKey,
   monthRange,
@@ -39,6 +41,8 @@ import {
   todayKey,
 } from "@/shared/lib/date-utils";
 import { Plus, Wallet, ShieldCheck, AlertTriangle, SlidersHorizontal } from "lucide-react";
+
+const TREND_MONTHS = 6;
 
 type TransactionDraft =
   | { mode: "create"; defaults: TransactionFormDefaults }
@@ -52,7 +56,16 @@ export function FinanceView() {
   const answer = useAssistantAnswer();
 
   const range = useMemo(() => monthRange(monthKey), [monthKey]);
+  const trendRange = useMemo(() => {
+    const end = parseYearMonthKey(monthKey);
+    const start = addMonths(end, -(TREND_MONTHS - 1));
+    return {
+      from: formatDateKey(new Date(start.getFullYear(), start.getMonth(), 1)),
+      to: range.to,
+    };
+  }, [monthKey, range.to]);
   const transactionsQuery = useTransactions(range);
+  const trendQuery = useTransactions(trendRange);
   const categoriesQuery = useFinanceCategories();
   const accountsQuery = useBankAccounts(dataSource === "http");
   const createTransaction = useCreateTransaction();
@@ -74,6 +87,10 @@ export function FinanceView() {
   const monthlyTransactions = useMemo(() => transactionsQuery.data ?? [], [transactionsQuery.data]);
   const categories = categoriesQuery.data ?? [];
   const metrics = useMemo(() => computeMonthlyMetrics(monthlyTransactions), [monthlyTransactions]);
+  const trendPoints = useMemo(
+    () => computeMonthlyTrend(trendQuery.data ?? [], monthKey, TREND_MONTHS),
+    [trendQuery.data, monthKey]
+  );
   const bankAccounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data]);
   const pace = useMemo(() => {
     if (!isCurrentMonth) return null;
@@ -187,6 +204,8 @@ export function FinanceView() {
         monthLabel={formatMonthYear(currentMonthDate).toLowerCase()}
         pace={pace ? { day: Number(todayKey().slice(8, 10)), days: Number(range.to.slice(8, 10)), ...pace } : null}
       />
+
+      <MonthlyTrend points={trendPoints} activeMonthKey={monthKey} onSelectMonth={setMonthKey} />
 
       <SpendingBreakdown
         categories={categories}
