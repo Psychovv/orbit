@@ -22,7 +22,7 @@ export function SettingsView() {
   const handleResetData = () => {
     if (
       window.confirm(
-        "Deseja restaurar tarefas, finanças e perfil para os dados de demonstração? Isso apaga os dados locais atuais."
+        "Deseja restaurar tarefas, finanças, hábitos e perfil para os dados de demonstração? Isso apaga os dados locais atuais."
       )
     ) {
       resetLocalData();
@@ -49,7 +49,7 @@ export function SettingsView() {
   const handleImportFile = async (file: File) => {
     if (
       !window.confirm(
-        "Importar este backup substitui tarefas, finanças e perfil atuais. Continuar?"
+        "Importar este backup substitui tarefas, finanças, hábitos e perfil atuais. Continuar?"
       )
     ) {
       return;
@@ -132,7 +132,7 @@ export function SettingsView() {
                 Exportar backup
               </p>
               <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                Baixa um JSON com tarefas, finanças e perfil.
+                Baixa um JSON com tarefas, finanças, hábitos e perfil.
               </p>
             </div>
             <button
@@ -183,7 +183,7 @@ export function SettingsView() {
                   Restaurar dados de demonstração
                 </p>
                 <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                  Apaga tarefas, finanças e perfil locais e volta o conteúdo inicial de demo.
+                  Apaga tarefas, finanças, hábitos e perfil locais e volta o conteúdo inicial de demo.
                   Disponível só no modo local.
                 </p>
               </div>
