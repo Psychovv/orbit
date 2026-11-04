@@ -15,6 +15,16 @@ export function filterByCategory(tasks: Task[], categoryId: string): Task[] {
   return tasks.filter((task) => task.categoryId === categoryId);
 }
 
+/** Filtra por título ou descrição (case-insensitive). Termo vazio mantém tudo. */
+export function filterByQuery(tasks: Task[], query: string): Task[] {
+  const term = query.trim().toLowerCase();
+  if (!term) return tasks;
+  return tasks.filter((task) => {
+    if (task.title.toLowerCase().includes(term)) return true;
+    return (task.description ?? "").toLowerCase().includes(term);
+  });
+}
+
 export function groupByDate(tasks: Task[]): Map<string, Task[]> {
   const map = new Map<string, Task[]>();
   for (const task of tasks) {
