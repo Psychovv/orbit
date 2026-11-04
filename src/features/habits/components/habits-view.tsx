@@ -2,6 +2,10 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, Flame, Plus, Sun } from "lucide-react";
+import type { HabitDraft } from "@/features/assistant/domain/actions";
+import { AssistantButton } from "@/features/assistant/components/assistant-button";
+import { useAssistantAnswer } from "@/features/assistant/components/assistant-answer-dialog";
+import { useAssistantReview } from "@/features/assistant/components/assistant-review-dialog";
 import {
   addDays,
   addWeeks,
@@ -25,6 +29,7 @@ import {
   habitsScheduledOn,
   isHabitScheduledOn,
 } from "../domain/habit.streak";
+import { useHabitAssistant } from "../hooks/use-habit-assistant";
 import {
   useCreateHabit,
   useDeleteHabit,
@@ -52,10 +57,12 @@ export function HabitsView() {
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [weekBase, setWeekBase] = useState(() => parseDateKey(todayKey()));
   const [modal, setModal] = useState<
-    | { mode: "create" }
+    | { mode: "create"; draft?: HabitDraft }
     | { mode: "edit"; habit: Habit }
     | null
   >(null);
+  const review = useAssistantReview();
+  const answer = useAssistantAnswer();
 
   const today = todayKey();
   const isToday = selectedDate === today;
@@ -79,6 +86,11 @@ export function HabitsView() {
   const deleteHabit = useDeleteHabit();
   const toggleCheckin = useToggleHabitCheckin();
   const updateValue = useUpdateHabitValue();
+  const runAssistant = useHabitAssistant({
+    onSingleDraft: (draft) => setModal({ mode: "create", draft }),
+    review: review.request,
+    showAnswer: answer.show,
+  });
 
   const habits = useMemo(() => habitsQuery.data ?? [], [habitsQuery.data]);
   const checkins = useMemo(() => checkinsQuery.data ?? [], [checkinsQuery.data]);
@@ -168,6 +180,10 @@ export function HabitsView() {
             value={tab}
             options={TAB_OPTIONS}
             onChange={setTab}
+          />
+          <AssistantButton
+            placeholder="Ex: cria hábito meditar de manhã..."
+            onSubmit={runAssistant}
           />
           <Button variant="primary" onClick={() => setModal({ mode: "create" })} className="h-9.5 text-xs px-4">
             <Plus className="w-4 h-4" />
@@ -290,8 +306,11 @@ export function HabitsView() {
         onClose={() => setModal(null)}
         mode={modal?.mode === "edit" ? "edit" : "create"}
         habit={modal?.mode === "edit" ? modal.habit : null}
+        draft={modal?.mode === "create" ? modal.draft ?? null : null}
         onSubmit={handleSubmit}
       />
+      {review.dialog}
+      {answer.dialog}
     </div>
   );
 }

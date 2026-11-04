@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import type { HabitDraft } from "@/features/assistant/domain/actions";
 import {
   CreateHabitSchema,
   HABIT_COLOR_PRESETS,
@@ -25,6 +26,8 @@ interface AddHabitModalProps {
   onClose: () => void;
   mode?: "create" | "edit";
   habit?: Habit | null;
+  /** Pré-preenche o formulário de criação (ex.: rascunho da Orbit AI). */
+  draft?: HabitDraft | null;
   onSubmit: (input: CreateHabitInput) => void;
 }
 
@@ -33,6 +36,7 @@ export function AddHabitModal({
   onClose,
   mode = "create",
   habit = null,
+  draft = null,
   onSubmit,
 }: AddHabitModalProps) {
   const editing = mode === "edit";
@@ -50,8 +54,9 @@ export function AddHabitModal({
       className="max-w-lg max-h-[90vh] overflow-y-auto"
     >
       <HabitForm
-        key={habit?.id ?? "create"}
+        key={habit?.id ?? draft?.name ?? "create"}
         habit={habit}
+        draft={draft}
         mode={mode}
         onClose={onClose}
         onSubmit={onSubmit}
@@ -62,27 +67,30 @@ export function AddHabitModal({
 
 function HabitForm({
   habit,
+  draft = null,
   mode = "create",
   onClose,
   onSubmit,
 }: Omit<AddHabitModalProps, "isOpen">) {
-  const [name, setName] = useState(habit?.name ?? "");
-  const [description, setDescription] = useState(habit?.description ?? "");
-  const [icon, setIcon] = useState(habit?.icon ?? "🎯");
-  const [color, setColor] = useState(habit?.color ?? HABIT_COLOR_PRESETS[0]);
-  const [period, setPeriod] = useState<HabitPeriod>(habit?.period ?? "anytime");
-  const [type, setType] = useState<HabitType>(habit?.type ?? "boolean");
-  const [targetValue, setTargetValue] = useState(String(habit?.targetValue ?? ""));
-  const [unit, setUnit] = useState(habit?.unit ?? "");
-  const [step, setStep] = useState(String(habit?.step ?? ""));
+  const [name, setName] = useState(habit?.name ?? draft?.name ?? "");
+  const [description, setDescription] = useState(habit?.description ?? draft?.description ?? "");
+  const [icon, setIcon] = useState(habit?.icon ?? draft?.icon ?? "🎯");
+  const [color, setColor] = useState(habit?.color ?? draft?.color ?? HABIT_COLOR_PRESETS[0]);
+  const [period, setPeriod] = useState<HabitPeriod>(habit?.period ?? draft?.period ?? "anytime");
+  const [type, setType] = useState<HabitType>(habit?.type ?? draft?.type ?? "boolean");
+  const [targetValue, setTargetValue] = useState(
+    String(habit?.targetValue ?? draft?.targetValue ?? "")
+  );
+  const [unit, setUnit] = useState(habit?.unit ?? draft?.unit ?? "");
+  const [step, setStep] = useState(String(habit?.step ?? draft?.step ?? ""));
   const [frequencyType, setFrequencyType] = useState<HabitFrequencyType>(
-    habit?.frequencyType ?? "daily"
+    habit?.frequencyType ?? draft?.frequencyType ?? "daily"
   );
   const [frequencyDays, setFrequencyDays] = useState<Weekday[]>(
-    habit?.frequencyDays ?? [1, 2, 3, 4, 5]
+    habit?.frequencyDays ?? draft?.frequencyDays ?? [1, 2, 3, 4, 5]
   );
   const [weeklyTargetCount, setWeeklyTargetCount] = useState(
-    String(habit?.weeklyTargetCount ?? 3)
+    String(habit?.weeklyTargetCount ?? draft?.weeklyTargetCount ?? 3)
   );
   const [error, setError] = useState<string | null>(null);
 
