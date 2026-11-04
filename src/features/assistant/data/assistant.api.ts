@@ -1,9 +1,12 @@
 import type { z } from "zod";
 import {
   FinanceCommandResponseSchema,
+  HabitCommandResponseSchema,
   TaskCommandResponseSchema,
   type FinanceCommandRequest,
   type FinanceCommandResponse,
+  type HabitCommandRequest,
+  type HabitCommandResponse,
   type TaskCommandRequest,
   type TaskCommandResponse,
 } from "../domain/actions";
@@ -67,4 +70,10 @@ export function requestFinanceCommand(
   body: FinanceCommandRequest
 ): Promise<AssistantCommandResult<FinanceCommandResponse>> {
   return post("/api/finance/parse-voice", body, FinanceCommandResponseSchema);
+}
+
+export function requestHabitCommand(
+  body: HabitCommandRequest
+): Promise<AssistantCommandResult<HabitCommandResponse>> {
+  return post("/api/habits/parse-voice", body, HabitCommandResponseSchema);
 }
