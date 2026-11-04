@@ -12,7 +12,13 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import type { Task, TaskCategory } from "../domain/task.schema";
-import { ALL_CATEGORIES, countCompleted, filterByCategory, groupByDate } from "../domain/task.selectors";
+import {
+  ALL_CATEGORIES,
+  countCompleted,
+  filterByCategory,
+  filterByQuery,
+  groupByDate,
+} from "../domain/task.selectors";
 import {
   useCreateTask,
   useDeleteTaskWithUndo,
@@ -49,7 +55,7 @@ import {
   parseDateKey,
   weekRange,
 } from "@/shared/lib/date-utils";
-import { Plus, SlidersHorizontal, X, Columns, LayoutGrid } from "lucide-react";
+import { Plus, Search, SlidersHorizontal, X, Columns, LayoutGrid } from "lucide-react";
 
 const VIEW_OPTIONS = [
   { value: "week", label: "Semana", icon: Columns },
@@ -61,6 +67,7 @@ export function TasksView() {
     useTasksViewState();
   const [selectedDayForDetail, setSelectedDayForDetail] = useState<string | null>(null);
   const [draggingTask, setDraggingTask] = useState<Task | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const dialogs = useTaskDialogs();
   const review = useAssistantReview();
   const answer = useAssistantAnswer();
@@ -102,8 +109,8 @@ export function TasksView() {
     viewMode === "week" ? weekRange(baseDate).from === weekRange(today).from : isSameMonth(baseDate, today);
 
   const filteredTasks = useMemo(
-    () => filterByCategory(tasksQuery.data ?? [], selectedCategoryId),
-    [tasksQuery.data, selectedCategoryId]
+    () => filterByQuery(filterByCategory(tasksQuery.data ?? [], selectedCategoryId), searchTerm),
+    [tasksQuery.data, selectedCategoryId, searchTerm]
   );
   const tasksByDate = useMemo(() => groupByDate(filteredTasks), [filteredTasks]);
 
@@ -176,9 +183,21 @@ export function TasksView() {
           </p>
         </div>
 
-        {/* Minimal Actions: View Mode Switcher, Category filter, Manage categories, Add task */}
+        {/* Minimal Actions: View Mode Switcher, Search, Category filter, Manage categories, Add task */}
         <div className="flex items-center gap-2.5 flex-wrap">
           <SegmentedControl label="Modo de visualização" value={viewMode} options={VIEW_OPTIONS} onChange={setView} />
+
+          <div className="relative min-w-[160px] flex-1 sm:flex-initial sm:w-52">
+            <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="search"
+              placeholder="Buscar tarefa..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Buscar tarefas"
+              className="w-full h-9.5 pl-9 pr-3 text-xs font-medium rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-[#121020]/80 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand/20 placeholder:text-zinc-400"
+            />
+          </div>
 
           {/* Discreet Category Filter */}
           <div className="relative">
