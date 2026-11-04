@@ -11,7 +11,7 @@ import { repositories } from "@/config/data-source";
 import { isInRange, type DateRange } from "@/shared/lib/date-utils";
 import { createId, nowIso } from "@/shared/lib/id";
 import { patchRangedLists, rangedListKey } from "@/shared/lib/query-cache";
-import { toast } from "@/shared/ui/toast";
+import { toast, toastMutationError } from "@/shared/ui/toast";
 import type {
   CreateFinanceCategoryInput,
   CreateTransactionInput,
@@ -56,7 +56,10 @@ export function useCreateTransaction() {
         !range || isInRange(input.date, range) ? [optimistic, ...txs] : txs
       );
     },
-    onError: (_error, _input, rollback) => rollback?.(),
+    onError: (error, _input, rollback) => {
+      rollback?.();
+      toastMutationError("Não foi possível criar o lançamento", error);
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: [TRANSACTIONS] }),
   });
 }
@@ -87,7 +90,10 @@ export function useUpdateTransaction() {
         return !range || isInRange(next.date, range) ? [next, ...without] : without;
       });
     },
-    onError: (_error, _vars, rollback) => rollback?.(),
+    onError: (error, _vars, rollback) => {
+      rollback?.();
+      toastMutationError("Não foi possível atualizar o lançamento", error);
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: [TRANSACTIONS] }),
   });
 }
@@ -98,7 +104,10 @@ export function useDeleteTransaction() {
     mutationFn: (id: string) => repositories.transactions.remove(id),
     onMutate: (id) =>
       patchRangedLists<Transaction>(queryClient, TRANSACTIONS, (txs) => txs.filter((tx) => tx.id !== id)),
-    onError: (_error, _id, rollback) => rollback?.(),
+    onError: (error, _id, rollback) => {
+      rollback?.();
+      toastMutationError("Não foi possível excluir o lançamento", error);
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: [TRANSACTIONS] }),
   });
 }
@@ -111,7 +120,10 @@ export function useRestoreTransaction() {
       patchRangedLists<Transaction>(queryClient, TRANSACTIONS, (txs, range) =>
         !range || isInRange(tx.date, range) ? [tx, ...txs.filter((t) => t.id !== tx.id)] : txs
       ),
-    onError: (_error, _tx, rollback) => rollback?.(),
+    onError: (error, _tx, rollback) => {
+      rollback?.();
+      toastMutationError("Não foi possível restaurar o lançamento", error);
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: [TRANSACTIONS] }),
   });
 }
@@ -159,7 +171,10 @@ export function useUpdateFinanceCategory() {
       );
       return () => queryClient.setQueryData([FINANCE_CATEGORIES], previous);
     },
-    onError: (_error, _vars, rollback) => rollback?.(),
+    onError: (error, _vars, rollback) => {
+      rollback?.();
+      toastMutationError("Não foi possível atualizar a categoria", error);
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: [FINANCE_CATEGORIES] }),
   });
 }
