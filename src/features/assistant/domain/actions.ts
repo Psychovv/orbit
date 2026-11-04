@@ -1,5 +1,11 @@
 import { z } from "zod";
 import { PaymentMethodSchema, TransactionTypeSchema } from "@/features/finance/domain/finance.schema";
+import {
+  HabitFrequencyTypeSchema,
+  HabitPeriodSchema,
+  HabitTypeSchema,
+  WeekdaySchema,
+} from "@/features/habits/domain/habit.schema";
 import { PrioritySchema } from "@/features/tasks/domain/task.schema";
 import { DateKeySchema, TimeSchema } from "@/shared/lib/schemas";
 
@@ -167,3 +173,67 @@ export const FinanceCommandResponseSchema = z.preprocess(
   })
 );
 export type FinanceCommandResponse = z.infer<typeof FinanceCommandResponseSchema>;
+
+// --- Hábitos ---
+
+export const ExistingHabitRefSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: HabitTypeSchema,
+  period: HabitPeriodSchema,
+  frequencyType: HabitFrequencyTypeSchema,
+  /** Check-in de hoje já conta como concluído. */
+  checkedInToday: z.boolean().optional(),
+  currentStreak: z.number().int().nonnegative().optional(),
+});
+export type ExistingHabitRef = z.infer<typeof ExistingHabitRefSchema>;
+
+export const HabitCommandRequestSchema = z.object({
+  text: AssistantTextSchema,
+  currentDate: DateKeySchema.optional(),
+  habits: z.array(ExistingHabitRefSchema).max(200).default([]),
+});
+export type HabitCommandRequest = z.input<typeof HabitCommandRequestSchema>;
+
+export const HabitDraftSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  description: loose(z.string().trim().max(2000)),
+  icon: loose(z.string().min(1).max(8)),
+  color: loose(z.string().min(1).max(20)),
+  period: loose(HabitPeriodSchema),
+  type: loose(HabitTypeSchema),
+  targetValue: loose(z.number().positive()),
+  unit: loose(z.string().trim().min(1).max(20)),
+  step: loose(z.number().positive()),
+  frequencyType: loose(HabitFrequencyTypeSchema),
+  frequencyDays: loose(z.array(WeekdaySchema).min(1).max(7)),
+  weeklyTargetCount: loose(z.number().int().min(1).max(7)),
+});
+export type HabitDraft = z.infer<typeof HabitDraftSchema>;
+
+export const HabitUpdateSchema = z.object({
+  id: z.coerce.string().min(1),
+  name: loose(z.string().trim().min(1).max(120)),
+  description: loose(z.string().trim().max(2000)),
+  period: loose(HabitPeriodSchema),
+  frequencyType: loose(HabitFrequencyTypeSchema),
+  frequencyDays: loose(z.array(WeekdaySchema).min(1).max(7)),
+  weeklyTargetCount: loose(z.number().int().min(1).max(7)),
+  targetValue: loose(z.number().positive()),
+  unit: loose(z.string().trim().min(1).max(20)),
+  step: loose(z.number().positive()),
+});
+export type HabitUpdate = z.infer<typeof HabitUpdateSchema>;
+
+export const HabitCommandResponseSchema = z.preprocess(
+  (value) => (Array.isArray(value) ? { create: value } : value),
+  z.object({
+    create: lenientArray(HabitDraftSchema).default([]),
+    updates: lenientArray(HabitUpdateSchema).default([]),
+    checkinIds: lenientArray(z.coerce.string()).default([]),
+    clearCheckinIds: lenientArray(z.coerce.string()).default([]),
+    deleteIds: lenientArray(z.coerce.string()).default([]),
+    answer: loose(AnswerSchema),
+  })
+);
+export type HabitCommandResponse = z.infer<typeof HabitCommandResponseSchema>;

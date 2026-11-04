@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { FinanceCommandResponseSchema, TaskCommandRequestSchema, TaskCommandResponseSchema } from "./actions";
+import {
+  FinanceCommandResponseSchema,
+  HabitCommandRequestSchema,
+  HabitCommandResponseSchema,
+  TaskCommandRequestSchema,
+  TaskCommandResponseSchema,
+} from "./actions";
 import { bulkTaskIds, prefersStrongerTaskModel } from "./bulk-commands";
-import { localFinanceCommand, localTaskCommand } from "./local-commands";
+import { localFinanceCommand, localHabitCommand, localTaskCommand } from "./local-commands";
 
 describe("TaskCommandResponseSchema", () => {
   it("accepts the legacy array format as creations", () => {
@@ -205,5 +211,58 @@ describe("localFinanceCommand", () => {
     expect(localFinanceCommand("cria a categoria Streaming", "2026-09-24")?.createCategories).toEqual([
       { name: "Streaming", type: "expense" },
     ]);
+  });
+});
+
+describe("HabitCommandResponseSchema", () => {
+  it("accepts the legacy array format as creations", () => {
+    const parsed = HabitCommandResponseSchema.parse([{ name: "Beber água" }]);
+    expect(parsed.create).toEqual([
+      expect.objectContaining({ name: "Beber água" }),
+    ]);
+    expect(parsed.checkinIds).toEqual([]);
+    expect(parsed.deleteIds).toEqual([]);
+  });
+
+  it("keeps check-ins, clears and updates", () => {
+    const parsed = HabitCommandResponseSchema.parse({
+      checkinIds: ["a"],
+      clearCheckinIds: ["b"],
+      updates: [{ id: "c", name: "Meditar" }],
+      answer: "2 pendentes.",
+    });
+    expect(parsed.checkinIds).toEqual(["a"]);
+    expect(parsed.clearCheckinIds).toEqual(["b"]);
+    expect(parsed.updates[0]).toMatchObject({ id: "c", name: "Meditar" });
+    expect(parsed.answer).toBe("2 pendentes.");
+  });
+});
+
+describe("HabitCommandRequestSchema", () => {
+  it("rejects empty text", () => {
+    expect(HabitCommandRequestSchema.safeParse({ text: "  " }).success).toBe(false);
+    expect(HabitCommandRequestSchema.safeParse({ text: "marque água" }).success).toBe(true);
+  });
+});
+
+describe("localHabitCommand", () => {
+  const habits = [
+    {
+      id: "agua",
+      name: "Beber água",
+      type: "boolean" as const,
+      period: "anytime" as const,
+      frequencyType: "daily" as const,
+      checkedInToday: false,
+      currentStreak: 3,
+    },
+  ];
+
+  it("creates a habit without the model", () => {
+    expect(localHabitCommand("cria o hábito alongar", [])?.create[0]?.name).toBe("alongar");
+  });
+
+  it("checks in by unique name", () => {
+    expect(localHabitCommand("conclua beber água", habits)?.checkinIds).toEqual(["agua"]);
   });
 });
