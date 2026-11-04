@@ -1,3 +1,4 @@
+import { addMonths, getYearMonthKey, parseYearMonthKey } from "@/shared/lib/date-utils";
 import type { FinanceCategory, Transaction } from "./finance.schema";
 
 /**
@@ -79,6 +80,48 @@ export function computeMonthlyMetrics(transactions: Transaction[]): MonthlyMetri
 
 export function netBalance(transactions: Transaction[]): number {
   return computeMonthlyMetrics(transactions).savedCents;
+}
+
+export interface MonthTrendPoint {
+  monthKey: string;
+  incomeCents: number;
+  expenseCents: number;
+  savedCents: number;
+}
+
+/**
+ * Agrega métricas mês a mês a partir de um intervalo contínuo de lançamentos.
+ * `monthCount` meses terminando em `endMonthKey` (inclusive), do mais antigo ao mais recente.
+ */
+export function computeMonthlyTrend(
+  transactions: Transaction[],
+  endMonthKey: string,
+  monthCount = 6
+): MonthTrendPoint[] {
+  const count = Math.max(1, Math.min(24, Math.floor(monthCount)));
+  const end = parseYearMonthKey(endMonthKey);
+  const keys: string[] = [];
+  for (let i = count - 1; i >= 0; i--) {
+    keys.push(getYearMonthKey(addMonths(end, -i)));
+  }
+
+  const byMonth = new Map<string, Transaction[]>();
+  for (const key of keys) byMonth.set(key, []);
+  for (const tx of transactions) {
+    const key = tx.date.slice(0, 7);
+    const bucket = byMonth.get(key);
+    if (bucket) bucket.push(tx);
+  }
+
+  return keys.map((monthKey) => {
+    const metrics = computeMonthlyMetrics(byMonth.get(monthKey) ?? []);
+    return {
+      monthKey,
+      incomeCents: metrics.incomeCents,
+      expenseCents: metrics.expenseCents,
+      savedCents: metrics.savedCents,
+    };
+  });
 }
 
 /** Projeta o gasto do mês pelo ritmo dos dias já passados. `null` sem gasto ou sem dia decorrido. */

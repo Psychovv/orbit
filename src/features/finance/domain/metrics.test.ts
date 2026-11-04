@@ -3,6 +3,7 @@ import type { FinanceCategory, Transaction } from "./finance.schema";
 import {
   computeBudgetUsage,
   computeMonthlyMetrics,
+  computeMonthlyTrend,
   computeSpendingBreakdown,
   netBalance,
   projectMonthSpend,
@@ -113,5 +114,21 @@ describe("finance metrics", () => {
     expect(breakdown.slices[3]).toMatchObject({ spentCents: 0, budgetCents: 35000 });
     expect(breakdown.totalBudgetCents).toBe(280000);
     expect(breakdown.budgetedSpentCents).toBe(230000);
+  });
+
+  it("builds a month-by-month trend ending at the selected month", () => {
+    const history = [
+      tx({ id: "aug-in", amountCents: 500000, type: "income", date: "2026-08-05" }),
+      tx({ id: "aug-out", amountCents: 200000, type: "expense", date: "2026-08-12" }),
+      tx({ id: "sep-in", amountCents: 620000, type: "income", date: "2026-09-01" }),
+      tx({ id: "sep-out", amountCents: 100000, type: "expense", date: "2026-09-15" }),
+      tx({ id: "old", amountCents: 999, type: "expense", date: "2026-06-01" }),
+    ];
+
+    expect(computeMonthlyTrend(history, "2026-09", 3)).toEqual([
+      { monthKey: "2026-07", incomeCents: 0, expenseCents: 0, savedCents: 0 },
+      { monthKey: "2026-08", incomeCents: 500000, expenseCents: 200000, savedCents: 300000 },
+      { monthKey: "2026-09", incomeCents: 620000, expenseCents: 100000, savedCents: 520000 },
+    ]);
   });
 });
