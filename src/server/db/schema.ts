@@ -132,4 +132,4 @@ export const habitCheckins = sqliteTable('habit_checkins', {
   currentValue: real('current_value'),
   notes: text('notes'),
   createdAt: text('created_at').notNull(),
-});
+}, (t) => [uniqueIndex('habit_checkins_habit_date_unique').on(t.habitId, t.date)]);
