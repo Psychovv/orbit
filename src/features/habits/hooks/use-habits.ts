@@ -11,6 +11,7 @@ import { repositories } from "@/config/data-source";
 import { isInRange, type DateRange } from "@/shared/lib/date-utils";
 import { createId, nowIso } from "@/shared/lib/id";
 import { patchRangedLists, rangedListKey } from "@/shared/lib/query-cache";
+import { toastMutationError } from "@/shared/ui/toast";
 import type {
   CreateHabitInput,
   Habit,
@@ -71,7 +72,10 @@ export function useCreateHabit() {
       }
       return () => snapshots.forEach(([key, data]) => queryClient.setQueryData(key, data));
     },
-    onError: (_e, _i, rollback) => rollback?.(),
+    onError: (error, _i, rollback) => {
+      rollback?.();
+      toastMutationError("Não foi possível criar o hábito", error);
+    },
     onSettled: () => invalidateHabits(queryClient),
   });
 }
@@ -99,7 +103,10 @@ export function useUpdateHabit() {
       }
       return () => snapshots.forEach(([key, data]) => queryClient.setQueryData(key, data));
     },
-    onError: (_e, _v, rollback) => rollback?.(),
+    onError: (error, _v, rollback) => {
+      rollback?.();
+      toastMutationError("Não foi possível atualizar o hábito", error);
+    },
     onSettled: () => invalidateHabits(queryClient),
   });
 }
@@ -116,7 +123,10 @@ export function useDeleteHabit() {
       }
       return () => snapshots.forEach(([key, data]) => queryClient.setQueryData(key, data));
     },
-    onError: (_e, _id, rollback) => rollback?.(),
+    onError: (error, _id, rollback) => {
+      rollback?.();
+      toastMutationError("Não foi possível excluir o hábito", error);
+    },
     onSettled: () => invalidateHabits(queryClient),
   });
 }
@@ -178,7 +188,10 @@ export function useToggleHabitCheckin() {
         return [optimistic, ...without];
       });
     },
-    onError: (_e, _v, rollback) => rollback?.(),
+    onError: (error, _v, rollback) => {
+      rollback?.();
+      toastMutationError("Não foi possível atualizar o check-in", error);
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: [HABIT_CHECKINS] }),
   });
 }
@@ -236,7 +249,10 @@ export function useUpdateHabitValue() {
         return [optimistic, ...without];
       });
     },
-    onError: (_e, _v, rollback) => rollback?.(),
+    onError: (error, _v, rollback) => {
+      rollback?.();
+      toastMutationError("Não foi possível atualizar o valor do hábito", error);
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: [HABIT_CHECKINS] }),
   });
 }
