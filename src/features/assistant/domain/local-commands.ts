@@ -1,13 +1,20 @@
 import type {
+  ExistingHabitRef,
   ExistingTaskRef,
   ExistingTransactionRef,
   FinanceCommandResponse,
+  HabitCommandResponse,
   TaskCommandResponse,
 } from "./actions";
 import { addCalendarDays, bulkTaskIds } from "./bulk-commands";
 import { formatBRL } from "@/features/finance/domain/money";
 import { computeMonthlyMetrics } from "@/features/finance/domain/metrics";
 import type { Transaction } from "@/features/finance/domain/finance.schema";
+import {
+  HABIT_COLOR_PRESETS,
+  HABIT_ICON_PRESETS,
+  type HabitPeriod,
+} from "@/features/habits/domain/habit.schema";
 
 function normalize(text: string): string {
   return text.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
@@ -19,6 +26,10 @@ export function emptyTaskCommand(): TaskCommandResponse {
 
 export function emptyFinanceCommand(): FinanceCommandResponse {
   return { create: [], updates: [], deleteIds: [], createCategories: [] };
+}
+
+export function emptyHabitCommand(): HabitCommandResponse {
+  return { create: [], updates: [], checkinIds: [], clearCheckinIds: [], deleteIds: [] };
 }
 
 function dayOfMonth(today: string, day: number): string | null {
@@ -326,6 +337,133 @@ export function localFinanceCommand(
         type: income ? "income" : "expense",
         date: today,
         paymentMethod,
+      },
+    ],
+  };
+}
+
+function uniqueHabitByName(text: string, habits: ExistingHabitRef[]): ExistingHabitRef | null {
+  const normalized = normalize(text);
+  const matches = habits.filter((habit) => {
+    const name = normalize(habit.name).trim();
+    return name.length >= 2 && normalized.includes(name);
+  });
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function mentionedPeriod(text: string): HabitPeriod | undefined {
+  const normalized = normalize(text);
+  if (/\bmanha\b/.test(normalized)) return "morning";
+  if (/\btarde\b/.test(normalized)) return "afternoon";
+  if (/\bnoite\b/.test(normalized)) return "evening";
+  return undefined;
+}
+
+function createHabitName(text: string): string | null {
+  const name = text
+    .replace(/^(?:por favor|pfv|favor)[, ]+/i, "")
+    .replace(/^(?:crie|cria|criar|adicione|adiciona|adicionar|novo|nova)\s+/i, "")
+    .replace(/^(?:o\s+|um\s+|uma\s+)?(?:habito|hábito)\s+/i, "")
+    .replace(/(?<!\p{L})(?:de\s+)?(?:manh[ãa]|tarde|noite)(?!\p{L})/giu, "")
+    .replace(/(?<!\p{L})(?:todos?\s+os\s+dias|diario|di[aá]rio)(?!\p{L})/giu, "")
+    .replace(/\s+/g, " ")
+    .replace(/^[\s,.:;-]+|[\s,.:;-]+$/g, "")
+    .trim();
+  return name.length >= 2 ? name.slice(0, 120) : null;
+}
+
+function localHabitQuery(text: string, habits: ExistingHabitRef[]): HabitCommandResponse | null {
+  const normalized = normalize(text);
+  const wantsQuery =
+    /\b(o que|oque|quais|lista|listar|mostra|mostrar|falt\w*|pendente\w*|streak|sequencia)\b/.test(
+      normalized
+    ) && /\b(habito\w*|hábito\w*|check[- ]?in)\b/.test(normalized);
+  if (!wantsQuery) return null;
+
+  const pending = habits.filter((h) => !h.checkedInToday);
+  if (pending.length === 0) {
+    return { ...emptyHabitCommand(), answer: "Todos os hábitos de hoje já estão concluídos." };
+  }
+
+  const lines = pending
+    .map((h) => {
+      const streak = h.currentStreak && h.currentStreak > 0 ? ` · streak ${h.currentStreak}d` : "";
+      return `• ${h.name}${streak}`;
+    })
+    .join("\n");
+  return {
+    ...emptyHabitCommand(),
+    answer: `${pending.length} hábito${pending.length === 1 ? "" : "s"} pendente${pending.length === 1 ? "" : "s"} hoje:\n${lines}`,
+  };
+}
+
+function localHabitCheckin(text: string, habits: ExistingHabitRef[]): HabitCommandResponse | null {
+  const normalized = normalize(text);
+  const wantsClear = /\b(desmarc\w*|desmarqu\w*|desfaz\w*|limpa\w*|remove\w*\s+check)\b/.test(normalized);
+  const wantsCheckin =
+    /\b(check[- ]?in|marque|marcar|marcando|conclu\w*|finaliz\w*|complet\w*|fiz|feito)\b/.test(normalized) ||
+    /\b(bebi|meditei|treinei|corri|li)\b/.test(normalized);
+  if (!wantsCheckin && !wantsClear) return null;
+
+  const habit = uniqueHabitByName(text, habits);
+  if (!habit) {
+    if (/\b(todos?|tudo)\b/.test(normalized) && wantsCheckin && !wantsClear) {
+      const pending = habits.filter((h) => !h.checkedInToday);
+      if (pending.length === 0) return null;
+      return { ...emptyHabitCommand(), checkinIds: pending.map((h) => h.id) };
+    }
+    return null;
+  }
+
+  if (wantsClear) return { ...emptyHabitCommand(), clearCheckinIds: [habit.id] };
+  return { ...emptyHabitCommand(), checkinIds: [habit.id] };
+}
+
+function localHabitDelete(text: string, habits: ExistingHabitRef[]): HabitCommandResponse | null {
+  const normalized = normalize(text);
+  const wantsDelete = /\b(exclu\w*|apag\w*|remov\w*|delet\w*|delete\w*)\b/.test(normalized);
+  if (!wantsDelete) return null;
+  const habit = uniqueHabitByName(text, habits);
+  if (!habit) return null;
+  return { ...emptyHabitCommand(), deleteIds: [habit.id] };
+}
+
+/**
+ * Interpreta pedidos óbvios de hábitos sem o Gemini.
+ * `null` quando a frase não é segura de resolver localmente.
+ */
+export function localHabitCommand(text: string, habits: ExistingHabitRef[]): HabitCommandResponse | null {
+  const query = localHabitQuery(text, habits);
+  if (query) return query;
+
+  const checkin = localHabitCheckin(text, habits);
+  if (checkin) return checkin;
+
+  const deleting = localHabitDelete(text, habits);
+  if (deleting) return deleting;
+
+  const normalized = normalize(text);
+  const wantsCreate =
+    /\b(cri\w*|adicion\w*|nov[ao])\b/.test(normalized) && /\b(habito|hábito)\b/.test(normalized);
+  if (!wantsCreate) return null;
+
+  const name = createHabitName(text);
+  if (!name) return null;
+
+  const iconHint = HABIT_ICON_PRESETS.find((icon) => text.includes(icon));
+  const colorHint = HABIT_COLOR_PRESETS.find((color) => normalized.includes(normalize(color)));
+  const period = mentionedPeriod(text);
+
+  return {
+    ...emptyHabitCommand(),
+    create: [
+      {
+        name,
+        icon: iconHint,
+        color: colorHint,
+        period,
+        type: "boolean",
+        frequencyType: "daily",
       },
     ],
   };

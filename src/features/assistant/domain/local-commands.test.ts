@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { emptyFinanceCommand, emptyTaskCommand, localFinanceCommand, localTaskCommand } from "./local-commands";
-import type { ExistingTaskRef, ExistingTransactionRef } from "./actions";
+import {
+  emptyFinanceCommand,
+  emptyHabitCommand,
+  emptyTaskCommand,
+  localFinanceCommand,
+  localHabitCommand,
+  localTaskCommand,
+} from "./local-commands";
+import type { ExistingHabitRef, ExistingTaskRef, ExistingTransactionRef } from "./actions";
 
 const TODAY = "2026-10-20";
 
@@ -185,5 +192,57 @@ describe("localFinanceCommand", () => {
       expect(localFinanceCommand("paguei o aluguel", TODAY)).toBeNull();
       expect(localFinanceCommand("gastei 0 no café", TODAY)).toBeNull();
     });
+  });
+});
+
+const habits: ExistingHabitRef[] = [
+  { id: "agua", name: "Beber água", type: "numeric", period: "anytime", frequencyType: "daily", checkedInToday: false, currentStreak: 4 },
+  { id: "meditar", name: "Meditar", type: "boolean", period: "morning", frequencyType: "daily", checkedInToday: true, currentStreak: 2 },
+  { id: "treino", name: "Treinar", type: "boolean", period: "evening", frequencyType: "specific_days", checkedInToday: false, currentStreak: 0 },
+];
+
+describe("localHabitCommand", () => {
+  it("lists pending habits for today", () => {
+    const result = localHabitCommand("quais hábitos faltam?", habits);
+    expect(result?.answer).toContain("Beber água");
+    expect(result?.answer).toContain("Treinar");
+    expect(result?.answer).not.toContain("Meditar");
+  });
+
+  it("checks in a uniquely named habit", () => {
+    expect(localHabitCommand("marque beber água", habits)).toEqual({
+      ...emptyHabitCommand(),
+      checkinIds: ["agua"],
+    });
+  });
+
+  it("checks in every pending habit", () => {
+    expect(localHabitCommand("marque todos os hábitos", habits)?.checkinIds).toEqual(["agua", "treino"]);
+  });
+
+  it("clears a check-in by name", () => {
+    expect(localHabitCommand("desmarque meditar", habits)?.clearCheckinIds).toEqual(["meditar"]);
+  });
+
+  it("deletes a uniquely named habit", () => {
+    expect(localHabitCommand("apague o hábito treinar", habits)?.deleteIds).toEqual(["treino"]);
+  });
+
+  it("creates a daily habit with period hint", () => {
+    expect(localHabitCommand("cria o hábito ler de manhã", habits)?.create).toEqual([
+      {
+        name: "ler",
+        icon: undefined,
+        color: undefined,
+        period: "morning",
+        type: "boolean",
+        frequencyType: "daily",
+      },
+    ]);
+  });
+
+  it("returns null for ambiguous or unrelated phrases", () => {
+    expect(localHabitCommand("bom dia", habits)).toBeNull();
+    expect(localHabitCommand("marque isso", habits)).toBeNull();
   });
 });
