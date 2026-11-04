@@ -38,6 +38,15 @@ export function toast(options: ToastOptions): number {
   return id;
 }
 
+/** Feedback padrão quando uma mutação falha após rollback otimista. */
+export function toastMutationError(message: string, error?: unknown) {
+  toast({
+    tone: "error",
+    message,
+    description: error instanceof Error && error.message ? error.message : undefined,
+  });
+}
+
 export function dismissToast(id: number) {
   toasts = toasts.filter((t) => t.id !== id);
   emit();
