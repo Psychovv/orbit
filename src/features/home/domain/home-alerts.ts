@@ -17,12 +17,45 @@ export interface HabitsAlertInput {
   bestActiveStreak: number;
 }
 
-/** Monta alertas curtos do hub a partir de orçamento e hábitos do dia. */
+export interface TasksAlertInput {
+  /** Pendentes com data de hoje. */
+  pendingToday: number;
+  /** Pendentes com data anterior a hoje. */
+  overdue: number;
+}
+
+/** Monta alertas curtos do hub a partir de orçamento, tarefas e hábitos do dia. */
 export function buildHomeAlerts(input: {
   budgetItems?: BudgetUsage[];
   habits?: HabitsAlertInput | null;
+  tasks?: TasksAlertInput | null;
 }): HomeAlert[] {
   const alerts: HomeAlert[] = [];
+
+  const tasks = input.tasks;
+  if (tasks) {
+    if (tasks.overdue > 0) {
+      alerts.push({
+        id: "tasks-overdue",
+        tone: "danger",
+        message:
+          tasks.overdue === 1
+            ? "1 tarefa atrasada — vale remarcar ou concluir."
+            : `${tasks.overdue} tarefas atrasadas — vale remarcar ou concluir.`,
+        href: "/tasks",
+      });
+    } else if (tasks.pendingToday > 0) {
+      alerts.push({
+        id: "tasks-today",
+        tone: "info",
+        message:
+          tasks.pendingToday === 1
+            ? "1 tarefa pendente hoje."
+            : `${tasks.pendingToday} tarefas pendentes hoje.`,
+        href: "/tasks",
+      });
+    }
+  }
 
   for (const item of input.budgetItems ?? []) {
     if (item.isOver) {

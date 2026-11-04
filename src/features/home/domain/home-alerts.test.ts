@@ -84,6 +84,35 @@ describe("buildHomeAlerts", () => {
     ]);
   });
 
+  it("flags overdue tasks before mentioning today's pending ones", () => {
+    expect(
+      buildHomeAlerts({
+        tasks: { pendingToday: 3, overdue: 2 },
+      })
+    ).toEqual([
+      expect.objectContaining({
+        id: "tasks-overdue",
+        tone: "danger",
+        href: "/tasks",
+        message: "2 tarefas atrasadas — vale remarcar ou concluir.",
+      }),
+    ]);
+  });
+
+  it("nudges pending tasks for today when nothing is overdue", () => {
+    expect(
+      buildHomeAlerts({
+        tasks: { pendingToday: 1, overdue: 0 },
+      })
+    ).toEqual([
+      expect.objectContaining({
+        id: "tasks-today",
+        tone: "info",
+        message: "1 tarefa pendente hoje.",
+      }),
+    ]);
+  });
+
   it("stays quiet when there is nothing actionable", () => {
     expect(buildHomeAlerts({})).toEqual([]);
     expect(
@@ -94,6 +123,11 @@ describe("buildHomeAlerts", () => {
     expect(
       buildHomeAlerts({
         habits: { total: 1, completed: 0, atRiskCount: 0, bestActiveStreak: 1 },
+      })
+    ).toEqual([]);
+    expect(
+      buildHomeAlerts({
+        tasks: { pendingToday: 0, overdue: 0 },
       })
     ).toEqual([]);
   });
