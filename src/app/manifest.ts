@@ -4,9 +4,9 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Orbit — Hub Pessoal Cósmico',
     short_name: 'Orbit',
-    description: 'Organização semanal de tarefas e controle financeiro.',
-    start_url: '/tasks',
-    id: '/tasks',
+    description: 'Hub pessoal de tarefas, finanças e hábitos.',
+    start_url: '/',
+    id: '/',
     display: 'standalone',
     background_color: '#090812',
     theme_color: '#844DFE',
