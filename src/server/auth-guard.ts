@@ -21,3 +21,16 @@ export async function requireUser(): Promise<AuthResult> {
   }
   return { userId }
 }
+
+/**
+ * Só o dono (admin) passa. Quem está logado mas não é o dono recebe 403.
+ * No modo local não há login: tudo é do dono.
+ */
+export async function requireOwner(): Promise<AuthResult> {
+  const auth = await requireUser()
+  if (auth.response) return auth
+  if (auth.userId !== OWNER_USER_ID) {
+    return { response: NextResponse.json({ error: 'Acesso restrito ao administrador.' }, { status: 403 }) }
+  }
+  return auth
+}
