@@ -9,14 +9,17 @@ export const OWNER_USER_ID = 'owner';
 /** Dono do registro. Default `owner` para o `drizzle-kit push` adicionar a coluna sem perder dados. */
 const userId = () => text('user_id').notNull().default(OWNER_USER_ID);
 
-/** Usuários cadastrados pelo `/signup`. O dono não está aqui: entra pelas variáveis de ambiente. */
+/** Usuários cadastrados pelo `/signup` ou pelo Google. O dono não está aqui: entra pelas variáveis de ambiente. */
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   /** Sempre em minúsculas. */
   email: text('email').notNull(),
+  /** Vazio em contas criadas pelo Google (sem senha). */
   passwordHash: text('password_hash').notNull(),
+  /** `sub` da conta Google vinculada. */
+  googleSub: text('google_sub'),
   createdAt: text('created_at').notNull(),
-}, (t) => [uniqueIndex('users_email_unique').on(t.email)]);
+}, (t) => [uniqueIndex('users_email_unique').on(t.email), uniqueIndex('users_google_sub_unique').on(t.googleSub)]);
 
 export const taskCategories = sqliteTable('task_categories', {
   id: text('id').primaryKey(),

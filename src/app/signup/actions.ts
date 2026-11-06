@@ -7,6 +7,7 @@ import { createSession, isOwnerEmail } from '@/server/auth'
 import { EmailTakenError, usersRepository } from '@/server/db/repositories/users.server'
 import { hashPassword } from '@/server/passwords'
 import { clientKeyFromHeaders, rateLimit } from '@/server/rate-limit'
+import { inviteCodeMatches } from '@/server/signup-policy'
 
 const SIGNUP_LIMIT = 5
 const SIGNUP_WINDOW_MS = 60 * 60 * 1000
@@ -23,12 +24,6 @@ const SignupSchema = z
   })
   .refine((d) => d.password === d.confirm, { message: 'As senhas não conferem.' })
 
-/** Com `SIGNUP_INVITE_CODE` definido, o cadastro exige esse código. Sem ele, é aberto. */
-function inviteCodeMatches(code: string): boolean {
-  const expected = process.env.SIGNUP_INVITE_CODE
-  return !expected || code === expected
-}
-
 export async function signupAction(_prev: SignupState, formData: FormData): Promise<SignupState> {
   if (process.env.NEXT_PUBLIC_DATA_SOURCE !== 'http') {
     return { error: 'Cadastro disponível só no modo nuvem.' }
@@ -39,7 +34,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
     return { error: 'Muitas contas criadas daqui. Tente de novo mais tarde.' }
   }
 
-  if (!inviteCodeMatches(String(formData.get('invite') ?? '').trim())) {
+  if (!inviteCodeMatches(String(formData.get('invite') ?? ''))) {
     return { error: 'Código de convite inválido.' }
   }
 

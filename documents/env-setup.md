@@ -64,6 +64,9 @@ GEMINI_API_KEY="AIza..."
 | `AUTH_PASSWORD` | Sim | Senha do dono. |
 | `SIGNUP_INVITE_CODE` | Não | Se definido, `/signup` exige esse código. Sem ele, qualquer pessoa pode criar conta. |
 
+| `GOOGLE_CLIENT_ID` | Para login com Google | Client ID OAuth (tipo "Aplicativo da Web") do Google Cloud. |
+| `GOOGLE_CLIENT_SECRET` | Para login com Google | Client secret do mesmo cliente OAuth. |
+
 O dono entra pelas variáveis acima; os demais usuários se cadastram em `/signup` e ficam na tabela `users`. Sem `AUTH_EMAIL` / `AUTH_PASSWORD`, só os usuários cadastrados conseguem entrar. Em dev, se `AUTH_SECRET` faltar, o código usa um fallback fraco — **não use isso em produção**.
 
 ### Banco (modo `http`)
@@ -82,6 +85,23 @@ pnpm db:push
 O `pnpm build` também roda `drizzle-kit push --force` antes do build Next.
 
 **Atenção:** não coloque o Turso de produção no `.env.local`. O `.env.development` já isola o dev em `file:local.db`.
+
+### Login com Google (opcional, modo `http`)
+
+1. No [Google Cloud Console](https://console.cloud.google.com/apis/credentials), crie (ou escolha) um projeto e configure a **tela de consentimento OAuth** (tipo Externo; escopos `openid` e `email`).
+2. Crie uma credencial **ID do cliente OAuth** → **Aplicativo da Web**.
+3. Em **URIs de redirecionamento autorizados**, adicione um por domínio:
+   - `https://SEU-DOMINIO/api/auth/google/callback`
+   - `http://localhost:3000/api/auth/google/callback` (dev)
+4. Copie o client ID e o secret para `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
+
+Sem essas duas variáveis o botão "Continuar com Google" não aparece. Regras:
+
+- E-mail do Google igual a `AUTH_EMAIL` → entra como dono.
+- E-mail de uma conta já cadastrada com senha → o Google é vinculado a ela.
+- E-mail novo → cria a conta (com `SIGNUP_INVITE_CODE` definido, só pela tela de cadastro com o código).
+
+Previews da Vercel têm domínio próprio; o Google só aceita URIs cadastrados, então o login com Google funciona nos domínios que você adicionar.
 
 ### Pluggy / MeuPluggy (opcional, modo `http`)
 
@@ -140,6 +160,8 @@ AUTH_SECRET=...
 AUTH_EMAIL=...
 AUTH_PASSWORD=...
 SIGNUP_INVITE_CODE=...   # opcional: fecha o cadastro com um código
+GOOGLE_CLIENT_ID=...     # opcional: login com Google
+GOOGLE_CLIENT_SECRET=...
 DATABASE_URL=libsql://orbit-....turso.io
 DATABASE_AUTH_TOKEN=...
 # Pluggy opcional

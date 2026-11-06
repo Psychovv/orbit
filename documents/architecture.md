@@ -64,6 +64,7 @@ Estado de visão (semana, mês, filtros) fica na **URL**, não só em estado Rea
 
 - Dono: `AUTH_EMAIL` + `AUTH_PASSWORD` (env), sempre com id `owner`.
 - Demais usuários: cadastro em `/signup` (tabela `users`, senha com scrypt em [`src/server/passwords.ts`](../src/server/passwords.ts)). `SIGNUP_INVITE_CODE` opcional fecha o cadastro com um código.
+- Google (opcional): OpenID Connect com PKCE em `/api/auth/google` → `/api/auth/google/callback` ([`src/server/google-oauth.ts`](../src/server/google-oauth.ts)). State, nonce e verifier ficam num cookie assinado de 10 min. O `id_token` é validado (assinatura, emissor, audiência, nonce, `email_verified`) e a conta é achada por `google_sub`, depois por e-mail (vincula), ou criada. Os botões são links, não forms, por causa da CSP `form-action 'self'`.
 - Sessão: JWT HS256 (`jose`), cookie httpOnly `orbit-session`, validade 30 dias. O `sub` é o id do usuário.
 - Rotas usam `requireUser()` ([`src/server/auth-guard.ts`](../src/server/auth-guard.ts)) e passam o `userId` aos repositórios. No modo `local`, tudo é do `owner`.
 - [`src/proxy.ts`](../src/proxy.ts) valida o cookie em quase todas as rotas quando `NEXT_PUBLIC_DATA_SOURCE=http`.

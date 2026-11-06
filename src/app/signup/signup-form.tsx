@@ -1,17 +1,26 @@
 'use client'
 
 import Link from 'next/link'
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { signupAction, type SignupState } from './actions'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { OrbitMark } from '@/shared/ui/orbit-mark'
+import { GoogleButton, OrDivider } from '@/app/login/google-button'
 
 const initialState: SignupState = {}
 const inputClass = 'w-full bg-[#151324] border-[#231f38]'
 
-export function SignupForm({ requiresInvite }: { requiresInvite: boolean }) {
+export function SignupForm({ requiresInvite, googleEnabled, error }: {
+  requiresInvite: boolean
+  googleEnabled: boolean
+  error?: string
+}) {
   const [state, formAction, isPending] = useActionState(signupAction, initialState)
+  const [invite, setInvite] = useState('')
+  const [inviteMissing, setInviteMissing] = useState(false)
+  const googleHref = '/api/auth/google?mode=signup'
+  const message = (inviteMissing ? 'Digite o código de convite antes.' : undefined) ?? state.error ?? error
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#090812] text-white">
@@ -25,7 +34,44 @@ export function SignupForm({ requiresInvite }: { requiresInvite: boolean }) {
           <p className="text-[#9a94b0]">Seus dados ficam separados dos outros usuários</p>
         </div>
 
-        <form action={formAction} className="space-y-4">
+        {requiresInvite && (
+          <Input
+            name="invite"
+            form="signup-form"
+            type="text"
+            placeholder="Código de convite"
+            autoComplete="off"
+            required
+            value={invite}
+            onChange={(e) => {
+              setInvite(e.target.value)
+              setInviteMissing(false)
+            }}
+            className={`${inputClass} mb-4`}
+          />
+        )}
+
+        {googleEnabled && (
+          <div className="space-y-4 mb-4">
+            <GoogleButton
+              href={googleHref}
+              onNavigate={
+                requiresInvite
+                  ? () => {
+                      if (!invite.trim()) {
+                        setInviteMissing(true)
+                        return null
+                      }
+                      return `${googleHref}&invite=${encodeURIComponent(invite.trim())}`
+                    }
+                  : undefined
+              }
+            />
+            <OrDivider />
+          </div>
+        )}
+
+        <form id="signup-form" action={formAction} className="space-y-4">
           <Input name="email" type="email" placeholder="Email" autoComplete="email" required className={inputClass} />
           <Input
             name="password"
@@ -45,11 +91,7 @@ export function SignupForm({ requiresInvite }: { requiresInvite: boolean }) {
             required
             className={inputClass}
           />
-          {requiresInvite && (
-            <Input name="invite" type="text" placeholder="Código de convite" required className={inputClass} />
-          )}
-
-          {state.error && <p className="text-sm text-[#f43f5e] text-center mt-2">{state.error}</p>}
+          {message && <p className="text-sm text-[#f43f5e] text-center mt-2">{message}</p>}
 
           <Button
             type="submit"
