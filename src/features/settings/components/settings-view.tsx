@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { Database, Download, Landmark, LogOut, Palette, RotateCcw, ShieldAlert, Trash2, Upload, User } from "lucide-react";
+import { ChevronRight, Database, Download, Landmark, LogOut, Palette, RotateCcw, ShieldAlert, ShieldCheck, Trash2, Upload, User } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { dataSource, resetLocalData } from "@/config/data-source";
@@ -15,7 +16,7 @@ import {
 import { ThemeToggle } from "@/shared/ui/theme-toggle";
 import { toast } from "@/shared/ui/toast";
 
-export function SettingsView() {
+export function SettingsView({ isAdmin = false }: { isAdmin?: boolean }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -124,6 +125,24 @@ export function SettingsView() {
           Perfil e preferências da interface.
         </p>
       </div>
+
+      {isAdmin ? (
+        <Link
+          href="/admin"
+          className="flex items-center justify-between gap-4 rounded-2xl border border-brand/30 bg-brand/5 p-4 sm:p-5 transition-colors hover:bg-brand/10"
+        >
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="h-5 w-5 text-brand" />
+            <div>
+              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Administração</p>
+              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                Gerencie os usuários cadastrados.
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="h-4 w-4 text-zinc-400" />
+        </Link>
+      ) : null}
 
       <section className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-[#100e1e]/70 backdrop-blur-md p-4 sm:p-5 shadow-2xs">
         <div className="mb-4 flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
