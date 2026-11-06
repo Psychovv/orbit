@@ -13,5 +13,5 @@ export default async function AdminPage() {
   if (auth.response) notFound();
 
   const users = await adminRepository.listUsers();
-  return <AdminUsersView initialUsers={users} />;
+  return <AdminUsersView initial={{ users, overview: adminRepository.overview(users) }} />;
 }
