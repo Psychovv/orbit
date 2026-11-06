@@ -4,6 +4,7 @@ const MESSAGES: Record<string, string> = {
   google_cancelled: 'Login com Google cancelado.',
   google_failed: 'Não foi possível entrar com o Google. Tente de novo.',
   account_conflict: 'Este e-mail já está ligado a outra conta Google.',
+  password_account: 'Este e-mail já tem conta com senha. Entre com e-mail e senha.',
   signup_required: 'Ainda não existe conta com esse Google. Crie uma com o código de convite.',
   invite: 'Código de convite inválido.',
   rate_limited: 'Muitas tentativas. Aguarde alguns minutos.',

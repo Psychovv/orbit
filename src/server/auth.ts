@@ -85,13 +85,15 @@ export async function authenticate(email: string, password: string): Promise<str
 
 export type GoogleSignInResult =
   | { userId: string; error?: undefined }
-  | { userId?: undefined; error: 'signup_required' | 'account_conflict' }
+  | { userId?: undefined; error: 'signup_required' | 'account_conflict' | 'password_account' }
 
 /**
  * Entra com uma identidade Google já validada (e-mail verificado pelo Google).
  * - E-mail do dono → dono.
  * - Conta já vinculada ao `sub` → essa conta.
- * - Conta com o mesmo e-mail → vincula o Google a ela.
+ * - Conta com o mesmo e-mail e sem senha → vincula o Google a ela.
+ * - Conta com o mesmo e-mail e com senha → recusa. O cadastro por senha não confirma o e-mail, então
+ *   vincular abriria a conta de quem cadastrou o e-mail (talvez um atacante) para o dono real do Google.
  * - Senão cria a conta, se `allowCreate`.
  */
 export async function signInWithGoogle(
@@ -106,6 +108,7 @@ export async function signInWithGoogle(
   const byEmail = await usersRepository.findByEmail(identity.email)
   if (byEmail) {
     if (byEmail.googleSub && byEmail.googleSub !== identity.sub) return { error: 'account_conflict' }
+    if (byEmail.passwordHash) return { error: 'password_account' }
     await usersRepository.linkGoogle(byEmail.id, identity.sub)
     return { userId: byEmail.id }
   }
