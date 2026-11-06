@@ -1,10 +1,8 @@
 import 'server-only'
 import { NextResponse } from 'next/server'
 import { getSessionUserId } from './auth'
+import { isAuthRequired } from '@/config/auth-config'
 import { OWNER_USER_ID } from './db/schema'
-
-/** Auth só é obrigatória no modo http. Em local, APIs de IA etc. ficam abertas. */
-const AUTH_REQUIRED = process.env.NEXT_PUBLIC_DATA_SOURCE === 'http'
 
 export type AuthResult =
   | { userId: string; response?: undefined }
@@ -15,7 +13,7 @@ export type AuthResult =
  * No modo local não há login: tudo é do dono.
  */
 export async function requireUser(): Promise<AuthResult> {
-  if (!AUTH_REQUIRED) return { userId: OWNER_USER_ID }
+  if (!isAuthRequired()) return { userId: OWNER_USER_ID }
 
   const userId = await getSessionUserId()
   if (!userId) {

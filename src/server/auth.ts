@@ -5,9 +5,9 @@ import { cookies } from 'next/headers'
 import { OWNER_USER_ID } from './db/schema'
 import { EmailTakenError, normalizeEmail, usersRepository } from './db/repositories/users.server'
 import type { GoogleIdentity } from './google-oauth'
+import { getAuthSecret } from '@/config/auth-config'
 import { getDummyHash, verifyPassword } from './passwords'
 
-const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET ?? 'dev-secret-change-me')
 const COOKIE_NAME = 'orbit-session'
 
 function safeEqual(a: string, b: string): boolean {
@@ -27,7 +27,7 @@ export async function createSession(userId: string) {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('30d')
-    .sign(SECRET)
+    .sign(getAuthSecret())
 
   const cookieStore = await cookies()
   cookieStore.set(COOKIE_NAME, token, {
@@ -45,7 +45,7 @@ export async function getSessionUserId(): Promise<string | null> {
   const token = cookieStore.get(COOKIE_NAME)?.value
   if (!token) return null
   try {
-    const { payload } = await jwtVerify(token, SECRET)
+    const { payload } = await jwtVerify(token, getAuthSecret())
     return typeof payload.sub === 'string' && payload.sub ? payload.sub : null
   } catch {
     return null

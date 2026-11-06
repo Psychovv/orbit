@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
+import { getAuthSecret, isAuthRequired } from '@/config/auth-config'
 
-const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET ?? 'dev-secret-change-me')
 const COOKIE_NAME = 'orbit-session'
 
 /** `/api/webhooks/pluggy` não usa sessão: autentica pelo cabeçalho secreto na própria rota. */
 const PUBLIC_PATHS = ['/login', '/signup', '/api/auth', '/api/webhooks/pluggy', '/manifest.webmanifest', '/sw.js']
 
-/** Auth só é obrigatória no modo http (nuvem). Modo local fica offline sem login. */
-const AUTH_REQUIRED = process.env.NEXT_PUBLIC_DATA_SOURCE === 'http'
 
 function unauthorized(request: NextRequest, clearCookie = false) {
   const isApi = request.nextUrl.pathname.startsWith('/api/')
@@ -27,7 +25,7 @@ function unauthorized(request: NextRequest, clearCookie = false) {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  if (!AUTH_REQUIRED) {
+  if (!isAuthRequired()) {
     return NextResponse.next()
   }
   
@@ -43,7 +41,7 @@ export async function proxy(request: NextRequest) {
   }
   
   try {
-    await jwtVerify(token, SECRET)
+    await jwtVerify(token, getAuthSecret())
     return NextResponse.next()
   } catch {
     return unauthorized(request, true)
