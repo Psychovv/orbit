@@ -30,6 +30,15 @@ function toTask(row: TaskRow): Task {
 export function createServerTasksRepository(userId: string): TasksRepository {
   const own = eq(tasks.userId, userId);
   const byId = (id: string) => and(eq(tasks.id, id), own);
+  /** Categoria de outro usuário (ou inexistente) vira "sem categoria". */
+  const ownCategoryId = async (id: string | null | undefined): Promise<string | null> => {
+    if (!id) return null;
+    const [row] = await db
+      .select({ id: taskCategories.id })
+      .from(taskCategories)
+      .where(and(eq(taskCategories.id, id), eq(taskCategories.userId, userId)));
+    return row ? id : null;
+  };
 
   return {
     async list(range) {
@@ -44,6 +53,7 @@ export function createServerTasksRepository(userId: string): TasksRepository {
       const now = nowIso();
       const task: Task = {
         ...input,
+        categoryId: await ownCategoryId(input.categoryId),
         description: input.description ?? undefined,
         time: input.time ?? undefined,
         id: createId(),
@@ -74,6 +84,7 @@ export function createServerTasksRepository(userId: string): TasksRepository {
       const updated = {
         ...current,
         ...patch,
+        ...(patch.categoryId !== undefined ? { categoryId: await ownCategoryId(patch.categoryId) } : {}),
         description: patch.description !== undefined ? patch.description : current.description,
         time: patch.time !== undefined ? patch.time : current.time,
         updatedAt: now,
@@ -88,7 +99,8 @@ export function createServerTasksRepository(userId: string): TasksRepository {
       await db.delete(tasks).where(byId(id));
     },
     
-    async restore(task: Task) {
+    async restore(input: Task) {
+      const task: Task = { ...input, categoryId: await ownCategoryId(input.categoryId) };
       const values = {
         ...task,
         description: task.description ?? null,

@@ -27,6 +27,15 @@ export function createServerTransactionsRepository(userId: string): Transactions
   const byId = (id: string) => and(eq(transactions.id, id), own);
   /** Só o dono importa do banco (Pluggy); os campos de importação não vêm de outros usuários. */
   const isOwner = userId === OWNER_USER_ID;
+  /** Categoria de outro usuário (ou inexistente) vira "sem categoria". */
+  const ownCategoryId = async (id: string | null | undefined): Promise<string | null> => {
+    if (!id) return null;
+    const [row] = await db
+      .select({ id: financeCategories.id })
+      .from(financeCategories)
+      .where(and(eq(financeCategories.id, id), eq(financeCategories.userId, userId)));
+    return row ? id : null;
+  };
 
   return {
     async list(range) {
@@ -41,6 +50,7 @@ export function createServerTransactionsRepository(userId: string): Transactions
       const now = nowIso();
       const tx: Transaction = {
         ...input,
+        categoryId: await ownCategoryId(input.categoryId),
         notes: input.notes ?? undefined,
         id: createId(),
         createdAt: now,
@@ -66,6 +76,7 @@ export function createServerTransactionsRepository(userId: string): Transactions
       const updated = {
         ...current,
         ...patch,
+        ...(patch.categoryId !== undefined ? { categoryId: await ownCategoryId(patch.categoryId) } : {}),
         notes: patch.notes !== undefined ? patch.notes : current.notes,
         updatedAt: now,
       };
@@ -81,9 +92,10 @@ export function createServerTransactionsRepository(userId: string): Transactions
     },
     
     async restore(input: Transaction) {
+      const scoped = { ...input, categoryId: await ownCategoryId(input.categoryId) };
       const transaction: Transaction = isOwner
-        ? input
-        : { ...input, externalId: undefined, institution: undefined, pending: undefined };
+        ? scoped
+        : { ...scoped, externalId: undefined, institution: undefined, pending: undefined };
       const values = {
         ...transaction,
         notes: transaction.notes ?? null,

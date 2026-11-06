@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { Database, Download, Landmark, Palette, RotateCcw, Upload, User } from "lucide-react";
+import { Database, Download, Landmark, LogOut, Palette, RotateCcw, ShieldAlert, Trash2, Upload, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { dataSource, resetLocalData } from "@/config/data-source";
 import { BankConnectionsPanel } from "@/features/finance/components/bank-connections-panel";
@@ -17,7 +18,46 @@ import { toast } from "@/shared/ui/toast";
 export function SettingsView() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState<"export" | "import" | null>(null);
+  const router = useRouter();
+  const [busy, setBusy] = useState<"export" | "import" | "logout-all" | "delete" | null>(null);
+
+  const handleLogoutAll = async () => {
+    if (!window.confirm("Encerrar a sessão em todos os dispositivos, inclusive neste?")) return;
+    setBusy("logout-all");
+    try {
+      const res = await fetch("/api/auth/logout-all", { method: "POST" });
+      if (!res.ok) throw new Error("Não foi possível encerrar as sessões.");
+      router.push("/login");
+    } catch (error) {
+      toast({ message: "Falha ao sair", description: error instanceof Error ? error.message : "Tente novamente." });
+      setBusy(null);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const typed = window.prompt(
+      "Isso exclui sua conta e TODOS os seus dados (tarefas, finanças, hábitos e perfil) de forma permanente. " +
+        "Exporte um backup antes se quiser guardar algo. Para confirmar, digite EXCLUIR:"
+    );
+    if (typed?.trim() !== "EXCLUIR") return;
+    setBusy("delete");
+    try {
+      const res = await fetch("/api/account", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: "EXCLUIR" }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "Não foi possível excluir a conta.");
+      }
+      queryClient.clear();
+      router.push("/login");
+    } catch (error) {
+      toast({ message: "Falha ao excluir", description: error instanceof Error ? error.message : "Tente novamente." });
+      setBusy(null);
+    }
+  };
 
   const handleResetData = () => {
     if (
@@ -199,6 +239,55 @@ export function SettingsView() {
           ) : null}
         </div>
       </section>
+
+      {dataSource === "http" ? (
+        <section className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-[#100e1e]/70 backdrop-blur-md p-4 sm:p-5 shadow-2xs">
+          <div className="mb-4 flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
+            <ShieldAlert className="h-4 w-4 text-brand" />
+            <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Conta e segurança</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                  Sair de todos os dispositivos
+                </p>
+                <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                  Encerra todas as sessões abertas, inclusive esta.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={() => void handleLogoutAll()}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                {busy === "logout-all" ? "Saindo…" : "Sair de todos"}
+              </button>
+            </div>
+
+            <div className="flex items-start justify-between gap-4 border-t border-zinc-100 pt-4 dark:border-zinc-800/80">
+              <div>
+                <p className="text-sm font-medium text-red-600 dark:text-red-400">Excluir conta</p>
+                <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                  Apaga sua conta e todos os seus dados de forma permanente.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={() => void handleDeleteAccount()}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-red-300 dark:border-red-900 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {busy === "delete" ? "Excluindo…" : "Excluir"}
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

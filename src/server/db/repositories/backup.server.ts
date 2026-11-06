@@ -19,6 +19,14 @@ export async function replaceAllFromBackup(userId: string, backup: OrbitBackup):
   // Campos de importação bancária são só do dono (ver finance.server).
   const isOwner = userId === OWNER_USER_ID;
 
+  // Referências só para itens do próprio backup: um id de categoria ou hábito de outro usuário não entra.
+  const taskCategoryIds = new Set(backup.taskCategories.map((c) => c.id));
+  const financeCategoryIds = new Set(backup.financeCategories.map((c) => c.id));
+  const habitIds = new Set(backup.habits.map((h) => h.id));
+  const ownTaskCategory = (id: string | null | undefined) => (id && taskCategoryIds.has(id) ? id : null);
+  const ownFinanceCategory = (id: string | null | undefined) => (id && financeCategoryIds.has(id) ? id : null);
+  const habitCheckinsToImport = backup.habitCheckins.filter((c) => habitIds.has(c.habitId));
+
   await db.transaction(async (tx) => {
     await tx.delete(habitCheckins).where(eq(habitCheckins.userId, userId));
     await tx.delete(habits).where(eq(habits.userId, userId));
@@ -37,6 +45,7 @@ export async function replaceAllFromBackup(userId: string, backup: OrbitBackup):
         backup.tasks.map((t) => ({
           ...t,
           userId,
+          categoryId: ownTaskCategory(t.categoryId),
           description: t.description ?? null,
           time: t.time ?? null,
         }))
@@ -58,6 +67,7 @@ export async function replaceAllFromBackup(userId: string, backup: OrbitBackup):
         backup.transactions.map((t) => ({
           ...t,
           userId,
+          categoryId: ownFinanceCategory(t.categoryId),
           notes: t.notes ?? null,
           ...(isOwner ? {} : { externalId: null, institution: null, pending: false }),
         }))
@@ -88,9 +98,9 @@ export async function replaceAllFromBackup(userId: string, backup: OrbitBackup):
       );
     }
 
-    if (backup.habitCheckins.length) {
+    if (habitCheckinsToImport.length) {
       await tx.insert(habitCheckins).values(
-        backup.habitCheckins.map((c) => ({
+        habitCheckinsToImport.map((c) => ({
           id: c.id,
           userId,
           habitId: c.habitId,
