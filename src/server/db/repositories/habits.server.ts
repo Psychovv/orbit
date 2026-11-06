@@ -84,10 +84,13 @@ function rowToCheckin(row: typeof habitCheckins.$inferSelect): HabitCheckin {
   return checkin;
 }
 
-export function createServerHabitsRepository(): HabitsRepository {
+export function createServerHabitsRepository(userId: string): HabitsRepository {
+  const own = eq(habits.userId, userId);
+  const byId = (id: string) => and(eq(habits.id, id), own);
+
   return {
     async list(includeArchived = false) {
-      const rows = await db.select().from(habits);
+      const rows = await db.select().from(habits).where(own);
       const mapped = rows.map(rowToHabit);
       return includeArchived ? mapped : mapped.filter((h) => !h.archivedAt);
     },
@@ -102,13 +105,13 @@ export function createServerHabitsRepository(): HabitsRepository {
         createdAt: now,
         updatedAt: now,
       };
-      await db.insert(habits).values(habitToRow(habit));
+      await db.insert(habits).values({ ...habitToRow(habit), userId });
       return habit;
     },
 
     async update(id: string, patch: UpdateHabitInput) {
       const data = UpdateHabitSchema.parse(patch);
-      const currentArr = await db.select().from(habits).where(eq(habits.id, id));
+      const currentArr = await db.select().from(habits).where(byId(id));
       if (currentArr.length === 0) throw new Error(`Habit ${id} not found`);
       const current = rowToHabit(currentArr[0]);
 
@@ -136,40 +139,48 @@ export function createServerHabitsRepository(): HabitsRepository {
       if (merged.frequencyType !== "specific_days") delete merged.frequencyDays;
       if (merged.frequencyType !== "weekly_target") delete merged.weeklyTargetCount;
 
-      await db.update(habits).set(habitToRow(merged)).where(eq(habits.id, id));
+      await db.update(habits).set(habitToRow(merged)).where(byId(id));
       return merged;
     },
 
     async remove(id: string) {
       await db.transaction(async (tx) => {
-        await tx.delete(habitCheckins).where(eq(habitCheckins.habitId, id));
-        await tx.delete(habits).where(eq(habits.id, id));
+        await tx.delete(habitCheckins).where(and(eq(habitCheckins.habitId, id), eq(habitCheckins.userId, userId)));
+        await tx.delete(habits).where(byId(id));
       });
     },
   };
 }
 
-export function createServerHabitCheckinsRepository(): HabitCheckinsRepository {
+export function createServerHabitCheckinsRepository(userId: string): HabitCheckinsRepository {
+  const own = eq(habitCheckins.userId, userId);
+
   return {
     async list(range) {
       const rows = await db
         .select()
         .from(habitCheckins)
-        .where(and(gte(habitCheckins.date, range.from), lte(habitCheckins.date, range.to)));
+        .where(and(own, gte(habitCheckins.date, range.from), lte(habitCheckins.date, range.to)));
       return rows.map(rowToCheckin);
     },
 
     async upsert(input: UpsertHabitCheckinInput) {
       const data = UpsertHabitCheckinSchema.parse(input);
+      const [habit] = await db
+        .select({ id: habits.id })
+        .from(habits)
+        .where(and(eq(habits.id, data.habitId), eq(habits.userId, userId)));
+      if (!habit) throw new Error(`Habit ${data.habitId} not found`);
+
       const existingArr = await db
         .select()
         .from(habitCheckins)
-        .where(and(eq(habitCheckins.habitId, data.habitId), eq(habitCheckins.date, data.date)));
+        .where(and(own, eq(habitCheckins.habitId, data.habitId), eq(habitCheckins.date, data.date)));
       const existing = existingArr[0] ? rowToCheckin(existingArr[0]) : null;
 
       if (data.clear) {
         if (existing) {
-          await db.delete(habitCheckins).where(eq(habitCheckins.id, existing.id));
+          await db.delete(habitCheckins).where(and(eq(habitCheckins.id, existing.id), own));
         }
         return null;
       }
@@ -197,6 +208,7 @@ export function createServerHabitCheckinsRepository(): HabitCheckinsRepository {
         .insert(habitCheckins)
         .values({
           id: next.id,
+          userId,
           habitId: next.habitId,
           date: next.date,
           completed: next.completed,
@@ -211,6 +223,7 @@ export function createServerHabitCheckinsRepository(): HabitCheckinsRepository {
             currentValue: next.currentValue ?? null,
             notes: next.notes ?? null,
           },
+          setWhere: own,
         });
 
       return next;
@@ -218,5 +231,3 @@ export function createServerHabitCheckinsRepository(): HabitCheckinsRepository {
   };
 }
 
-export const habitsRepository = createServerHabitsRepository();
-export const habitCheckinsRepository = createServerHabitCheckinsRepository();

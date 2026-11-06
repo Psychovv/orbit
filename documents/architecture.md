@@ -4,7 +4,7 @@ Como o sistema está organizado hoje: camadas, modos de dados, autenticação, b
 
 ## Visão geral
 
-O Orbit é um app Next.js 16 (App Router) de uso pessoal: tarefas, finanças, hábitos e um hub (`/`). A mesma UI serve dois modos de persistência, escolhidos em build/runtime pela variável `NEXT_PUBLIC_DATA_SOURCE`:
+O Orbit é um app Next.js 16 (App Router), multiusuário no modo `http`: tarefas, finanças, hábitos e um hub (`/`). A mesma UI serve dois modos de persistência, escolhidos em build/runtime pela variável `NEXT_PUBLIC_DATA_SOURCE`:
 
 | Modo | Persistência | Login | Uso típico |
 |---|---|---|---|
@@ -62,13 +62,15 @@ Estado de visão (semana, mês, filtros) fica na **URL**, não só em estado Rea
 
 ## Autenticação (modo `http`)
 
-- Credenciais únicas do dono: `AUTH_EMAIL` + `AUTH_PASSWORD` (env).
-- Sessão: JWT HS256 (`jose`), cookie httpOnly `orbit-session`, validade 30 dias.
+- Dono: `AUTH_EMAIL` + `AUTH_PASSWORD` (env), sempre com id `owner`.
+- Demais usuários: cadastro em `/signup` (tabela `users`, senha com scrypt em [`src/server/passwords.ts`](../src/server/passwords.ts)). `SIGNUP_INVITE_CODE` opcional fecha o cadastro com um código.
+- Sessão: JWT HS256 (`jose`), cookie httpOnly `orbit-session`, validade 30 dias. O `sub` é o id do usuário.
+- Rotas usam `requireUser()` ([`src/server/auth-guard.ts`](../src/server/auth-guard.ts)) e passam o `userId` aos repositórios. No modo `local`, tudo é do `owner`.
 - [`src/proxy.ts`](../src/proxy.ts) valida o cookie em quase todas as rotas quando `NEXT_PUBLIC_DATA_SOURCE=http`.
-- Caminhos públicos: `/login`, `/api/auth/*`, `/api/webhooks/pluggy`, PWA (`sw.js`, manifest).
+- Caminhos públicos: `/login`, `/signup`, `/api/auth/*`, `/api/webhooks/pluggy`, PWA (`sw.js`, manifest).
 - No modo `local`, o proxy não exige login.
 
-Comparação de email/senha usa `timingSafeEqual` ([`src/server/auth.ts`](../src/server/auth.ts)).
+Comparação das credenciais do dono usa `timingSafeEqual` ([`src/server/auth.ts`](../src/server/auth.ts)).
 
 ## Banco de dados (modo `http`)
 
@@ -86,7 +88,9 @@ Comparação de email/senha usa `timingSafeEqual` ([`src/server/auth.ts`](../src
 | Finanças manuais | `transactions`, `finance_categories` |
 | Open Finance | `bank_connections`, `bank_accounts`, `card_bills`, `dismissed_bank_transactions` |
 | Hábitos | `habits`, `habit_checkins` |
-| Conta | `profiles` |
+| Conta | `users`, `profiles` (id = id do usuário) |
+
+Tarefas, categorias, lançamentos, hábitos e check-ins têm `user_id` (default `owner`, para os dados de antes do multiusuário). Os repositórios server são criados por usuário (`createServerTasksRepository(userId)` etc.) e filtram toda leitura e escrita por ele; o restore usa `setWhere` para não sobrescrever id de outro usuário.
 
 Dinheiro no banco é **inteiro em centavos** (`amount_cents`, `balance_cents`, …). Datas de calendário são `YYYY-MM-DD` (sem timezone embutido).
 
@@ -94,7 +98,7 @@ Repositórios server: `src/server/db/repositories/*.server.ts`. O front HTTP cha
 
 ## Open Finance (Pluggy / MeuPluggy)
 
-Só faz sentido no modo `http`, com `PLUGGY_CLIENT_ID` e `PLUGGY_CLIENT_SECRET`.
+Só faz sentido no modo `http`, com `PLUGGY_CLIENT_ID` e `PLUGGY_CLIENT_SECRET`, e só para o dono: as credenciais são de uma conta MeuPluggy pessoal. As tabelas bancárias não têm `user_id`, e o sync só lê e grava lançamentos do `owner`.
 
 - Cliente e sync: `src/server/pluggy/`.
 - UI de conexões: Configurações; APIs sob `/api/finance/bank/…`.

@@ -1,14 +1,34 @@
-import { sqliteTable, text, integer, real, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
+
+/**
+ * Id fixo do dono (login por `AUTH_EMAIL`/`AUTH_PASSWORD`). Os dados de antes do multiusuário
+ * ficam com ele pelo default da coluna `user_id`.
+ */
+export const OWNER_USER_ID = 'owner';
+
+/** Dono do registro. Default `owner` para o `drizzle-kit push` adicionar a coluna sem perder dados. */
+const userId = () => text('user_id').notNull().default(OWNER_USER_ID);
+
+/** Usuários cadastrados pelo `/signup`. O dono não está aqui: entra pelas variáveis de ambiente. */
+export const users = sqliteTable('users', {
+  id: text('id').primaryKey(),
+  /** Sempre em minúsculas. */
+  email: text('email').notNull(),
+  passwordHash: text('password_hash').notNull(),
+  createdAt: text('created_at').notNull(),
+}, (t) => [uniqueIndex('users_email_unique').on(t.email)]);
 
 export const taskCategories = sqliteTable('task_categories', {
   id: text('id').primaryKey(),
+  userId: userId(),
   name: text('name').notNull(),
   color: text('color').notNull(),
   icon: text('icon').notNull(),
-});
+}, (t) => [index('task_categories_user_id_idx').on(t.userId)]);
 
 export const tasks = sqliteTable('tasks', {
   id: text('id').primaryKey(),
+  userId: userId(),
   title: text('title').notNull(),
   description: text('description'),
   date: text('date').notNull(),
@@ -20,19 +40,21 @@ export const tasks = sqliteTable('tasks', {
   focusStartedAt: text('focus_started_at'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
-});
+}, (t) => [index('tasks_user_id_idx').on(t.userId)]);
 
 export const financeCategories = sqliteTable('finance_categories', {
   id: text('id').primaryKey(),
+  userId: userId(),
   name: text('name').notNull(),
   type: text('type', { enum: ['income', 'expense'] }).notNull(),
   color: text('color').notNull(),
   icon: text('icon').notNull(),
   monthlyBudgetCents: integer('monthly_budget_cents'),
-});
+}, (t) => [index('finance_categories_user_id_idx').on(t.userId)]);
 
 export const transactions = sqliteTable('transactions', {
   id: text('id').primaryKey(),
+  userId: userId(),
   description: text('description').notNull(),
   amountCents: integer('amount_cents').notNull(),
   type: text('type', { enum: ['income', 'expense'] }).notNull(),
@@ -50,7 +72,7 @@ export const transactions = sqliteTable('transactions', {
   pending: integer('pending', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
-}, (t) => [uniqueIndex('transactions_external_id_unique').on(t.externalId)]);
+}, (t) => [index('transactions_user_id_idx').on(t.userId), uniqueIndex('transactions_external_id_unique').on(t.externalId)]);
 
 /** Faturas de cartão importadas. O total é o da fatura fechada, não o saldo em aberto. */
 export const cardBills = sqliteTable('card_bills', {
@@ -104,6 +126,7 @@ export const profiles = sqliteTable('profiles', {
 
 export const habits = sqliteTable('habits', {
   id: text('id').primaryKey(),
+  userId: userId(),
   name: text('name').notNull(),
   description: text('description'),
   icon: text('icon').notNull(),
@@ -122,14 +145,15 @@ export const habits = sqliteTable('habits', {
   archivedAt: text('archived_at'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
-});
+}, (t) => [index('habits_user_id_idx').on(t.userId)]);
 
 export const habitCheckins = sqliteTable('habit_checkins', {
   id: text('id').primaryKey(),
+  userId: userId(),
   habitId: text('habit_id').notNull(),
   date: text('date').notNull(),
   completed: integer('completed', { mode: 'boolean' }).notNull(),
   currentValue: real('current_value'),
   notes: text('notes'),
   createdAt: text('created_at').notNull(),
-}, (t) => [uniqueIndex('habit_checkins_habit_date_unique').on(t.habitId, t.date)]);
+}, (t) => [index('habit_checkins_user_id_idx').on(t.userId), uniqueIndex('habit_checkins_habit_date_unique').on(t.habitId, t.date)]);

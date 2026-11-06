@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { UpsertHabitCheckinSchema } from "@/features/habits/domain/habit.schema";
-import { requireAuth } from "@/server/auth-guard";
-import { habitCheckinsRepository } from "@/server/db/repositories/habits.server";
+import { requireUser } from "@/server/auth-guard";
+import { createServerHabitCheckinsRepository } from "@/server/db/repositories/habits.server";
 import { DateKeySchema } from "@/shared/lib/schemas";
 
 export async function GET(request: Request) {
-  const authResponse = await requireAuth();
-  if (authResponse) return authResponse;
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
 
   const { searchParams } = new URL(request.url);
   const from = searchParams.get("from");
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Informe from e to (YYYY-MM-DD)" }, { status: 400 });
   }
 
-  const checkins = await habitCheckinsRepository.list({
+  const checkins = await createServerHabitCheckinsRepository(auth.userId).list({
     from: fromParsed.data,
     to: toParsed.data,
   });
@@ -26,8 +26,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const authResponse = await requireAuth();
-  if (authResponse) return authResponse;
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
 
   const body = await request.json().catch(() => ({}));
   const parsed = UpsertHabitCheckinSchema.safeParse(body);
@@ -35,6 +35,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
   }
 
-  const checkin = await habitCheckinsRepository.upsert(parsed.data);
+  const checkin = await createServerHabitCheckinsRepository(auth.userId).upsert(parsed.data);
   return NextResponse.json(checkin);
 }

@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/server/auth-guard";
+import { requireUser } from "@/server/auth-guard";
 import { CreateTaskCategorySchema } from "@/features/tasks/domain/task.schema";
-import { taskCategoriesRepository } from "@/server/db/repositories/tasks.server";
+import { createServerTaskCategoriesRepository } from "@/server/db/repositories/tasks.server";
 
 export async function GET() {
-  const authResponse = await requireAuth();
-  if (authResponse) return authResponse;
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
 
-  const categories = await taskCategoriesRepository.list();
+  const categories = await createServerTaskCategoriesRepository(auth.userId).list();
   return NextResponse.json(categories);
 }
 
 export async function POST(request: Request) {
-  const authResponse = await requireAuth();
-  if (authResponse) return authResponse;
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
 
   const body = await request.json().catch(() => ({}));
   const parsed = CreateTaskCategorySchema.safeParse(body);
@@ -21,6 +21,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
   }
 
-  const category = await taskCategoriesRepository.create(parsed.data);
+  const category = await createServerTaskCategoriesRepository(auth.userId).create(parsed.data);
   return NextResponse.json(category);
 }

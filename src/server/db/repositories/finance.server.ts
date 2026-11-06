@@ -1,15 +1,16 @@
 import { db } from '../index';
-import { transactions, financeCategories } from '../schema';
+import { transactions, financeCategories, OWNER_USER_ID } from '../schema';
 import { eq, and, gte, lte } from 'drizzle-orm';
 import type { TransactionsRepository, FinanceCategoriesRepository } from '@/features/finance/data/finance.repository';
 import type { Transaction, CreateTransactionInput, UpdateTransactionInput, FinanceCategory, CreateFinanceCategoryInput, UpdateFinanceCategoryInput } from '@/features/finance/domain/finance.schema';
 import { createId, nowIso } from '@/shared/lib/id';
+import { omitUserId } from './omit-user-id';
 import { dismissExternalTransaction, undismissExternalTransaction } from './bank.server';
 
 type TransactionRow = typeof transactions.$inferSelect;
 
 function toTransaction(t: TransactionRow): Transaction {
-  const { externalId, notes, institution, countsInBalance, pending, ...rest } = t;
+  const { externalId, notes, institution, countsInBalance, pending, ...rest } = omitUserId(t);
   return {
     ...rest,
     categoryId: rest.categoryId ?? null,
@@ -21,14 +22,18 @@ function toTransaction(t: TransactionRow): Transaction {
   };
 }
 
-export function createServerTransactionsRepository(): TransactionsRepository {
+export function createServerTransactionsRepository(userId: string): TransactionsRepository {
+  const own = eq(transactions.userId, userId);
+  const byId = (id: string) => and(eq(transactions.id, id), own);
+  /** Só o dono importa do banco (Pluggy); os campos de importação não vêm de outros usuários. */
+  const isOwner = userId === OWNER_USER_ID;
+
   return {
     async list(range) {
-      let query = db.select().from(transactions).$dynamic();
-      if (range) {
-        query = query.where(and(gte(transactions.date, range.from), lte(transactions.date, range.to)));
-      }
-      const result = await query;
+      const result = await db
+        .select()
+        .from(transactions)
+        .where(range ? and(own, gte(transactions.date, range.from), lte(transactions.date, range.to)) : own);
       return result.map(toTransaction);
     },
     
@@ -44,6 +49,7 @@ export function createServerTransactionsRepository(): TransactionsRepository {
       
       await db.insert(transactions).values({
         ...tx,
+        userId,
         notes: tx.notes ?? null,
       });
       
@@ -53,7 +59,7 @@ export function createServerTransactionsRepository(): TransactionsRepository {
     async update(id: string, patch: UpdateTransactionInput) {
       const now = nowIso();
       
-      const currentArr = await db.select().from(transactions).where(eq(transactions.id, id));
+      const currentArr = await db.select().from(transactions).where(byId(id));
       if (currentArr.length === 0) throw new Error(`Transaction ${id} not found`);
       const current = currentArr[0];
 
@@ -64,17 +70,20 @@ export function createServerTransactionsRepository(): TransactionsRepository {
         updatedAt: now,
       };
 
-      await db.update(transactions).set(updated).where(eq(transactions.id, id));
+      await db.update(transactions).set(updated).where(byId(id));
       
       return toTransaction(updated);
     },
     
     async remove(id: string) {
-      const [row] = await db.delete(transactions).where(eq(transactions.id, id)).returning({ externalId: transactions.externalId });
-      if (row?.externalId) await dismissExternalTransaction(row.externalId);
+      const [row] = await db.delete(transactions).where(byId(id)).returning({ externalId: transactions.externalId });
+      if (isOwner && row?.externalId) await dismissExternalTransaction(row.externalId);
     },
     
-    async restore(transaction: Transaction) {
+    async restore(input: Transaction) {
+      const transaction: Transaction = isOwner
+        ? input
+        : { ...input, externalId: undefined, institution: undefined, pending: undefined };
       const values = {
         ...transaction,
         notes: transaction.notes ?? null,
@@ -83,24 +92,31 @@ export function createServerTransactionsRepository(): TransactionsRepository {
         countsInBalance: transaction.countsInBalance !== false,
         pending: transaction.pending === true,
       };
-      await db.insert(transactions).values(values).onConflictDoUpdate({
+      // `setWhere` impede que um id de outro usuário seja sobrescrito.
+      await db.insert(transactions).values({ ...values, userId }).onConflictDoUpdate({
         target: transactions.id,
         set: values,
+        setWhere: own,
       });
-      if (transaction.externalId) await undismissExternalTransaction(transaction.externalId);
-      return transaction;
+      if (isOwner && transaction.externalId) await undismissExternalTransaction(transaction.externalId);
+      return toTransaction({ ...values, userId });
     }
   };
 }
 
-export function createServerFinanceCategoriesRepository(): FinanceCategoriesRepository {
+function toFinanceCategory(row: typeof financeCategories.$inferSelect): FinanceCategory {
+  const c = omitUserId(row);
+  return { ...c, monthlyBudgetCents: c.monthlyBudgetCents ?? undefined } as FinanceCategory;
+}
+
+export function createServerFinanceCategoriesRepository(userId: string): FinanceCategoriesRepository {
+  const own = eq(financeCategories.userId, userId);
+  const byId = (id: string) => and(eq(financeCategories.id, id), own);
+
   return {
     async list() {
-      const result = await db.select().from(financeCategories);
-      return result.map(c => ({
-        ...c,
-        monthlyBudgetCents: c.monthlyBudgetCents ?? undefined,
-      })) as FinanceCategory[];
+      const result = await db.select().from(financeCategories).where(own);
+      return result.map(toFinanceCategory);
     },
     
     async create(input: CreateFinanceCategoryInput) {
@@ -112,6 +128,7 @@ export function createServerFinanceCategoriesRepository(): FinanceCategoriesRepo
       
       await db.insert(financeCategories).values({
         ...category,
+        userId,
         monthlyBudgetCents: category.monthlyBudgetCents ?? null,
       });
       
@@ -119,7 +136,7 @@ export function createServerFinanceCategoriesRepository(): FinanceCategoriesRepo
     },
     
     async update(id: string, patch: UpdateFinanceCategoryInput) {
-      const currentArr = await db.select().from(financeCategories).where(eq(financeCategories.id, id));
+      const currentArr = await db.select().from(financeCategories).where(byId(id));
       if (currentArr.length === 0) throw new Error(`Finance category ${id} not found`);
       const current = currentArr[0];
 
@@ -129,22 +146,20 @@ export function createServerFinanceCategoriesRepository(): FinanceCategoriesRepo
         monthlyBudgetCents: patch.monthlyBudgetCents !== undefined ? patch.monthlyBudgetCents : current.monthlyBudgetCents,
       };
 
-      await db.update(financeCategories).set(updated).where(eq(financeCategories.id, id));
-      
-      return {
-        ...updated,
-        monthlyBudgetCents: updated.monthlyBudgetCents ?? undefined,
-      } as FinanceCategory;
+      await db.update(financeCategories).set(updated).where(byId(id));
+
+      return toFinanceCategory(updated);
     },
     
     async remove(id: string) {
       await db.transaction(async (tx) => {
-        await tx.delete(financeCategories).where(eq(financeCategories.id, id));
-        await tx.update(transactions).set({ categoryId: null, updatedAt: nowIso() }).where(eq(transactions.categoryId, id));
+        await tx.delete(financeCategories).where(byId(id));
+        await tx
+          .update(transactions)
+          .set({ categoryId: null, updatedAt: nowIso() })
+          .where(and(eq(transactions.categoryId, id), eq(transactions.userId, userId)));
       });
     }
   };
 }
 
-export const transactionsRepository = createServerTransactionsRepository();
-export const financeCategoriesRepository = createServerFinanceCategoriesRepository();

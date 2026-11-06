@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useActionState } from 'react'
 import { loginAction, type LoginState } from './actions'
 import { Button } from '@/shared/ui/button'
@@ -58,6 +59,13 @@ export default function LoginPage() {
             {isPending ? 'Entrando...' : 'Entrar'}
           </Button>
         </form>
+
+        <p className="text-sm text-[#9a94b0] text-center mt-6">
+          Não tem conta?{' '}
+          <Link href="/signup" className="font-medium text-[#844DFE] hover:underline">
+            Criar conta
+          </Link>
+        </p>
       </div>
     </div>
   )

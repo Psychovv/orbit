@@ -1,12 +1,13 @@
 import "server-only";
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/server/auth-guard";
+import { requireUser } from "@/server/auth-guard";
+import { OWNER_USER_ID } from "@/server/db/schema";
 import { clientKey, rateLimit } from "@/server/rate-limit";
 import { isPluggyConfigured } from "./client";
 
 /**
  * Rotas de banco exigem modo http (com login) mesmo que as credenciais existam:
- * no modo local as APIs ficam sem autenticação.
+ * no modo local as APIs ficam sem autenticação. Só o dono usa: as credenciais Pluggy são dele.
  */
 export async function requireBankAccess(
   request: Request,
@@ -16,8 +17,11 @@ export async function requireBankAccess(
     return NextResponse.json({ error: "Disponível só no modo nuvem." }, { status: 404 });
   }
 
-  const authResponse = await requireAuth();
-  if (authResponse) return authResponse;
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  if (auth.userId !== OWNER_USER_ID) {
+    return NextResponse.json({ error: "Integração bancária disponível só para o dono da conta." }, { status: 403 });
+  }
 
   const key = `bank:${request.method}:${new URL(request.url).pathname}:${clientKey(request)}`;
   if (!rateLimit(key, limit.max, limit.windowMs)) {

@@ -60,10 +60,11 @@ GEMINI_API_KEY="AIza..."
 | Variável | Obrigatória no `http` | Descrição |
 |---|---|---|
 | `AUTH_SECRET` | Sim (prod) | Segredo HMAC do JWT. Gere com `openssl rand -base64 32`. |
-| `AUTH_EMAIL` | Sim | E-mail do único usuário. |
-| `AUTH_PASSWORD` | Sim | Senha do único usuário. |
+| `AUTH_EMAIL` | Sim | E-mail do dono (usuário `owner`). |
+| `AUTH_PASSWORD` | Sim | Senha do dono. |
+| `SIGNUP_INVITE_CODE` | Não | Se definido, `/signup` exige esse código. Sem ele, qualquer pessoa pode criar conta. |
 
-Sem `AUTH_EMAIL` / `AUTH_PASSWORD` válidos, o login falha. Em dev, se `AUTH_SECRET` faltar, o código usa um fallback fraco — **não use isso em produção**.
+O dono entra pelas variáveis acima; os demais usuários se cadastram em `/signup` e ficam na tabela `users`. Sem `AUTH_EMAIL` / `AUTH_PASSWORD`, só os usuários cadastrados conseguem entrar. Em dev, se `AUTH_SECRET` faltar, o código usa um fallback fraco — **não use isso em produção**.
 
 ### Banco (modo `http`)
 
@@ -83,6 +84,8 @@ O `pnpm build` também roda `drizzle-kit push --force` antes do build Next.
 **Atenção:** não coloque o Turso de produção no `.env.local`. O `.env.development` já isola o dev em `file:local.db`.
 
 ### Pluggy / MeuPluggy (opcional, modo `http`)
+
+Só o dono (login por `AUTH_EMAIL`) usa o Open Finance: as credenciais são de uma conta MeuPluggy pessoal. Os outros usuários recebem 403 nas rotas `/api/finance/bank/*`.
 
 | Variável | Obrigatória | Descrição |
 |---|---|---|
@@ -136,6 +139,7 @@ GEMINI_API_KEY=...
 AUTH_SECRET=...
 AUTH_EMAIL=...
 AUTH_PASSWORD=...
+SIGNUP_INVITE_CODE=...   # opcional: fecha o cadastro com um código
 DATABASE_URL=libsql://orbit-....turso.io
 DATABASE_AUTH_TOKEN=...
 # Pluggy opcional

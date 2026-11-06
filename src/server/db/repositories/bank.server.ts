@@ -1,12 +1,18 @@
 import "server-only";
 import { and, eq, inArray, isNotNull, isNull, ne } from "drizzle-orm";
 import { db } from "../index";
-import { bankAccounts, bankConnections, cardBills, dismissedBankTransactions, transactions } from "../schema";
+import { bankAccounts, bankConnections, cardBills, dismissedBankTransactions, OWNER_USER_ID, transactions } from "../schema";
 import type { BankAccount, BankConnection, CardBill } from "@/features/finance/domain/bank.schema";
 import { billPaymentIds, type BillPaymentRef, type ImportedTransaction } from "@/server/pluggy/mapping";
 import { createId, nowIso } from "@/shared/lib/id";
 
 const CHUNK = 200;
+
+/**
+ * Open Finance é só do dono: as credenciais Pluggy (MeuPluggy) são dele. Tudo que este
+ * arquivo lê ou grava em `transactions` fica restrito às linhas do dono.
+ */
+const ownerRows = eq(transactions.userId, OWNER_USER_ID);
 
 function chunks<T>(items: T[], size = CHUNK): T[][] {
   const out: T[][] = [];
@@ -83,6 +89,7 @@ export const importedTransactionsRepository = {
             ...r,
             notes: r.notes || null,
             id: createId(),
+            userId: OWNER_USER_ID,
             categoryId: null,
             countsInBalance: r.countsInBalance,
             pending: r.pending,
@@ -113,7 +120,7 @@ export const importedTransactionsRepository = {
           pending: r.pending,
           updatedAt: nowIso(),
         })
-        .where(eq(transactions.externalId, r.externalId))
+        .where(and(ownerRows, eq(transactions.externalId, r.externalId)))
         .returning({ id: transactions.id });
       updated += result.length;
     }
@@ -131,7 +138,7 @@ export const importedTransactionsRepository = {
       const found = await db
         .select({ externalId: transactions.externalId, notes: transactions.notes })
         .from(transactions)
-        .where(inArray(transactions.externalId, part));
+        .where(and(ownerRows, inArray(transactions.externalId, part)));
       for (const row of found) {
         if (row.externalId) existingNotes.set(row.externalId, row.notes);
       }
@@ -159,7 +166,7 @@ export const importedTransactionsRepository = {
             notes: keepNotes ? currentNotes : r.notes || null,
             updatedAt: nowIso(),
           })
-          .where(eq(transactions.externalId, externalId))
+          .where(and(ownerRows, eq(transactions.externalId, externalId)))
       );
     }
 
@@ -175,14 +182,14 @@ export const importedTransactionsRepository = {
     const [row] = await db
       .select({ id: transactions.id })
       .from(transactions)
-      .where(and(isNotNull(transactions.externalId), isNull(transactions.institution)))
+      .where(and(ownerRows, isNotNull(transactions.externalId), isNull(transactions.institution)))
       .limit(1);
     return Boolean(row);
   },
 
   async removeByExternalIds(externalIds: string[]): Promise<void> {
     for (const part of chunks(externalIds)) {
-      await db.delete(transactions).where(inArray(transactions.externalId, part));
+      await db.delete(transactions).where(and(ownerRows, inArray(transactions.externalId, part)));
     }
   },
 };
@@ -195,7 +202,7 @@ export async function markBillPayments(payments: BillPaymentRef[]): Promise<numb
   await db
     .update(transactions)
     .set({ countsInBalance: true })
-    .where(and(isNotNull(transactions.externalId), ne(transactions.paymentMethod, "cartao")));
+    .where(and(ownerRows, isNotNull(transactions.externalId), ne(transactions.paymentMethod, "cartao")));
 
   const candidates = await db
     .select({
@@ -206,14 +213,14 @@ export async function markBillPayments(payments: BillPaymentRef[]): Promise<numb
       paymentMethod: transactions.paymentMethod,
     })
     .from(transactions)
-    .where(isNotNull(transactions.externalId));
+    .where(and(ownerRows, isNotNull(transactions.externalId)));
 
   const ids = billPaymentIds(candidates, payments);
   for (const part of chunks(ids)) {
     await db
       .update(transactions)
       .set({ countsInBalance: false, updatedAt: nowIso() })
-      .where(inArray(transactions.id, part));
+      .where(and(ownerRows, inArray(transactions.id, part)));
   }
   return ids.length;
 }

@@ -11,23 +11,33 @@ import type {
   UpdateTaskCategoryInput,
 } from '@/features/tasks/domain/task.schema';
 import { createId, nowIso } from '@/shared/lib/id';
+import { omitUserId } from './omit-user-id';
 
-export function createServerTasksRepository(): TasksRepository {
+type TaskRow = typeof tasks.$inferSelect;
+
+function toTask(row: TaskRow): Task {
+  const t = omitUserId(row);
+  return {
+    ...t,
+    description: t.description ?? undefined,
+    time: t.time ?? undefined,
+    completedAt: t.completedAt ?? null,
+    focusStartedAt: t.focusStartedAt ?? null,
+    categoryId: t.categoryId ?? null,
+  } as Task;
+}
+
+export function createServerTasksRepository(userId: string): TasksRepository {
+  const own = eq(tasks.userId, userId);
+  const byId = (id: string) => and(eq(tasks.id, id), own);
+
   return {
     async list(range) {
-      let query = db.select().from(tasks).$dynamic();
-      if (range) {
-        query = query.where(and(gte(tasks.date, range.from), lte(tasks.date, range.to)));
-      }
-      const result = await query;
-      return result.map(t => ({
-        ...t,
-        description: t.description ?? undefined,
-        time: t.time ?? undefined,
-        completedAt: t.completedAt ?? null,
-        focusStartedAt: t.focusStartedAt ?? null,
-        categoryId: t.categoryId ?? null,
-      })) as Task[];
+      const result = await db
+        .select()
+        .from(tasks)
+        .where(range ? and(own, gte(tasks.date, range.from), lte(tasks.date, range.to)) : own);
+      return result.map(toTask);
     },
     
     async create(input: CreateTaskInput) {
@@ -46,6 +56,7 @@ export function createServerTasksRepository(): TasksRepository {
       
       await db.insert(tasks).values({
         ...task,
+        userId,
         description: task.description ?? null,
         time: task.time ?? null,
       });
@@ -56,7 +67,7 @@ export function createServerTasksRepository(): TasksRepository {
     async update(id: string, patch: UpdateTaskInput) {
       const now = nowIso();
       
-      const currentArr = await db.select().from(tasks).where(eq(tasks.id, id));
+      const currentArr = await db.select().from(tasks).where(byId(id));
       if (currentArr.length === 0) throw new Error(`Task ${id} not found`);
       const current = currentArr[0];
 
@@ -68,45 +79,44 @@ export function createServerTasksRepository(): TasksRepository {
         updatedAt: now,
       };
 
-      await db.update(tasks).set(updated).where(eq(tasks.id, id));
-      
-      return {
-        ...updated,
-        description: updated.description ?? undefined,
-        time: updated.time ?? undefined,
-        completedAt: updated.completedAt ?? null,
-        focusStartedAt: updated.focusStartedAt ?? null,
-        categoryId: updated.categoryId ?? null,
-      } as Task;
+      await db.update(tasks).set(updated).where(byId(id));
+
+      return toTask(updated);
     },
     
     async remove(id: string) {
-      await db.delete(tasks).where(eq(tasks.id, id));
+      await db.delete(tasks).where(byId(id));
     },
     
     async restore(task: Task) {
-      await db.insert(tasks).values({
+      const values = {
         ...task,
         description: task.description ?? null,
         time: task.time ?? null,
-      }).onConflictDoUpdate({
+      };
+      // `setWhere` impede que um id de outro usuário seja sobrescrito.
+      await db.insert(tasks).values({ ...values, userId }).onConflictDoUpdate({
         target: tasks.id,
-        set: {
-          ...task,
-          description: task.description ?? null,
-          time: task.time ?? null,
-        }
+        set: values,
+        setWhere: own,
       });
       return task;
     }
   };
 }
 
-export function createServerTaskCategoriesRepository(): TaskCategoriesRepository {
+function toTaskCategory(row: typeof taskCategories.$inferSelect): TaskCategory {
+  return omitUserId(row) as TaskCategory;
+}
+
+export function createServerTaskCategoriesRepository(userId: string): TaskCategoriesRepository {
+  const own = eq(taskCategories.userId, userId);
+  const byId = (id: string) => and(eq(taskCategories.id, id), own);
+
   return {
     async list() {
-      const result = await db.select().from(taskCategories);
-      return result as TaskCategory[];
+      const result = await db.select().from(taskCategories).where(own);
+      return result.map(toTaskCategory);
     },
     
     async create(input: CreateTaskCategoryInput) {
@@ -114,27 +124,28 @@ export function createServerTaskCategoriesRepository(): TaskCategoriesRepository
         ...input,
         id: createId(),
       };
-      await db.insert(taskCategories).values(category);
+      await db.insert(taskCategories).values({ ...category, userId });
       return category;
     },
 
     async update(id: string, patch: UpdateTaskCategoryInput) {
-      const currentArr = await db.select().from(taskCategories).where(eq(taskCategories.id, id));
+      const currentArr = await db.select().from(taskCategories).where(byId(id));
       if (currentArr.length === 0) throw new Error(`Task category ${id} not found`);
       const current = currentArr[0];
       const updated = { ...current, ...patch };
-      await db.update(taskCategories).set(updated).where(eq(taskCategories.id, id));
-      return updated as TaskCategory;
+      await db.update(taskCategories).set(updated).where(byId(id));
+      return toTaskCategory(updated);
     },
     
     async remove(id: string) {
       await db.transaction(async (tx) => {
-        await tx.delete(taskCategories).where(eq(taskCategories.id, id));
-        await tx.update(tasks).set({ categoryId: null, updatedAt: nowIso() }).where(eq(tasks.categoryId, id));
+        await tx.delete(taskCategories).where(byId(id));
+        await tx
+          .update(tasks)
+          .set({ categoryId: null, updatedAt: nowIso() })
+          .where(and(eq(tasks.categoryId, id), eq(tasks.userId, userId)));
       });
     }
   };
 }
 
-export const tasksRepository = createServerTasksRepository();
-export const taskCategoriesRepository = createServerTaskCategoriesRepository();

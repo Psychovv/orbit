@@ -29,6 +29,7 @@ Orbit é um aplicativo web de organização pessoal e planejamento financeiro, c
 
 ### Conta e dados
 
+- Multiusuário no modo `http`: cadastro em `/signup` (opcionalmente com código de convite), cada usuário vê só os próprios dados. O dono entra pelas variáveis `AUTH_*`; Open Finance é só dele.
 - Perfil (nome, foto, bio) compartilhado entre Home e Configurações.
 - Exportar / importar backup JSON em Configurações.
 - Tema claro e escuro.

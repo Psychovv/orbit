@@ -2,7 +2,7 @@
 
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { createSession, validateCredentials } from '@/server/auth'
+import { authenticate, createSession } from '@/server/auth'
 import {
   clientKeyFromHeaders,
   rateLimit,
@@ -41,11 +41,12 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     }
   }
 
-  if (!validateCredentials(email, password)) {
+  const userId = await authenticate(email, password)
+  if (!userId) {
     return { error: 'Credenciais inválidas.' }
   }
 
   resetRateLimit(key)
-  await createSession()
+  await createSession(userId)
   redirect('/')
 }

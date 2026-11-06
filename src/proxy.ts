@@ -6,7 +6,7 @@ const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET ?? 'dev-secret-c
 const COOKIE_NAME = 'orbit-session'
 
 /** `/api/webhooks/pluggy` não usa sessão: autentica pelo cabeçalho secreto na própria rota. */
-const PUBLIC_PATHS = ['/login', '/api/auth', '/api/webhooks/pluggy', '/manifest.webmanifest', '/sw.js']
+const PUBLIC_PATHS = ['/login', '/signup', '/api/auth', '/api/webhooks/pluggy', '/manifest.webmanifest', '/sw.js']
 
 /** Auth só é obrigatória no modo http (nuvem). Modo local fica offline sem login. */
 const AUTH_REQUIRED = process.env.NEXT_PUBLIC_DATA_SOURCE === 'http'

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/server/auth-guard";
+import { requireUser } from "@/server/auth-guard";
 import { TaskSchema } from "@/features/tasks/domain/task.schema";
-import { tasksRepository } from "@/server/db/repositories/tasks.server";
+import { createServerTasksRepository } from "@/server/db/repositories/tasks.server";
 
 export async function PUT(request: Request) {
-  const authResponse = await requireAuth();
-  if (authResponse) return authResponse;
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
 
   const body = await request.json().catch(() => ({}));
   const parsed = TaskSchema.safeParse(body);
@@ -13,6 +13,6 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
   }
 
-  const task = await tasksRepository.restore(parsed.data);
+  const task = await createServerTasksRepository(auth.userId).restore(parsed.data);
   return NextResponse.json(task);
 }
