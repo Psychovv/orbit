@@ -2,3 +2,7 @@ ignoredBuiltDependencies:
   - esbuild
   - sharp
   - unrs-resolver
+
+# Correção de segurança transitiva (GHSA-68fv-2mgg-jv7q, via next > postcss).
+overrides:
+  source-map-js: ">=1.2.2"
