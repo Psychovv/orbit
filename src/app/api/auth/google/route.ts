@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const back = (error: string) => NextResponse.redirect(new URL(`/${from}?error=${error}`, origin));
 
   if (!isGoogleConfigured()) return back("google_unavailable");
-  if (!rateLimit(`google-start:${clientKey(request)}`, 20, 15 * 60_000)) return back("rate_limited");
+  if (!(await rateLimit(`google-start:${clientKey(request)}`, 20, 15 * 60_000))) return back("rate_limited");
 
   const invite = searchParams.get("invite") ?? "";
   if (from === "signup" && inviteRequired() && !inviteCodeMatches(invite)) return back("invite");

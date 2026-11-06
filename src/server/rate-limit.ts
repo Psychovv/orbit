@@ -1,43 +1,57 @@
-const hits = new Map<string, number[]>();
+import "server-only";
+import { eq, lte, sql } from "drizzle-orm";
+import { db } from "./db";
+import { rateLimits } from "./db/schema";
+import * as memory from "./rate-limit-memory";
+
+export { clientKey, clientKeyFromHeaders } from "./client-key";
 
 /**
- * Limite simples em memória (janela deslizante). Vale por instância do servidor:
- * em produção com várias instâncias, trocar por um store compartilhado (ex.: Redis).
+ * Limite de tentativas em janela fixa, num contador atômico no banco (Turso), compartilhado
+ * entre as instâncias serverless. Se o banco falhar, cai no limite em memória (por instância).
  */
-export function rateLimit(key: string, limit: number, windowMs: number): boolean {
+export async function rateLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
   const now = Date.now();
-  const recent = (hits.get(key) ?? []).filter((t) => now - t < windowMs);
+  try {
+    const [row] = await db
+      .insert(rateLimits)
+      .values({ key, count: 1, resetAt: now + windowMs })
+      .onConflictDoUpdate({
+        target: rateLimits.key,
+        set: {
+          count: sql`CASE WHEN ${rateLimits.resetAt} <= ${now} THEN 1 ELSE ${rateLimits.count} + 1 END`,
+          resetAt: sql`CASE WHEN ${rateLimits.resetAt} <= ${now} THEN ${now + windowMs} ELSE ${rateLimits.resetAt} END`,
+        },
+      })
+      .returning({ count: rateLimits.count });
 
-  if (hits.size > 5000) hits.clear();
+    // Limpa janelas vencidas de vez em quando, sem custo em toda requisição.
+    if (Math.random() < 0.01) void db.delete(rateLimits).where(lte(rateLimits.resetAt, now)).catch(() => {});
 
-  if (recent.length >= limit) {
-    hits.set(key, recent);
-    return false;
+    return (row?.count ?? 1) <= limit;
+  } catch (error) {
+    console.error("[rate-limit] store indisponível, usando memória", error instanceof Error ? error.message : "");
+    return memory.rateLimit(key, limit, windowMs);
   }
-  recent.push(now);
-  hits.set(key, recent);
-  return true;
 }
 
 /** Ms até a janela liberar uma vaga, ou null se ainda há cota. */
-export function rateLimitRetryAfterMs(key: string, limit: number, windowMs: number): number | null {
+export async function rateLimitRetryAfterMs(key: string, limit: number, windowMs: number): Promise<number | null> {
   const now = Date.now();
-  const recent = (hits.get(key) ?? []).filter((t) => now - t < windowMs);
-  hits.set(key, recent);
-  if (recent.length < limit) return null;
-  const oldest = recent[0] ?? now;
-  return Math.max(1000, oldest + windowMs - now);
+  try {
+    const [row] = await db.select().from(rateLimits).where(eq(rateLimits.key, key));
+    if (!row || row.resetAt <= now || row.count < limit) return null;
+    return Math.max(1000, row.resetAt - now);
+  } catch {
+    return memory.rateLimitRetryAfterMs(key, limit, windowMs);
+  }
 }
 
-export function resetRateLimit(key: string): void {
-  hits.delete(key);
-}
-
-export function clientKeyFromHeaders(headerStore: Headers): string {
-  const forwarded = headerStore.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || headerStore.get("x-real-ip") || "local";
-}
-
-export function clientKey(req: Request): string {
-  return clientKeyFromHeaders(req.headers);
+export async function resetRateLimit(key: string): Promise<void> {
+  memory.resetRateLimit(key);
+  try {
+    await db.delete(rateLimits).where(eq(rateLimits.key, key));
+  } catch {
+    // sem store: o limite em memória já foi zerado
+  }
 }

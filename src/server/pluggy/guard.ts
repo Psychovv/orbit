@@ -24,7 +24,7 @@ export async function requireBankAccess(
   }
 
   const key = `bank:${request.method}:${new URL(request.url).pathname}:${clientKey(request)}`;
-  if (!rateLimit(key, limit.max, limit.windowMs)) {
+  if (!(await rateLimit(key, limit.max, limit.windowMs))) {
     return NextResponse.json({ error: "Muitas requisições. Aguarde um pouco." }, { status: 429 });
   }
 

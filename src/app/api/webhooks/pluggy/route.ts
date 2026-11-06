@@ -54,7 +54,7 @@ async function handleEvent(event: PluggyWebhookEvent): Promise<void> {
 
 export async function POST(request: Request) {
   const ip = clientKey(request);
-  if (!rateLimit(`pluggy-webhook:${ip}`, 120, 60_000)) {
+  if (!(await rateLimit(`pluggy-webhook:${ip}`, 120, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

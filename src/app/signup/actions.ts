@@ -30,7 +30,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
   }
 
   const headerStore = await headers()
-  if (!rateLimit(`signup:${clientKeyFromHeaders(headerStore)}`, SIGNUP_LIMIT, SIGNUP_WINDOW_MS)) {
+  if (!(await rateLimit(`signup:${clientKeyFromHeaders(headerStore)}`, SIGNUP_LIMIT, SIGNUP_WINDOW_MS))) {
     return { error: 'Muitas contas criadas daqui. Tente de novo mais tarde.' }
   }
 

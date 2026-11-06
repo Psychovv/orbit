@@ -160,3 +160,20 @@ export const habitCheckins = sqliteTable('habit_checkins', {
   notes: text('notes'),
   createdAt: text('created_at').notNull(),
 }, (t) => [index('habit_checkins_user_id_idx').on(t.userId), uniqueIndex('habit_checkins_habit_date_unique').on(t.habitId, t.date)]);
+
+/**
+ * Versão de sessão por usuário (inclui o dono). O JWT carrega a versão; subir o número
+ * invalida todas as sessões emitidas antes ("sair de todos os dispositivos"). Sem linha = 0.
+ */
+export const sessionVersions = sqliteTable('session_versions', {
+  userId: text('user_id').primaryKey(),
+  version: integer('version').notNull().default(0),
+});
+
+/** Contadores do limite de tentativas, compartilhados entre as instâncias serverless. */
+export const rateLimits = sqliteTable('rate_limits', {
+  key: text('key').primaryKey(),
+  count: integer('count').notNull(),
+  /** Epoch ms em que a janela termina. */
+  resetAt: integer('reset_at').notNull(),
+}, (t) => [index('rate_limits_reset_at_idx').on(t.resetAt)]);

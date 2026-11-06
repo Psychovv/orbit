@@ -1,11 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  clientKey,
-  clientKeyFromHeaders,
-  rateLimit,
-  rateLimitRetryAfterMs,
-  resetRateLimit,
-} from "./rate-limit";
+import { clientKey, clientKeyFromHeaders } from "./client-key";
+import { rateLimit, rateLimitRetryAfterMs, resetRateLimit } from "./rate-limit-memory";
 
 const KEY = "test-client";
 
@@ -102,5 +97,14 @@ describe("clientKeyFromHeaders", () => {
   it("reads the headers of a Request", () => {
     const req = new Request("http://localhost/api", { headers: { "x-real-ip": "198.51.100.2" } });
     expect(clientKey(req)).toBe("198.51.100.2");
+  });
+});
+
+describe("eviction", () => {
+  it("does not reset the counters of other keys when the map grows", () => {
+    resetRateLimit("victim");
+    rateLimit("victim", 1, 60_000);
+    for (let i = 0; i < 5100; i++) rateLimit(`noise-${i}`, 1, 60_000);
+    expect(rateLimit("victim", 1, 60_000)).toBe(false);
   });
 });

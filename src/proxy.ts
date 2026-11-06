@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
-import { getAuthSecret, isAuthRequired } from '@/config/auth-config'
+import { SESSION_AUDIENCE, getAuthSecret, isAuthRequired } from '@/config/auth-config'
 
 const COOKIE_NAME = 'orbit-session'
 
@@ -41,7 +41,8 @@ export async function proxy(request: NextRequest) {
   }
   
   try {
-    await jwtVerify(token, getAuthSecret())
+    const { payload } = await jwtVerify(token, getAuthSecret(), { audience: SESSION_AUDIENCE })
+    if (typeof payload.sub !== 'string' || !payload.sub) return unauthorized(request, true)
     return NextResponse.next()
   } catch {
     return unauthorized(request, true)

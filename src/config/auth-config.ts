@@ -26,3 +26,6 @@ export function getAuthSecret(): Uint8Array {
 export function isAuthRequired(): boolean {
   return process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_DATA_SOURCE === 'http'
 }
+
+/** Audiência dos JWTs de sessão: outros tokens assinados com o mesmo segredo (ex.: state do Google) não valem como sessão. */
+export const SESSION_AUDIENCE = 'orbit-session'

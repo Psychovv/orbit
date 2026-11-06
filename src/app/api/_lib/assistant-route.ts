@@ -132,7 +132,7 @@ export function createAssistantRoute<Req extends z.ZodType, Res extends z.ZodTyp
     if (authResponse) return authResponse;
 
     try {
-      if (!rateLimit(`${name}:${clientKey(req)}`, RATE_LIMIT.limit, RATE_LIMIT.windowMs)) {
+      if (!(await rateLimit(`${name}:${clientKey(req)}`, RATE_LIMIT.limit, RATE_LIMIT.windowMs))) {
         throw new HttpError(429, "Muitas requisições. Aguarde um minuto e tente de novo.");
       }
 

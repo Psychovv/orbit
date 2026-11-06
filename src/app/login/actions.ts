@@ -12,9 +12,15 @@ import {
 
 const LOGIN_LIMIT = 5
 const LOGIN_WINDOW_MS = 15 * 60 * 1000
+/** Teto por e-mail, somando todos os IPs: segura força bruta distribuída contra uma conta. */
+const LOGIN_EMAIL_LIMIT = 20
 
 export interface LoginState {
   error?: string
+}
+
+function emailKey(email: string): string {
+  return `login-email:${email.trim().toLowerCase()}`
 }
 
 function loginKey(ip: string, email: string): string {
@@ -33,8 +39,15 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   const ip = clientKeyFromHeaders(headerStore)
   const key = loginKey(ip, email)
 
-  if (!rateLimit(key, LOGIN_LIMIT, LOGIN_WINDOW_MS)) {
-    const retryMs = rateLimitRetryAfterMs(key, LOGIN_LIMIT, LOGIN_WINDOW_MS) ?? LOGIN_WINDOW_MS
+  const perEmailKey = emailKey(email)
+  const allowedByIp = await rateLimit(key, LOGIN_LIMIT, LOGIN_WINDOW_MS)
+  const allowedByEmail = await rateLimit(perEmailKey, LOGIN_EMAIL_LIMIT, LOGIN_WINDOW_MS)
+  if (!allowedByIp || !allowedByEmail) {
+    const retryMs =
+      Math.max(
+        (await rateLimitRetryAfterMs(key, LOGIN_LIMIT, LOGIN_WINDOW_MS)) ?? 0,
+        (await rateLimitRetryAfterMs(perEmailKey, LOGIN_EMAIL_LIMIT, LOGIN_WINDOW_MS)) ?? 0
+      ) || LOGIN_WINDOW_MS
     const minutes = Math.max(1, Math.ceil(retryMs / 60_000))
     return {
       error: `Muitas tentativas. Aguarde cerca de ${minutes} min e tente de novo.`,
@@ -46,7 +59,8 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     return { error: 'Credenciais inválidas.' }
   }
 
-  resetRateLimit(key)
+  await resetRateLimit(key)
+  await resetRateLimit(perEmailKey)
   await createSession(userId)
   redirect('/')
 }

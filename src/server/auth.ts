@@ -5,7 +5,8 @@ import { cookies } from 'next/headers'
 import { OWNER_USER_ID } from './db/schema'
 import { EmailTakenError, normalizeEmail, usersRepository } from './db/repositories/users.server'
 import type { GoogleIdentity } from './google-oauth'
-import { getAuthSecret } from '@/config/auth-config'
+import { SESSION_AUDIENCE, getAuthSecret } from '@/config/auth-config'
+import { sessionVersionsRepository } from './db/repositories/session-versions.server'
 import { getDummyHash, verifyPassword } from './passwords'
 
 const COOKIE_NAME = 'orbit-session'
@@ -23,8 +24,9 @@ function safeEqual(a: string, b: string): boolean {
 
 /** Grava o cookie de sessão. `sub` do JWT é o id do usuário (`owner` para o dono). */
 export async function createSession(userId: string) {
-  const token = await new SignJWT({ sub: userId })
+  const token = await new SignJWT({ sub: userId, sv: await sessionVersionsRepository.get(userId) })
     .setProtectedHeader({ alg: 'HS256' })
+    .setAudience(SESSION_AUDIENCE)
     .setIssuedAt()
     .setExpirationTime('30d')
     .sign(getAuthSecret())
@@ -45,11 +47,20 @@ export async function getSessionUserId(): Promise<string | null> {
   const token = cookieStore.get(COOKIE_NAME)?.value
   if (!token) return null
   try {
-    const { payload } = await jwtVerify(token, getAuthSecret())
-    return typeof payload.sub === 'string' && payload.sub ? payload.sub : null
+    const { payload } = await jwtVerify(token, getAuthSecret(), { audience: SESSION_AUDIENCE })
+    if (typeof payload.sub !== 'string' || !payload.sub) return null
+    // Sessão revogada: a versão do token ficou para trás da versão atual do usuário.
+    const current = await sessionVersionsRepository.get(payload.sub)
+    return payload.sv === current ? payload.sub : null
   } catch {
     return null
   }
+}
+
+/** "Sair de todos os dispositivos": invalida as sessões do usuário e apaga o cookie daqui. */
+export async function revokeAllSessions(userId: string) {
+  await sessionVersionsRepository.bump(userId)
+  await deleteSession()
 }
 
 export async function deleteSession() {
