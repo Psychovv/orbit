@@ -32,6 +32,7 @@ Orbit é um aplicativo web de organização pessoal e planejamento financeiro, c
 - Multiusuário no modo `http`: cadastro em `/signup` (opcionalmente com código de convite), cada usuário vê só os próprios dados. Login e cadastro também com Google (opcional). O dono entra pelas variáveis `AUTH_*`; Open Finance é só dele.
 - Perfil (nome, foto, bio) compartilhado entre Home e Configurações.
 - Exportar / importar backup JSON em Configurações.
+- Sair de todos os dispositivos e excluir a conta com todos os dados (modo `http`), em Configurações.
 - Tema claro e escuro.
 - Rotas `/` (hub), `/tasks`, `/finance`, `/habits` e `/settings`. Visão, data, categoria e mês ficam na URL.
 
@@ -103,7 +104,7 @@ pnpm dev
 
 Abra [http://localhost:3000](http://localhost:3000).
 
-Build de produção (`drizzle-kit push` + Next):
+Build de produção (`drizzle-kit push` + Next). O push roda sem `--force`: se uma mudança de schema apagaria dados, o build falha e a mudança precisa ser revisada e aplicada à mão com `pnpm db:push`:
 
 ```bash
 pnpm build
