@@ -21,8 +21,3 @@ export async function requireUser(): Promise<AuthResult> {
   }
   return { userId }
 }
-
-/** Para rotas que só precisam de alguém logado, sem dados por usuário. */
-export async function requireAuth(): Promise<NextResponse | null> {
-  return (await requireUser()).response ?? null
-}

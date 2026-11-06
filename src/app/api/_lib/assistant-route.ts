@@ -6,10 +6,12 @@ import {
 import { NextResponse } from "next/server";
 import type { z } from "zod";
 import { ASSISTANT_SOURCE_HEADER, type AssistantSource } from "@/features/assistant/domain/source";
-import { requireAuth } from "@/server/auth-guard";
-import { clientKey, rateLimit } from "@/server/rate-limit";
+import { requireUser } from "@/server/auth-guard";
+import { rateLimit } from "@/server/rate-limit";
 
 const RATE_LIMIT = { limit: 20, windowMs: 60_000 };
+/** Teto diário por usuário somando todas as rotas da IA: segura o gasto da cota do Gemini por conta. */
+const DAILY_LIMIT = { limit: 300, windowMs: 24 * 60 * 60_000 };
 const REQUEST_TIMEOUT_MS = 15_000;
 
 /**
@@ -128,12 +130,16 @@ export function createAssistantRoute<Req extends z.ZodType, Res extends z.ZodTyp
   resolveLocally,
 }: AssistantRouteOptions<Req, Res>) {
   return async function POST(req: Request) {
-    const authResponse = await requireAuth();
-    if (authResponse) return authResponse;
+    const auth = await requireUser();
+    if (auth.response) return auth.response;
 
     try {
-      if (!(await rateLimit(`${name}:${clientKey(req)}`, RATE_LIMIT.limit, RATE_LIMIT.windowMs))) {
+      // Por usuário (não por IP): trocar de IP não renova a cota.
+      if (!(await rateLimit(`${name}:${auth.userId}`, RATE_LIMIT.limit, RATE_LIMIT.windowMs))) {
         throw new HttpError(429, "Muitas requisições. Aguarde um minuto e tente de novo.");
+      }
+      if (!(await rateLimit(`assistant-daily:${auth.userId}`, DAILY_LIMIT.limit, DAILY_LIMIT.windowMs))) {
+        throw new HttpError(429, "Limite diário da Orbit AI atingido. Tente de novo amanhã.");
       }
 
       const body = request.safeParse(await req.json().catch(() => null));
